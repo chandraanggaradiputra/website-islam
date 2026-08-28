@@ -3,49 +3,48 @@
 
 import { useState, useEffect } from 'react';
 import { getSerangPrayerTimes } from '@/lib/prayerTimes';
-import { PrayerTimeItem } from '@/types';
 import { Clock, MapPin } from 'lucide-react';
 
 export function PrayerTimesWidget() {
-  const [times, setTimes] = useState<PrayerTimeItem[]>([]);
-  const [nextPrayer, setNextPrayer] = useState<string>('');
-  const [mounted, setMounted] = useState<boolean>(false);
+  const [now, setNow] = useState<Date | null>(null);
 
   useEffect(() => {
-    setMounted(true);
-    const data = getSerangPrayerTimes(new Date());
-    setTimes(data.items);
-    setNextPrayer(data.nextPrayerName);
+    const timeout = setTimeout(() => setNow(new Date()), 0);
 
     const interval = setInterval(() => {
-      const refreshed = getSerangPrayerTimes(new Date());
-      setTimes(refreshed.items);
-      setNextPrayer(refreshed.nextPrayerName);
+      setNow(new Date());
     }, 60000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(timeout);
+      clearInterval(interval);
+    };
   }, []);
 
-  if (!mounted) {
+  if (!now) {
     return (
-      <div className={clsx('bg-slate-100', 'dark:bg-slate-900', 'rounded-2xl', 'w-full', 'h-24', 'animate-pulse')} />
+      <div className="bg-slate-100 dark:bg-slate-900 rounded-2xl w-full h-24 animate-pulse" />
     );
   }
 
+  const data = getSerangPrayerTimes(now);
+  const times = data.items;
+  const nextPrayer = data.nextPrayerName;
+
   return (
-    <div className={clsx('bg-gradient-to-br', 'from-[#093c96]', 'to-blue-900', 'shadow-lg', 'p-5', 'border', 'border-slate-200', 'dark:border-slate-800', 'rounded-2xl', 'overflow-hidden', 'text-white')}>
-      <div className={clsx('flex', 'justify-between', 'items-center', 'mb-4')}>
-        <div className={clsx('flex', 'items-center', 'gap-2', 'text-blue-100')}>
-          <MapPin className={clsx('w-4', 'h-4')} />
-          <span className={clsx('font-medium', 'text-sm')}>Kota Serang, Banten</span>
+    <div className="bg-gradient-to-br from-[#093c96] to-blue-900 shadow-lg p-5 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden text-white">
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex items-center gap-2 text-blue-100">
+          <MapPin className="w-4 h-4" />
+          <span className="font-medium text-sm">Kota Serang, Banten</span>
         </div>
-        <div className={clsx('flex', 'items-center', 'gap-1.5', 'bg-white/10', 'backdrop-blur', 'px-3', 'py-1', 'rounded-full', 'text-xs')}>
-          <Clock className={clsx('w-3.5', 'h-3.5')} />
+        <div className="flex items-center gap-1.5 bg-white/10 backdrop-blur px-3 py-1 rounded-full text-xs">
+          <Clock className="w-3.5 h-3.5" />
           <span>Menuju {nextPrayer}</span>
         </div>
       </div>
 
-      <div className={clsx('gap-2', 'grid', 'grid-cols-5', 'text-center')}>
+      <div className="gap-2 grid grid-cols-5 text-center">
         {times.map((item) => (
           <div
             key={item.name}
@@ -58,7 +57,7 @@ export function PrayerTimesWidget() {
             <p className={`text-xs ${item.isNext ? 'text-[#093c96]' : 'text-blue-200'}`}>
               {item.name}
             </p>
-            <p className={clsx('mt-1', 'font-semibold', 'text-sm', 'tracking-tight')}>{item.time}</p>
+            <p className="mt-1 font-semibold text-sm tracking-tight">{item.time}</p>
           </div>
         ))}
       </div>
