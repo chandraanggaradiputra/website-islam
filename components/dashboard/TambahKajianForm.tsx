@@ -4,8 +4,9 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ImagePlus, Loader2, Calendar, MapPin, Clock, Video } from 'lucide-react';
+import { ImagePlus, Loader2, Calendar, MapPin, Clock, Video, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { submitKajian } from '@/lib/actions/kajian';
 
 const kajianSchema = z.object({
   judul: z.string().min(5, 'Judul kajian minimal 5 karakter'),
@@ -42,10 +43,34 @@ export function TambahKajianForm({ masjidId, masjidName }: TambahKajianFormProps
     }
   });
 
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   const onSubmit = async (data: KajianValues) => {
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    console.log('Data Kajian:', { ...data, masjidId });
-    router.push('/dashboard/dkm');
+    setErrorMessage(null);
+    
+    const formData = new FormData();
+    Object.entries(data).forEach(([key, value]) => {
+      if (value !== undefined) {
+        formData.append(key, value as string);
+      }
+    });
+
+    const fileInput = document.getElementById('poster-upload') as HTMLInputElement;
+    if (fileInput?.files?.[0]) {
+      formData.append('poster', fileInput.files[0]);
+    }
+
+    try {
+      const res = await submitKajian(formData);
+      if (res.success) {
+        alert("Alhamdulillah, jadwal kajian berhasil diajukan dan sedang menunggu persetujuan Admin.");
+        router.push('/dashboard/dkm');
+      } else {
+        setErrorMessage(res.error || 'Terjadi kesalahan saat mengajukan kajian.');
+      }
+    } catch (err) {
+      setErrorMessage('Terjadi kesalahan jaringan.');
+    }
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -63,6 +88,13 @@ export function TambahKajianForm({ masjidId, masjidName }: TambahKajianFormProps
     <form onSubmit={handleSubmit(onSubmit)} className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
       <div className="p-6 md:p-8 space-y-8">
         
+        {errorMessage && (
+          <div className="p-4 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-xl flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 shrink-0" />
+            <p className="text-sm font-medium">{errorMessage}</p>
+          </div>
+        )}
+
         {/* Masjid Info (Locked) */}
         <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col md:flex-row md:items-center gap-4">
           <div className="flex items-center gap-4 flex-1">
@@ -180,6 +212,7 @@ export function TambahKajianForm({ masjidId, masjidName }: TambahKajianFormProps
               <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Upload Poster Kajian</label>
               <div className="relative border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-4 text-center hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group cursor-pointer overflow-hidden">
                 <input 
+                  id="poster-upload"
                   type="file" 
                   accept="image/*"
                   onChange={handleImageChange}

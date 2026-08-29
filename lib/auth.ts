@@ -47,32 +47,79 @@ export async function login(formData: FormData) {
   const username = formData.get('username') as string;
   const password = formData.get('password') as string;
 
-  // Mock Authentication Fallback
-  if (username === 'admin' && password === 'admin123') {
-    const session: UserSession = {
-      username: 'admin',
-      name: 'Super Admin',
-      email: 'admin@websiteislam.com',
-      role: 'admin',
-    };
-    await createSession(session);
-    return { success: true, redirect: '/dashboard/admin' };
-  }
+  try {
+    // 1. Dapatkan JWT Token dari WordPress
+    const authRes = await fetch('https://salaf.maschandigital.id/wp-json/jwt-auth/v1/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ username, password }),
+    });
 
-  if (username === 'dkm_wildan' && password === 'dkm123') {
-    const session: UserSession = {
-      username: 'dkm_wildan',
-      name: 'Pengurus Masjid Wildan',
-      email: 'dkm@wildan.com',
-      role: 'dkm',
-      masjidId: 30,
-      masjidName: 'Masjid At Taqwa Wildan'
-    };
-    await createSession(session);
-    return { success: true, redirect: '/dashboard/dkm' };
-  }
+    const authData = await authRes.json();
 
-  return { success: false, error: 'Username atau password salah.' };
+    if (!authRes.ok) {
+      // Bersihkan tag HTML dari pesan error WordPress
+      const errorMsg = authData.message 
+        ? authData.message.replace(/<[^>]*>?/gm, '') 
+        : 'Username atau password salah.';
+      return { success: false, error: errorMsg };
+    }
+
+    const { token, user_email, user_display_name } = authData;
+
+    // 2. Ambil detail user (Role & ACF) dari endpoint /users/me
+    const userRes = await fetch('https://salaf.maschandigital.id/wp-json/wp/v2/users/me?context=edit', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    let role: 'admin' | 'dkm' = 'dkm';
+    let masjidId: number | undefined = undefined;
+    let masjidName: string | undefined = undefined;
+
+    if (userRes.ok) {
+      const userData = await userRes.json();
+      
+      // Deteksi role
+      if (userData.roles && userData.roles.includes('administrator')) {
+        role = 'admin';
+      } else {
+        role = 'dkm';
+      }
+
+      // Deteksi masjid_terkait dari ACF jika tersedia (asumsi ACF fields diekspos di REST API)
+      if (userData.acf && userData.acf.masjid_terkait) {
+        if (typeof userData.acf.masjid_terkait === 'object') {
+          masjidId = userData.acf.masjid_terkait.ID || userData.acf.masjid_terkait.id;
+          masjidName = userData.acf.masjid_terkait.post_title;
+        } else {
+          masjidId = Number(userData.acf.masjid_terkait);
+        }
+      }
+    }
+
+    const session: UserSession = {
+      username: username,
+      name: user_display_name || username,
+      email: user_email,
+      role: role,
+      masjidId: masjidId,
+      masjidName: masjidName || (role === 'admin' ? undefined : 'Masjid Anda'),
+      token: token // Simpan WP JWT untuk keperluan mutasi API di masa depan
+    };
+
+    await createSession(session);
+    
+    const redirectUrl = role === 'admin' ? '/dashboard/admin' : '/dashboard/dkm';
+    return { success: true, redirect: redirectUrl };
+    
+  } catch (error) {
+    console.error('Login error:', error);
+    return { success: false, error: 'Terjadi kesalahan sistem saat mencoba login.' };
+  }
 }
 
 export async function logout() {

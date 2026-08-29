@@ -1,8 +1,26 @@
 import { getSession } from '@/lib/auth';
 import { Users, BookOpen, CheckCircle, Clock } from 'lucide-react';
+import { AdminKajianActions } from '@/components/dashboard/AdminKajianActions';
+import { WPKajian } from '@/types';
+
+async function getPendingKajian(token: string): Promise<WPKajian[]> {
+  try {
+    const res = await fetch('https://salaf.maschandigital.id/wp-json/wp/v2/kajian?status=pending&_embed', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      cache: 'no-store'
+    });
+    if (!res.ok) return [];
+    return res.json();
+  } catch {
+    return [];
+  }
+}
 
 export default async function AdminDashboard() {
   const session = await getSession();
+  const pendingKajian = session?.token ? await getPendingKajian(session.token) : [];
 
   return (
     <div className="space-y-6">
@@ -31,45 +49,51 @@ export default async function AdminDashboard() {
         ))}
       </div>
 
-      {/* Recent Registrations */}
+      {/* Antrean Kajian */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm mt-8">
         <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
-          <h3 className="text-lg font-bold text-slate-900 dark:text-white">Pendaftaran DKM Terbaru</h3>
-          <button className="text-sm font-medium text-[#093c96] dark:text-blue-400 hover:underline cursor-pointer">Lihat Semua</button>
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white">Antrean Kajian Pending</h3>
         </div>
         <div className="p-6">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400">
                 <tr>
-                  <th className="p-4 font-semibold rounded-tl-lg">Nama Pengurus</th>
-                  <th className="p-4 font-semibold">Masjid</th>
-                  <th className="p-4 font-semibold">Tanggal</th>
-                  <th className="p-4 font-semibold">Status</th>
+                  <th className="p-4 font-semibold rounded-tl-lg">Judul Kajian</th>
+                  <th className="p-4 font-semibold">Ustadz</th>
+                  <th className="p-4 font-semibold">Pengirim</th>
+                  <th className="p-4 font-semibold">Tanggal Diajukan</th>
                   <th className="p-4 font-semibold rounded-tr-lg">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {/* Mock Data */}
-                <tr>
-                  <td className="p-4">
-                    <p className="font-medium text-slate-900 dark:text-white">Ahmad Fauzi</p>
-                    <p className="text-slate-500 text-xs">ahmad@example.com</p>
-                  </td>
-                  <td className="p-4 text-slate-700 dark:text-slate-300">Masjid At Taqwa Wildan</td>
-                  <td className="p-4 text-slate-700 dark:text-slate-300">29 Aug 2026</td>
-                  <td className="p-4">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400">
-                      Menunggu
-                    </span>
-                  </td>
-                  <td className="p-4">
-                    <div className="flex gap-2">
-                      <button className="text-green-600 hover:text-green-700 font-medium cursor-pointer">Setujui</button>
-                      <button className="text-red-600 hover:text-red-700 font-medium cursor-pointer">Tolak</button>
-                    </div>
-                  </td>
-                </tr>
+                {pendingKajian.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="p-8 text-center text-slate-500">
+                      Tidak ada kajian yang menunggu persetujuan.
+                    </td>
+                  </tr>
+                ) : (
+                  pendingKajian.map((kajian) => (
+                    <tr key={kajian.id}>
+                      <td className="p-4">
+                        <p className="font-medium text-slate-900 dark:text-white">{kajian.title?.rendered}</p>
+                        <p className="text-slate-500 text-xs truncate max-w-[200px]">{kajian.acf?.kitab_bahasan || 'Tidak ada deskripsi'}</p>
+                      </td>
+                      <td className="p-4 text-slate-700 dark:text-slate-300">{kajian.acf?.nama_ustadz}</td>
+                      <td className="p-4 text-slate-700 dark:text-slate-300">
+                        {/* Type definition of WPKajian might not have _embedded.author mapped correctly, we just try our best safely */}
+                        {kajian._embedded?.author?.[0]?.name || 'Unknown'}
+                      </td>
+                      <td className="p-4 text-slate-700 dark:text-slate-300">
+                        {kajian.date ? new Date(kajian.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Tidak diketahui'}
+                      </td>
+                      <td className="p-4">
+                        <AdminKajianActions id={kajian.id} />
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
