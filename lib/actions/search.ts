@@ -1,84 +1,88 @@
 'use server';
 
+import { getKajianList, getMasjidList, getArtikelList } from '@/lib/wordpress';
 import { SearchResultItem } from '@/types';
 
-const WP_BASE_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || 'https://salaf.maschandigital.id/wp-json/wp/v2';
-
 export async function globalSearch(query: string): Promise<SearchResultItem[]> {
-  if (!query || query.trim().length < 2) {
-    return [];
-  }
-
-  const encodedQuery = encodeURIComponent(query.trim());
+  const cleanQuery = query.trim().toLowerCase();
+  if (!cleanQuery || cleanQuery.length < 2) return [];
 
   try {
-    const [kajianRes, masjidRes, artikelRes] = await Promise.allSettled([
-      fetch(`${WP_BASE_URL}/kajian?search=${encodedQuery}&per_page=5&_embed`),
-      fetch(`${WP_BASE_URL}/masjid?search=${encodedQuery}&per_page=5&_embed`),
-      fetch(`${WP_BASE_URL}/posts?search=${encodedQuery}&per_page=5&_embed`),
+    const [listKajian, listMasjid, listArtikel] = await Promise.all([
+      getKajianList(),
+      getMasjidList(),
+      getArtikelList(),
     ]);
 
     const results: SearchResultItem[] = [];
 
-    // Process Kajian
-    if (kajianRes.status === 'fulfilled' && kajianRes.value.ok) {
-      const data = await kajianRes.value.json();
-      if (Array.isArray(data)) {
-        data.forEach((item: any) => {
-          results.push({
-            id: item.id,
-            title: item.title?.rendered || 'Kajian Tanpa Judul',
-            subtitle: item.acf?.nama_ustadz || 'Ustadz tidak diketahui',
-            category: 'kajian',
-            url: `/jadwal-kajian/${item.slug}`,
-            badgeText: 'Kajian',
-          });
-        });
-      }
-    }
+    // 1. Cari di Jadwal Kajian (Mencari di Judul, Nama Ustadz, Kitab, & Nama Masjid)
+    listKajian.forEach((kajian) => {
+      const title = kajian.title?.rendered || '';
+      const ustadz = kajian.acf?.nama_ustadz || '';
+      const kitab = kajian.acf?.kitab_bahasan || '';
+      const masjid = kajian.masjid_name || kajian.masjid_detail?.title?.rendered || '';
 
-    // Process Masjid
-    if (masjidRes.status === 'fulfilled' && masjidRes.value.ok) {
-      const data = await masjidRes.value.json();
-      if (Array.isArray(data)) {
-        data.forEach((item: any) => {
-          results.push({
-            id: item.id,
-            title: item.title?.rendered || 'Masjid Tanpa Nama',
-            subtitle: item.acf?.alamat_lengkap || 'Alamat tidak tersedia',
-            category: 'masjid',
-            url: `/masjid/${item.slug}`,
-            badgeText: 'Masjid',
-          });
-        });
-      }
-    }
+      const isMatch =
+        title.toLowerCase().includes(cleanQuery) ||
+        ustadz.toLowerCase().includes(cleanQuery) ||
+        kitab.toLowerCase().includes(cleanQuery) ||
+        masjid.toLowerCase().includes(cleanQuery);
 
-    // Process Artikel
-    if (artikelRes.status === 'fulfilled' && artikelRes.value.ok) {
-      const data = await artikelRes.value.json();
-      if (Array.isArray(data)) {
-        data.forEach((item: any) => {
-          const author = Array.isArray(item._embedded?.author) && item._embedded.author.length > 0 
-            ? item._embedded.author[0].name 
-            : 'Admin';
-            
-          results.push({
-            id: item.id,
-            title: item.title?.rendered || 'Artikel Tanpa Judul',
-            subtitle: author,
-            category: 'artikel',
-            url: `/artikel/${item.slug}`,
-            badgeText: 'Artikel',
-          });
+      if (isMatch) {
+        results.push({
+          id: kajian.id,
+          title: title,
+          subtitle: `${ustadz ? `Ust. ${ustadz}` : ''} ${masjid ? `• ${masjid}` : ''}`.trim(),
+          category: 'kajian',
+          url: `/jadwal-kajian/${kajian.slug}`,
+          badgeText: 'Jadwal Kajian',
         });
       }
-    }
+    });
+
+    // 2. Cari di Direktori Masjid (Mencari di Nama Masjid, Alamat, & Kecamatan)
+    listMasjid.forEach((masjid) => {
+      const name = masjid.title?.rendered || '';
+      const alamat = masjid.acf?.alamat_lengkap || '';
+      // Memperbaiki type safety: kecamatan ada di root object (WPMasjid) dan bertipe number[]
+      const kec = Array.isArray(masjid.kecamatan) ? masjid.kecamatan.join(', ') : '';
+
+      const isMatch =
+        name.toLowerCase().includes(cleanQuery) ||
+        alamat.toLowerCase().includes(cleanQuery) ||
+        kec.toLowerCase().includes(cleanQuery);
+
+      if (isMatch) {
+        results.push({
+          id: masjid.id,
+          title: name,
+          subtitle: alamat || (kec ? `ID Kecamatan ${kec}` : 'Kota Serang'),
+          category: 'masjid',
+          url: `/masjid/${masjid.slug}`,
+          badgeText: 'Masjid',
+        });
+      }
+    });
+
+    // 3. Cari di Artikel & Faedah Ilmiah (Mencari di Judul Artikel)
+    listArtikel.forEach((artikel) => {
+      const title = artikel.title?.rendered || '';
+      if (title.toLowerCase().includes(cleanQuery)) {
+        results.push({
+          id: artikel.id,
+          title: title,
+          subtitle: 'Faedah Ilmiah & Artikel Dakwah',
+          category: 'artikel',
+          url: `/artikel/${artikel.slug}`,
+          badgeText: 'Artikel',
+        });
+      }
+    });
 
     return results;
-
-  } catch (error: unknown) {
-    console.error('Global search error:', error);
+  } catch (err: unknown) {
+    console.error('Error in globalSearch Server Action:', err);
     return [];
   }
 }
