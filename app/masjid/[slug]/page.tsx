@@ -19,9 +19,7 @@ export default async function MasjidDetailPage({ params }: { params: Promise<{ s
 
   // Fetch all kajian and filter by this masjid
   const allKajian = await getKajianList();
-  const masjidKajian = allKajian.filter(k => 
-    (typeof k.acf.masjid_terkait === 'object' ? k.acf.masjid_terkait?.id : k.acf.masjid_terkait) === masjid.id
-  );
+  const masjidKajian = allKajian.filter((k) => k.masjid_detail?.id === masjid.id);
 
   const { acf, title, content, featured_media_url } = masjid;
   const fasilitas = acf.fasilitas || [];
@@ -81,7 +79,7 @@ export default async function MasjidDetailPage({ params }: { params: Promise<{ s
 
             <div className="space-y-4">
               <a 
-                href={acf.google_maps_url}
+                href={acf.google_maps_url || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(masjid.title.rendered + ' Kota Serang')}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white py-3 rounded-xl font-semibold transition-colors"
@@ -95,10 +93,10 @@ export default async function MasjidDetailPage({ params }: { params: Promise<{ s
               <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-100 dark:border-slate-800 mt-4 space-y-3">
                 <h4 className="font-semibold text-sm">Kontak DKM</h4>
                 {acf.no_wa_dkm && (
-                  <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                  <a href={`https://wa.me/${acf.no_wa_dkm.replace(/\D/g, '').replace(/^0/, '62')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 hover:text-green-600 dark:hover:text-green-400 transition-colors">
                     <Phone className="w-4 h-4" />
                     <span>{acf.no_wa_dkm} {acf.nama_kontak_dkm ? `(${acf.nama_kontak_dkm})` : ''}</span>
-                  </div>
+                  </a>
                 )}
                 {acf.instagram_url && (
                   <a href={acf.instagram_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-[#093c96] dark:text-blue-400 hover:underline">

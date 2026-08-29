@@ -17,16 +17,14 @@ export default async function KajianDetailPage({ params }: { params: Promise<{ s
     notFound();
   }
 
-  const { acf, title, content, featured_media_url } = kajian;
-  const isRutin = acf.jenis_kajian === 'rutin';
+  const { acf, title, content, featured_media_url, masjid_detail } = kajian;
+  const isRutin = acf?.jenis_kajian === 'rutin';
   
-  const masjidName = typeof acf.masjid_terkait === 'object' && acf.masjid_terkait?.title 
-    ? acf.masjid_terkait.title.rendered 
-    : 'Masjid tidak diketahui';
+  const masjidName = masjid_detail 
+    ? masjid_detail.title.rendered
+    : (acf?.nama_masjid_manual || 'Masjid tidak diketahui');
     
-  const masjidSlug = typeof acf.masjid_terkait === 'object' && acf.masjid_terkait?.slug 
-    ? acf.masjid_terkait.slug 
-    : null;
+  const masjidSlug = masjid_detail?.slug || null;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">

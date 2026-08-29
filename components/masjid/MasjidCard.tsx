@@ -6,6 +6,8 @@ export function MasjidCard({ masjid }: { masjid: WPMasjid }) {
   const { title, acf, slug } = masjid;
   const fasilitas = acf.fasilitas || [];
 
+  const mapsUrl = acf.google_maps_url || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(masjid.title.rendered + ' Kota Serang')}`;
+
   return (
     <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden hover:shadow-md transition-shadow flex flex-col h-full">
       <div className="p-5 flex-grow">
@@ -42,7 +44,7 @@ export function MasjidCard({ masjid }: { masjid: WPMasjid }) {
           Lihat Profil
         </Link>
         <a 
-          href={acf.google_maps_url}
+          href={mapsUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="p-3 flex items-center justify-center gap-1.5 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800/50 text-[#093c96] dark:text-blue-400 transition-colors"

@@ -1,40 +1,50 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useMemo } from 'react';
+import { WPKajian } from '@/types';
+import { KajianCard } from './KajianCard';
 
-export function KajianFilter({ kecamatans }: { kecamatans: { id: number; name: string }[] }) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  
-  const currentKecamatan = searchParams.get('kecamatan') || '';
-  const currentJenis = searchParams.get('jenis') || '';
-  const currentUstadz = searchParams.get('ustadz') || '';
+export function KajianFilter({ 
+  initialKajian = [], 
+  kecamatans = [] 
+}: { 
+  initialKajian: WPKajian[], 
+  kecamatans?: { id: number; name: string }[] 
+}) {
+  const [kecamatan, setKecamatan] = useState('');
+  const [jenis, setJenis] = useState('');
+  const [ustadz, setUstadz] = useState('');
 
-  const [kecamatan, setKecamatan] = useState(currentKecamatan);
-  const [jenis, setJenis] = useState(currentJenis);
-  const [ustadz, setUstadz] = useState(currentUstadz);
+  const displayedKajian = useMemo(() => {
+    return initialKajian.filter((item) => {
+      // Sembunyikan kajian yang sudah selesai
+      if (item.acf?.status_kajian === 'selesai') return false;
 
-  const applyFilters = () => {
-    const params = new URLSearchParams();
-    if (kecamatan) params.set('kecamatan', kecamatan);
-    if (jenis) params.set('jenis', jenis);
-    if (ustadz) params.set('ustadz', ustadz);
-    
-    router.push(`/jadwal-kajian?${params.toString()}`);
-  };
-
-  const clearFilters = () => {
-    setKecamatan('');
-    setJenis('');
-    setUstadz('');
-    router.push('/jadwal-kajian');
-  };
+      // Filter Kecamatan
+      if (kecamatan && kecamatan !== '' && kecamatan !== 'semua') {
+        const kec = item.masjid_detail?.kecamatan;
+        if (!String(kec).toLowerCase().includes(kecamatan.toLowerCase())) return false;
+      }
+      
+      // Filter Jenis Kajian
+      if (jenis && jenis !== '' && jenis !== 'semua') {
+        if (item.acf?.jenis_kajian?.toLowerCase() !== jenis.toLowerCase()) return false;
+      }
+      
+      // Filter Nama Ustadz
+      if (ustadz && ustadz.trim() !== '') {
+        const nama = item.acf?.nama_ustadz || '';
+        if (!nama.toLowerCase().includes(ustadz.toLowerCase())) return false;
+      }
+      
+      return true;
+    });
+  }, [initialKajian, kecamatan, jenis, ustadz]);
 
   return (
-    <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 mb-6">
-      <h3 className="font-semibold text-slate-800 dark:text-slate-200 mb-3">Filter Kajian</h3>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+    <div className="space-y-6">
+      {/* Form Filter dengan value="" pada opsi default */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
         <select 
           value={kecamatan} 
           onChange={(e) => setKecamatan(e.target.value)}
@@ -42,9 +52,20 @@ export function KajianFilter({ kecamatans }: { kecamatans: { id: number; name: s
           aria-label="Filter Kecamatan"
         >
           <option value="">Semua Kecamatan</option>
-          {kecamatans.map((kec) => (
-            <option key={kec.id} value={kec.id}>{kec.name}</option>
-          ))}
+          {kecamatans.length > 0 ? (
+            kecamatans.map((kec) => (
+              <option key={kec.id} value={kec.id}>{kec.name}</option>
+            ))
+          ) : (
+            <>
+              <option value="Serang">Serang</option>
+              <option value="Cipocok Jaya">Cipocok Jaya</option>
+              <option value="Kasemen">Kasemen</option>
+              <option value="Taktakan">Taktakan</option>
+              <option value="Walantaka">Walantaka</option>
+              <option value="Curug">Curug</option>
+            </>
+          )}
         </select>
         
         <select 
@@ -68,20 +89,19 @@ export function KajianFilter({ kecamatans }: { kecamatans: { id: number; name: s
         />
       </div>
       
-      <div className="flex gap-2 mt-4 justify-end">
-        <button 
-          onClick={clearFilters}
-          className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-        >
-          Reset
-        </button>
-        <button 
-          onClick={applyFilters}
-          className="px-4 py-2 text-sm font-medium bg-[#093c96] hover:bg-blue-800 text-white rounded-lg transition-colors"
-        >
-          Terapkan Filter
-        </button>
-      </div>
+      {/* List Hasil Kajian */}
+      {displayedKajian.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {displayedKajian.map((kajian) => (
+            <KajianCard key={kajian.id} kajian={kajian} />
+          ))}
+        </div>
+      ) : (
+        <div className="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-12 text-center text-slate-500">
+          <p className="font-medium text-lg mb-1">Tidak ada jadwal kajian</p>
+          <p className="text-sm">Tidak ada kajian yang sesuai dengan filter pencarian Anda atau jadwal masih kosong.</p>
+        </div>
+      )}
     </div>
   );
 }

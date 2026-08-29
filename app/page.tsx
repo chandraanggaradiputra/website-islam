@@ -15,7 +15,10 @@ export default async function Home() {
     getArtikelList(),
   ]);
 
-  const activeKajian = kajianList.filter(k => k.acf.status_kajian === 'aktif').slice(0, 3);
+  let activeKajian = kajianList.filter(k => k.acf.status_kajian === 'aktif').slice(0, 3);
+  if (activeKajian.length === 0) {
+    activeKajian = kajianList.slice(0, 3);
+  }
   const featuredMasjid = masjidList.slice(0, 2);
   const latestArtikel = artikelList.slice(0, 3);
 

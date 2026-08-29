@@ -25,6 +25,8 @@ export interface WPMasjid {
   featured_media_url?: string;
   kecamatan?: number[];
   acf: MasjidACF;
+  post_title?: string;
+  post_name?: string;
 }
 
 export interface KajianACF {
@@ -33,6 +35,7 @@ export interface KajianACF {
   nama_ustadz: string;
   kitab_bahasan?: string;
   masjid_terkait: number | WPMasjid;
+  nama_masjid_manual?: string;
   hari_kajian?: string;
   tanggal_kajian?: string; // Format: YYYY-MM-DD
   waktu_keterangan: string;
@@ -50,6 +53,7 @@ export interface WPKajian {
   featured_media_url?: string;
   kategori_kajian?: number[];
   acf: KajianACF;
+  masjid_detail?: WPMasjid | null;
 }
 
 export interface WPArtikel {

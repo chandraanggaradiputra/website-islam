@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { Footer } from "@/components/layout/Footer";
+import clsx from 'clsx';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,13 +30,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
+      <body className={clsx('flex', 'flex-col', 'bg-slate-50', 'dark:bg-slate-950', 'min-h-full', 'text-slate-900', 'dark:text-slate-100', 'transition-colors', 'duration-200')}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <Header />
-          <main className="flex-grow container mx-auto px-4 py-8 pb-24 md:pb-8">
+          <main className={clsx('flex-grow', 'mx-auto', 'px-4', 'py-8', 'pb-24', 'md:pb-8', 'container')}>
             {children}
           </main>
           <BottomNav />
+          <Footer />
         </ThemeProvider>
       </body>
     </html>
