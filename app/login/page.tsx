@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { login } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Lock, User, AlertCircle, Loader2 } from 'lucide-react';
 
 const loginSchema = z.object({
@@ -74,7 +75,17 @@ export default function LoginPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Password</label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Password *
+            </label>
+            <Link
+              href="/lupa-password"
+              className="text-xs font-medium text-[#093c96] hover:underline dark:text-blue-400"
+            >
+              Lupa Password?
+            </Link>
+          </div>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Lock className="h-5 w-5 text-slate-400" />
