@@ -102,3 +102,14 @@ export interface PrayerTimeItem {
   isPassed: boolean;
   isNext: boolean;
 }
+
+export type SearchCategory = 'kajian' | 'masjid' | 'artikel';
+
+export interface SearchResultItem {
+  id: number;
+  title: string;
+  subtitle: string;
+  category: SearchCategory;
+  url: string;
+  badgeText: string;
+}

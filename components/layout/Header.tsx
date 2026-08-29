@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { GlobalSearch } from '@/components/ui/GlobalSearch';
 import { Moon, Sparkles, MessageCircle } from 'lucide-react';
 
 const NAV_LINKS = [
@@ -55,6 +56,7 @@ export function Header() {
 
         {/* Right Actions */}
         <div className="flex items-center gap-2">
+          <GlobalSearch />
           <Link
             href="https://wa.me/6282298148474?text=Assalamualaikum%20Admin%20Syiar%20Salaf%20Kota%20Serang,%20saya%20ingin%20info/pasang%20jadwal%20kajian"
             target="_blank"
