@@ -1,7 +1,27 @@
 // types/index.ts
 
+export type UserRole = 'admin' | 'dkm';
+
+export interface UserSession {
+  username: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  masjidId?: number;
+  masjidName?: string;
+  token?: string;
+}
+
+export interface DKMRegistrationPayload {
+  namaPengurus: string;
+  email: string;
+  noWhatsapp: string;
+  masjidId: number;
+  catatan?: string;
+}
+
 export type JenisKajian = 'rutin' | 'tematik';
-export type KategoriJamaah = 'umum' | 'khusus_ikhwan' | 'khusus_akhawat';
+export type KategoriJamaah = 'umum' | 'khusus_ikhwan' | 'khusus_akhwat';
 export type StatusKajian = 'aktif' | 'libur' | 'selesai';
 
 export interface MasjidACF {

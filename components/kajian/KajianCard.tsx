@@ -34,7 +34,7 @@ export function KajianCard({ kajian }: { kajian: WPKajian }) {
           </span>
           {acf?.kategori_jamaah && (
             <span className="text-xs font-semibold px-2 py-1 rounded-md bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-              {acf.kategori_jamaah === 'umum' ? 'Umum' : acf.kategori_jamaah === 'khusus_akhawat' ? 'Akhawat' : 'Ikhwan'}
+              {acf.kategori_jamaah === 'umum' ? 'Umum' : acf.kategori_jamaah === 'khusus_akhwat' ? 'Akhwat' : 'Ikhwan'}
             </span>
           )}
         </div>

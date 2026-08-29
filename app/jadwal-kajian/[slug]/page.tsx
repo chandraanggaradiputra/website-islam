@@ -87,7 +87,7 @@ export default async function KajianDetailPage({ params }: { params: Promise<{ s
               {isRutin ? 'Kajian Rutin' : 'Kajian Tematik'}
             </span>
             <span className="text-xs font-semibold px-2 py-1 rounded-md bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-              {acf.kategori_jamaah === 'umum' ? 'Umum' : acf.kategori_jamaah === 'khusus_akhawat' ? 'Akhawat' : 'Ikhwan'}
+              {acf.kategori_jamaah === 'umum' ? 'Umum' : acf.kategori_jamaah === 'khusus_akhwat' ? 'Akhwat' : 'Ikhwan'}
             </span>
             {acf.status_kajian === 'libur' && (
               <span className="text-xs font-semibold px-2 py-1 rounded-md bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">
