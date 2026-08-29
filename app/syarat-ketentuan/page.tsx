@@ -1,4 +1,4 @@
-import { ShieldCheck, Scale, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Scale, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 export const metadata = {
   title: 'Syarat & Ketentuan - Syiar Salaf Kota Serang',

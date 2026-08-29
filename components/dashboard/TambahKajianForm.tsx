@@ -27,7 +27,7 @@ interface TambahKajianFormProps {
   masjidName: string;
 }
 
-export function TambahKajianForm({ masjidId: _masjidId, masjidName }: TambahKajianFormProps) {
+export function TambahKajianForm({ masjidName }: TambahKajianFormProps) {
   const router = useRouter();
   const [posterPreview, setPosterPreview] = useState<string | null>(null);
 
