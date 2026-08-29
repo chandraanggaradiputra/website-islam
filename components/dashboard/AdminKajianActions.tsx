@@ -3,8 +3,10 @@
 import { useState } from 'react';
 import { approveKajian, rejectKajian } from '@/lib/actions/kajian';
 import { Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 export function AdminKajianActions({ id }: { id: number }) {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
   const handleApprove = async () => {
@@ -13,6 +15,7 @@ export function AdminKajianActions({ id }: { id: number }) {
       const res = await approveKajian(id);
       setIsLoading(false);
       if (!res.success) alert(res.error);
+      else router.refresh();
     }
   };
 
@@ -22,6 +25,7 @@ export function AdminKajianActions({ id }: { id: number }) {
       const res = await rejectKajian(id);
       setIsLoading(false);
       if (!res.success) alert(res.error);
+      else router.refresh();
     }
   };
 

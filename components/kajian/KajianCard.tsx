@@ -4,10 +4,9 @@ import { WPKajian } from '@/types';
 import { MapPin, Clock, Calendar, User } from 'lucide-react';
 
 export function KajianCard({ kajian }: { kajian: WPKajian }) {
-  const { title, acf, slug, masjid_detail } = kajian;
-  const masjidName = masjid_detail 
-    ? masjid_detail.title.rendered 
-    : (acf?.nama_masjid_manual || 'Masjid tidak diketahui');
+  const { title, acf, slug, masjid_detail, masjid_name } = kajian;
+  const masjidName = masjid_name 
+    || (masjid_detail ? masjid_detail.title.rendered : (acf?.nama_masjid_manual || 'Masjid tidak diketahui'));
 
   const isRutin = acf?.jenis_kajian === 'rutin';
   

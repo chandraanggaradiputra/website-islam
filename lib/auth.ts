@@ -33,7 +33,7 @@ export async function getSession(): Promise<UserSession | null> {
   try {
     const { payload } = await jwtVerify(sessionToken, SECRET_KEY);
     return payload as unknown as UserSession;
-  } catch (error) {
+  } catch {
     return null; // Invalid or expired token
   }
 }
@@ -90,13 +90,17 @@ export async function login(formData: FormData) {
         role = 'dkm';
       }
 
-      // Deteksi masjid_terkait dari ACF jika tersedia (asumsi ACF fields diekspos di REST API)
-      if (userData.acf && userData.acf.masjid_terkait) {
-        if (typeof userData.acf.masjid_terkait === 'object') {
-          masjidId = userData.acf.masjid_terkait.ID || userData.acf.masjid_terkait.id;
-          masjidName = userData.acf.masjid_terkait.post_title;
+      // Ambil masjid yang author-nya adalah user DKM yang sedang login
+      if (role === 'dkm') {
+        const resMasjid = await fetch(`https://salaf.maschandigital.id/wp-json/wp/v2/masjid?author=${userData.id}&_embed`);
+        const userMasjidList = resMasjid.ok ? await resMasjid.json() : [];
+
+        if (userMasjidList.length > 0) {
+          masjidId = userMasjidList[0].id;
+          masjidName = userMasjidList[0].title?.rendered;
         } else {
-          masjidId = Number(userData.acf.masjid_terkait);
+          masjidId = undefined;
+          masjidName = undefined;
         }
       }
     }
@@ -107,7 +111,7 @@ export async function login(formData: FormData) {
       email: user_email,
       role: role,
       masjidId: masjidId,
-      masjidName: masjidName || (role === 'admin' ? undefined : 'Masjid Anda'),
+      masjidName: masjidName,
       token: token // Simpan WP JWT untuk keperluan mutasi API di masa depan
     };
 

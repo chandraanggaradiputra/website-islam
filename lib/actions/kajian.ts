@@ -29,9 +29,10 @@ export async function submitKajian(formData: FormData) {
       });
 
       if (!mediaRes.ok) {
-        const err = await mediaRes.json();
-        console.error('Media upload error:', err);
-        return { success: false, error: 'Gagal mengupload poster kajian.' };
+        const errText = await mediaRes.text();
+        console.error('Media upload error status:', mediaRes.status);
+        console.error('Media upload error body:', errText);
+        return { success: false, error: `Gagal mengupload poster [${mediaRes.status}]: ${errText}` };
       }
 
       const mediaData = await mediaRes.json();
@@ -52,7 +53,7 @@ export async function submitKajian(formData: FormData) {
         jam_mulai: formData.get('waktu'),
         jam_selesai: formData.get('waktu'),
         status_kajian: 'aktif',
-        masjid_terkait: session.masjidId ? [session.masjidId] : [], 
+        masjid_terkait: session.masjidId ? [session.masjidId] : [],
         waktu_keterangan: formData.get('waktu'), 
         link_streaming: formData.get('linkStreaming') || '',
       }
@@ -73,9 +74,10 @@ export async function submitKajian(formData: FormData) {
     });
 
     if (!kajianRes.ok) {
-      const err = await kajianRes.json();
-      console.error('Kajian creation error:', err);
-      return { success: false, error: 'Gagal mengirim jadwal kajian.' };
+      const errorBody = await kajianRes.text();
+      console.error('WP Error Response Status:', kajianRes.status);
+      console.error('WP Error Response Body:', errorBody);
+      return { success: false, error: `WordPress Error [${kajianRes.status}]: ${errorBody}` };
     }
 
     return { success: true };
@@ -108,10 +110,11 @@ export async function approveKajian(id: number) {
 
     revalidatePath('/');
     revalidatePath('/jadwal-kajian');
+    revalidatePath('/masjid');
     revalidatePath('/dashboard/admin');
 
     return { success: true };
-  } catch (error) {
+  } catch {
     return { success: false, error: 'Terjadi kesalahan sistem.' };
   }
 }
@@ -139,7 +142,7 @@ export async function rejectKajian(id: number) {
     revalidatePath('/dashboard/admin');
 
     return { success: true };
-  } catch (error) {
+  } catch {
     return { success: false, error: 'Terjadi kesalahan sistem.' };
   }
 }

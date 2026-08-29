@@ -30,6 +30,54 @@ export function normalizeACFHari(hariStr?: string): string {
   return hariStr;
 }
 
+// Fungsi penggabungan data kajian dengan nama masjid yang akurat
+export function enrichKajianWithMasjid(kajianList: unknown[], masjidList: WPMasjid[] = []): WPKajian[] {
+  return (kajianList as WPKajian[]).map((kajian) => {
+    const raw = kajian.acf?.masjid_terkait as unknown;
+    let targetId: number | null = null;
+
+    // Ekstrak ID dari berbagai kemungkinan format ACF
+    if (Array.isArray(raw) && raw.length > 0) {
+      const first = raw[0];
+      targetId = typeof first === 'object' && first !== null 
+        ? Number((first as { ID?: number; id?: number }).ID || (first as { ID?: number; id?: number }).id) 
+        : Number(first);
+    } else if (typeof raw === 'object' && raw !== null) {
+      targetId = Number((raw as { ID?: number; id?: number }).ID || (raw as { ID?: number; id?: number }).id);
+    } else if (raw) {
+      targetId = Number(raw);
+    }
+
+    // Cari masjid yang cocok di database
+    const matchedMasjid = targetId ? masjidList.find((m) => Number(m.id) === targetId) : null;
+
+    // AMBIL NAMA ASLI ATAU NULL (DILARANG MEMASUKKAN NAMA MASJID DEFAULT PALSU)
+    let resolvedName: string | null = null;
+    if (matchedMasjid?.title?.rendered) {
+      resolvedName = matchedMasjid.title.rendered;
+    } else if (typeof raw === 'object' && raw !== null && (raw as { post_title?: string }).post_title) {
+      resolvedName = (raw as { post_title: string }).post_title;
+    } else if (Array.isArray(raw) && typeof raw[0] === 'object' && raw[0] !== null && (raw[0] as { post_title?: string }).post_title) {
+      resolvedName = (raw[0] as { post_title: string }).post_title;
+    } else if (kajian.acf?.nama_masjid_manual) {
+      resolvedName = kajian.acf.nama_masjid_manual;
+    }
+
+    if (kajian.acf) {
+      kajian.acf.tanggal_kajian = normalizeACFDate(kajian.acf.tanggal_kajian);
+      kajian.acf.hari_kajian = normalizeACFHari(kajian.acf.hari_kajian);
+    }
+    
+    kajian.featured_media_url = extractFeaturedImage(kajian) || kajian.featured_media_url;
+
+    return {
+      ...kajian,
+      masjid_name: resolvedName,
+      masjid_detail: matchedMasjid || null,
+    };
+  });
+}
+
 export async function getKajianList(): Promise<WPKajian[]> {
   try {
     const [resKajian, resMasjid] = await Promise.all([
@@ -41,27 +89,7 @@ export async function getKajianList(): Promise<WPKajian[]> {
     const listKajian: WPKajian[] = await resKajian.json();
     const listMasjid: WPMasjid[] = resMasjid.ok ? await resMasjid.json() : [];
 
-    return listKajian.map((kajian) => {
-      const terkait = kajian.acf?.masjid_terkait;
-      let masjidId = Number(terkait);
-      if (typeof terkait === 'object' && terkait !== null) {
-        masjidId = Number((terkait as { ID?: number }).ID || (terkait as { id?: number }).id);
-      }
-
-      const matchedMasjid = listMasjid.find((m) => Number(m.id) === Number(masjidId));
-      
-      if (kajian.acf) {
-        kajian.acf.tanggal_kajian = normalizeACFDate(kajian.acf.tanggal_kajian);
-        kajian.acf.hari_kajian = normalizeACFHari(kajian.acf.hari_kajian);
-      }
-      
-      kajian.featured_media_url = extractFeaturedImage(kajian) || kajian.featured_media_url;
-
-      return {
-        ...kajian,
-        masjid_detail: matchedMasjid || null,
-      };
-    });
+    return enrichKajianWithMasjid(listKajian, listMasjid);
   } catch (err: unknown) {
     if (err instanceof Error) {
       console.error('Error fetching Kajian list:', err.message);
@@ -78,27 +106,9 @@ export async function getKajianBySlug(slug: string): Promise<WPKajian | null> {
     if (!res.ok) return null;
     const data: WPKajian[] = await res.json();
     if (data.length > 0) {
-      const kajian = data[0];
-      const terkait = kajian.acf?.masjid_terkait;
-      let masjidId = Number(terkait);
-      if (typeof terkait === 'object' && terkait !== null) {
-        masjidId = Number((terkait as { ID?: number }).ID || (terkait as { id?: number }).id);
-      }
-
       const listMasjid = await getMasjidList();
-      const matchedMasjid = listMasjid.find((m) => Number(m.id) === Number(masjidId));
-      
-      if (kajian.acf) {
-        kajian.acf.tanggal_kajian = normalizeACFDate(kajian.acf.tanggal_kajian);
-        kajian.acf.hari_kajian = normalizeACFHari(kajian.acf.hari_kajian);
-      }
-      
-      kajian.featured_media_url = extractFeaturedImage(kajian) || kajian.featured_media_url;
-
-      return {
-        ...kajian,
-        masjid_detail: matchedMasjid || null,
-      };
+      const enriched = enrichKajianWithMasjid(data, listMasjid);
+      return enriched[0] || null;
     }
     return null;
   } catch (err: unknown) {

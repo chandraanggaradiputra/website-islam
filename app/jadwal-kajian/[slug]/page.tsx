@@ -18,10 +18,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     return { title: 'Kajian Tidak Ditemukan' };
   }
 
-  const { acf, title, featured_media_url, masjid_detail } = kajian;
-  const masjidName = masjid_detail 
-    ? masjid_detail.title.rendered
-    : (acf?.nama_masjid_manual || 'Masjid tidak diketahui');
+  const { acf, title, featured_media_url, masjid_detail, masjid_name } = kajian;
+  const masjidName = masjid_name
+    || (masjid_detail ? masjid_detail.title.rendered : (acf?.nama_masjid_manual || 'Masjid tidak diketahui'));
     
   const isRutin = acf?.jenis_kajian === 'rutin';
   const waktu = isRutin ? `Setiap ${acf.hari_kajian}` : acf.tanggal_kajian;
@@ -54,12 +53,11 @@ export default async function KajianDetailPage({ params }: { params: Promise<{ s
     notFound();
   }
 
-  const { acf, title, content, featured_media_url, masjid_detail } = kajian;
+  const { acf, title, content, featured_media_url, masjid_detail, masjid_name } = kajian;
   const isRutin = acf?.jenis_kajian === 'rutin';
   
-  const masjidName = masjid_detail 
-    ? masjid_detail.title.rendered
-    : (acf?.nama_masjid_manual || 'Masjid tidak diketahui');
+  const masjidName = masjid_name
+    || (masjid_detail ? masjid_detail.title.rendered : (acf?.nama_masjid_manual || 'Masjid tidak diketahui'));
     
   const masjidSlug = masjid_detail?.slug || null;
 

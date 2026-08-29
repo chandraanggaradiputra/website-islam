@@ -69,12 +69,14 @@ export interface WPKajian {
   id: number;
   slug: string;
   date?: string;
+  status?: 'publish' | 'pending' | 'draft' | 'future' | 'private' | 'trash';
   title: { rendered: string };
   content: { rendered: string };
   featured_media_url?: string;
   kategori_kajian?: number[];
   acf: KajianACF;
   masjid_detail?: WPMasjid | null;
+  masjid_name?: string | null;
   _embedded?: {
     author?: { name: string }[];
     'wp:featuredmedia'?: unknown[];
