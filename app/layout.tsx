@@ -30,7 +30,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className={clsx('flex', 'flex-col', 'bg-slate-50', 'dark:bg-slate-950', 'min-h-full', 'text-slate-900', 'dark:text-slate-100', 'transition-colors', 'duration-200')}>
+      <body suppressHydrationWarning className={clsx('flex', 'flex-col', 'bg-slate-50', 'dark:bg-slate-950', 'min-h-full', 'text-slate-900', 'dark:text-slate-100', 'transition-colors', 'duration-200')}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <Header />
           <main className={clsx('flex-grow', 'mx-auto', 'px-4', 'py-8', 'pb-24', 'md:pb-8', 'container')}>
