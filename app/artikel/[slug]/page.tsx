@@ -1,4 +1,5 @@
 import { getArtikelBySlug } from '@/lib/wordpress';
+import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ShareButton } from '@/components/ui/ShareButton';
@@ -7,6 +8,34 @@ import htmlParser from 'html-react-parser';
 import Image from 'next/image';
 
 export const revalidate = 60;
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const resolvedParams = await Promise.resolve(params);
+  const artikel = await getArtikelBySlug(resolvedParams.slug);
+  
+  if (!artikel) {
+    return { title: 'Artikel Tidak Ditemukan' };
+  }
+
+  const plainTitle = artikel.title.rendered.replace(/<[^>]+>/g, '');
+  const plainDescription = artikel.excerpt.rendered.replace(/<[^>]+>/g, '').trim();
+  
+  return {
+    title: plainTitle,
+    description: plainDescription,
+    openGraph: {
+      title: plainTitle,
+      description: plainDescription,
+      images: artikel.featured_media_url ? [artikel.featured_media_url] : [],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: plainTitle,
+      description: plainDescription,
+      images: artikel.featured_media_url ? [artikel.featured_media_url] : [],
+    }
+  };
+}
 
 export default async function ArtikelDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = await Promise.resolve(params);

@@ -1,4 +1,5 @@
 import { getMasjidBySlug, getKajianList } from '@/lib/wordpress';
+import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { KajianCard } from '@/components/kajian/KajianCard';
@@ -8,6 +9,34 @@ import htmlParser from 'html-react-parser';
 import Image from 'next/image';
 
 export const revalidate = 60;
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const resolvedParams = await Promise.resolve(params);
+  const masjid = await getMasjidBySlug(resolvedParams.slug);
+  
+  if (!masjid) {
+    return { title: 'Masjid Tidak Ditemukan' };
+  }
+
+  const plainTitle = masjid.title.rendered.replace(/<[^>]+>/g, '');
+  const description = masjid.acf.alamat_lengkap || `Jadwal dan informasi detail mengenai ${plainTitle}.`;
+  
+  return {
+    title: plainTitle,
+    description,
+    openGraph: {
+      title: plainTitle,
+      description,
+      images: masjid.featured_media_url ? [masjid.featured_media_url] : [],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: plainTitle,
+      description,
+      images: masjid.featured_media_url ? [masjid.featured_media_url] : [],
+    }
+  };
+}
 
 export default async function MasjidDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = await Promise.resolve(params);

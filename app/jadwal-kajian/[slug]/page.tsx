@@ -1,4 +1,5 @@
 import { getKajianBySlug } from '@/lib/wordpress';
+import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { CalendarButton } from '@/components/kajian/CalendarButton';
@@ -8,6 +9,42 @@ import htmlParser from 'html-react-parser';
 import Image from 'next/image';
 
 export const revalidate = 60;
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const resolvedParams = await Promise.resolve(params);
+  const kajian = await getKajianBySlug(resolvedParams.slug);
+  
+  if (!kajian) {
+    return { title: 'Kajian Tidak Ditemukan' };
+  }
+
+  const { acf, title, featured_media_url, masjid_detail } = kajian;
+  const masjidName = masjid_detail 
+    ? masjid_detail.title.rendered
+    : (acf?.nama_masjid_manual || 'Masjid tidak diketahui');
+    
+  const isRutin = acf?.jenis_kajian === 'rutin';
+  const waktu = isRutin ? `Setiap ${acf.hari_kajian}` : acf.tanggal_kajian;
+  
+  const plainTitle = title.rendered.replace(/<[^>]+>/g, '');
+  const description = `Kajian bersama ${acf.nama_ustadz} di ${masjidName} pada ${waktu} jam ${acf.jam_mulai}.`;
+  
+  return {
+    title: plainTitle,
+    description,
+    openGraph: {
+      title: plainTitle,
+      description,
+      images: featured_media_url ? [featured_media_url] : [],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: plainTitle,
+      description,
+      images: featured_media_url ? [featured_media_url] : [],
+    }
+  };
+}
 
 export default async function KajianDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = await Promise.resolve(params);

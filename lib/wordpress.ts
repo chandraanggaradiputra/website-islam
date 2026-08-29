@@ -2,6 +2,18 @@ import { WPKajian, WPMasjid, WPArtikel } from '@/types';
 
 const WP_BASE_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || 'https://salaf.maschandigital.id/wp-json/wp/v2';
 
+export function extractFeaturedImage(post: unknown): string | null {
+  const p = post as { 
+    _embedded?: { 'wp:featuredmedia'?: Array<{ source_url?: string }> };
+    featured_media_url?: string;
+  };
+  if (p._embedded?.['wp:featuredmedia']?.[0]?.source_url) {
+    return p._embedded['wp:featuredmedia'][0].source_url;
+  }
+  if (p.featured_media_url) return p.featured_media_url;
+  return null;
+}
+
 export function normalizeACFDate(dateStr?: string): string {
   if (!dateStr) return '';
   if (/^\d{8}$/.test(dateStr)) {
@@ -30,9 +42,11 @@ export async function getKajianList(): Promise<WPKajian[]> {
     const listMasjid: WPMasjid[] = resMasjid.ok ? await resMasjid.json() : [];
 
     return listKajian.map((kajian) => {
-      const masjidId = typeof kajian.acf?.masjid_terkait === 'object'
-        ? (kajian.acf.masjid_terkait as any)?.ID || (kajian.acf.masjid_terkait as any)?.id
-        : Number(kajian.acf?.masjid_terkait);
+      const terkait = kajian.acf?.masjid_terkait;
+      let masjidId = Number(terkait);
+      if (typeof terkait === 'object' && terkait !== null) {
+        masjidId = Number((terkait as { ID?: number }).ID || (terkait as { id?: number }).id);
+      }
 
       const matchedMasjid = listMasjid.find((m) => Number(m.id) === Number(masjidId));
       
@@ -40,6 +54,8 @@ export async function getKajianList(): Promise<WPKajian[]> {
         kajian.acf.tanggal_kajian = normalizeACFDate(kajian.acf.tanggal_kajian);
         kajian.acf.hari_kajian = normalizeACFHari(kajian.acf.hari_kajian);
       }
+      
+      kajian.featured_media_url = extractFeaturedImage(kajian) || kajian.featured_media_url;
 
       return {
         ...kajian,
@@ -63,9 +79,11 @@ export async function getKajianBySlug(slug: string): Promise<WPKajian | null> {
     const data: WPKajian[] = await res.json();
     if (data.length > 0) {
       const kajian = data[0];
-      const masjidId = typeof kajian.acf?.masjid_terkait === 'object'
-        ? (kajian.acf.masjid_terkait as any)?.ID || (kajian.acf.masjid_terkait as any)?.id
-        : Number(kajian.acf?.masjid_terkait);
+      const terkait = kajian.acf?.masjid_terkait;
+      let masjidId = Number(terkait);
+      if (typeof terkait === 'object' && terkait !== null) {
+        masjidId = Number((terkait as { ID?: number }).ID || (terkait as { id?: number }).id);
+      }
 
       const listMasjid = await getMasjidList();
       const matchedMasjid = listMasjid.find((m) => Number(m.id) === Number(masjidId));
@@ -74,6 +92,8 @@ export async function getKajianBySlug(slug: string): Promise<WPKajian | null> {
         kajian.acf.tanggal_kajian = normalizeACFDate(kajian.acf.tanggal_kajian);
         kajian.acf.hari_kajian = normalizeACFHari(kajian.acf.hari_kajian);
       }
+      
+      kajian.featured_media_url = extractFeaturedImage(kajian) || kajian.featured_media_url;
 
       return {
         ...kajian,
@@ -95,7 +115,11 @@ export async function getMasjidList(): Promise<WPMasjid[]> {
       next: { revalidate: 60 }
     });
     if (!res.ok) return [];
-    return await res.json();
+    const data: WPMasjid[] = await res.json();
+    return data.map(masjid => {
+      masjid.featured_media_url = extractFeaturedImage(masjid) || masjid.featured_media_url;
+      return masjid;
+    });
   } catch (err: unknown) {
     if (err instanceof Error) {
       console.error('Error fetching Masjid list:', err.message);
@@ -110,8 +134,13 @@ export async function getMasjidBySlug(slug: string): Promise<WPMasjid | null> {
       next: { revalidate: 60 }
     });
     if (!res.ok) return null;
-    const data = await res.json();
-    return data.length > 0 ? data[0] : null;
+    const data: WPMasjid[] = await res.json();
+    if (data.length > 0) {
+      const masjid = data[0];
+      masjid.featured_media_url = extractFeaturedImage(masjid) || masjid.featured_media_url;
+      return masjid;
+    }
+    return null;
   } catch (err: unknown) {
     if (err instanceof Error) {
       console.error(`Error fetching Masjid slug ${slug}:`, err.message);
@@ -126,7 +155,11 @@ export async function getArtikelList(): Promise<WPArtikel[]> {
       next: { revalidate: 60 }
     });
     if (!res.ok) return [];
-    return await res.json();
+    const data: WPArtikel[] = await res.json();
+    return data.map(artikel => {
+      artikel.featured_media_url = extractFeaturedImage(artikel) || artikel.featured_media_url;
+      return artikel;
+    });
   } catch (err: unknown) {
     if (err instanceof Error) {
       console.error('Error fetching Artikel list:', err.message);
@@ -141,8 +174,13 @@ export async function getArtikelBySlug(slug: string): Promise<WPArtikel | null> 
       next: { revalidate: 60 }
     });
     if (!res.ok) return null;
-    const data = await res.json();
-    return data.length > 0 ? data[0] : null;
+    const data: WPArtikel[] = await res.json();
+    if (data.length > 0) {
+      const artikel = data[0];
+      artikel.featured_media_url = extractFeaturedImage(artikel) || artikel.featured_media_url;
+      return artikel;
+    }
+    return null;
   } catch (err: unknown) {
     if (err instanceof Error) {
       console.error(`Error fetching Artikel slug ${slug}:`, err.message);

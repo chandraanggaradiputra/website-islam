@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { WPMasjid } from '@/types';
 import { MapPin, Navigation } from 'lucide-react';
 
@@ -10,6 +11,17 @@ export function MasjidCard({ masjid }: { masjid: WPMasjid }) {
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden hover:shadow-md transition-shadow flex flex-col h-full">
+      {masjid.featured_media_url && (
+        <div className="relative w-full h-48 bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-800">
+          <Image
+            src={masjid.featured_media_url}
+            alt={title.rendered}
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            className="object-cover"
+          />
+        </div>
+      )}
       <div className="p-5 flex-grow">
         <h3 className="font-bold text-lg leading-tight mb-2 text-slate-900 dark:text-slate-100">
           {title.rendered}

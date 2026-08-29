@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { WPKajian } from '@/types';
 import { MapPin, Clock, Calendar, User } from 'lucide-react';
 
@@ -15,6 +16,17 @@ export function KajianCard({ kajian }: { kajian: WPKajian }) {
   
   return (
     <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden hover:shadow-md transition-shadow flex flex-col h-full">
+      {kajian.featured_media_url && (
+        <div className="relative w-full h-48 bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-800">
+          <Image
+            src={kajian.featured_media_url}
+            alt={title.rendered}
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            className="object-cover"
+          />
+        </div>
+      )}
       <div className="p-5 flex-grow">
         <div className="flex gap-2 mb-3">
           <span className={`text-xs font-semibold px-2 py-1 rounded-md ${isRutin ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'}`}>
