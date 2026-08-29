@@ -1,6 +1,6 @@
 // components/layout/Footer.tsx
 import Link from 'next/link';
-import { MapPin, Phone, Mail, Sparkles, ExternalLink, Heart } from 'lucide-react';
+import { MapPin, Phone, Mail, Sparkles, Heart } from 'lucide-react';
 import clsx from 'clsx';
 
 const KECAMATAN_LIST = [
@@ -62,6 +62,11 @@ export function Footer() {
                   Artikel & Faedah Ilmiah
                 </Link>
               </li>
+              <li>
+                <Link href="/donasi" className={clsx('hover:text-[#093c96]', 'dark:hover:text-blue-400', 'transition-colors')}>
+                  Infaq Pengembangan
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -94,7 +99,7 @@ export function Footer() {
             </p>
             <div className={clsx('space-y-2', 'pt-1', 'text-sm')}>
               <a
-                href="[https://wa.me/6282298148474](https://wa.me/6282298148474)"
+                href="https://wa.me/6282298148474"
                 target="_blank"
                 rel="noopener noreferrer"
                 className={clsx('flex', 'items-center', 'gap-2', 'hover:text-[#093c96]', 'dark:hover:text-blue-400', 'transition-colors')}
@@ -114,14 +119,14 @@ export function Footer() {
         </div>
 
         {/* Bottom Copyright Bar */}
-        <div className={clsx('mt-12', 'pt-6', 'border-slate-200/80', 'dark:border-slate-800', 'border-t', 'text-slate-500', 'dark:text-slate-400', 'text-xs', 'text-center')}>
+        <div className={clsx('mt-12', 'pt-6', 'border-slate-200/80', 'dark:border-slate-800', 'border-t', 'text-slate-500', 'dark:text-slate-400', 'text-xs', 'text-center', 'space-y-2')}>
           <p className={clsx('flex', 'flex-wrap', 'justify-center', 'items-center', 'gap-1')}>
             <span>© 2026 Syiar Salaf Kota Serang. All rights reserved.</span>
             <span>•</span>
             <span className={clsx('inline-flex', 'items-center', 'gap-1')}>
               Developed with <Heart className={clsx('fill-red-500', 'w-3', 'h-3', 'text-red-500')} /> by
               <a
-                href="[https://maschandigital.id](https://maschandigital.id)"
+                href="https://maschandigital.id"
                 target="_blank"
                 rel="noopener noreferrer"
                 className={clsx('font-semibold', 'text-[#093c96]', 'dark:text-blue-400', 'hover:underline')}
@@ -130,6 +135,15 @@ export function Footer() {
               </a>
             </span>
           </p>
+          <div className="flex flex-wrap justify-center items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400">
+            <Link href="/syarat-ketentuan" className="hover:underline hover:text-slate-700 dark:hover:text-slate-200 transition-colors">
+              Syarat & Ketentuan
+            </Link>
+            <span className="mx-2">•</span>
+            <Link href="/kebijakan-privasi" className="hover:underline hover:text-slate-700 dark:hover:text-slate-200 transition-colors">
+              Kebijakan Privasi
+            </Link>
+          </div>
         </div>
       </div>
     </footer>
