@@ -1,23 +1,14 @@
-# Aturan Rekayasa & Standar Kode Proyek "Website Islam"
+# Standar Rekayasa Kode Proyek "Website Islam" (Mas Chan Digital)
 
-1. **Strict TypeScript 7 & Zero Type Errors**:
-   - Seluruh kode wajib lolos `npx tsc --noEmit` dengan 0 error.
-   - Dilarang menggunakan tipe `any`. Gunakan interface resmi dari `types/index.ts`.
-   - Gunakan `catch (err: unknown)` dengan validasi `if (err instanceof Error)`.
+1. **5 Prinsip Rekayasa Baku**:
+   - **Prinsip 1 (Zero Silent Fallback)**: Dilarang keras menyuntikkan ID/nama data default palsu jika data relasi/sesi kosong. Kembalikan `null` atau `Error` eksplisit.
+   - **Prinsip 2 (Anti-Dangling Filter)**: Setiap fungsi `.filter()` wajib memiliki evaluasi boolean yang eksplisit (`return Boolean(...)`).
+   - **Prinsip 3 (Single Source of Truth)**: Fungsi normalisasi tanggal, waktu, dan format teks wajib menggunakan helper bersama di `lib/utils.ts` atau `lib/wordpress.ts`.
+   - **Prinsip 4 (Cache Revalidation)**: Setiap Server Action yang mengubah status data wajib memanggil `revalidatePath('/')`, `revalidatePath('/jadwal-kajian')`, dan `revalidatePath('/masjid')`.
+   - **Prinsip 5 (Strict Type Safety)**: 0 error pada `npx tsc --noEmit`. Dilarang menggunakan tipe `any`, dan penanganan `catch` wajib men-cast `error` secara aman atau dikosongkan jika tidak dipakai.
 
-2. **React 19 & Next.js 16 App Router Compliance**:
-   - Dilarang memanggil `setState()` secara sinkron langsung di badan `useEffect` saat mount.
-   - Tangani `params` dan `searchParams` pada Server Component sebagai `Promise`:
-     `const resolvedParams = await Promise.resolve(params);`
-
-3. **Prinsip Zero Silent Fallback**:
-   - Jika data REST API WordPress kosong/gagal di-fetch, kembalikan state error yang jelas atau array kosong `[]`.
-   - Dilarang membuat fallback data tiruan/palsu di komponen produksi.
-
-4. **Aksesibilitas (A11y) & HTML Semantik**:
-   - Seluruh tombol icon wajib memiliki `aria-label`.
-   - Navigasi mobile wajib menggunakan tag semantik `<nav aria-label="Navigasi Utama">`.
-
-5. **Penanganan Tipografi Arab & Nilai Waktu**:
-   - Teks Arab wajib menggunakan font `var(--font-amiri)` dengan `leading-[2.2]`.
-   - Perhitungan jam/waktu sholat dinamis wajib aman dari hydration mismatch (gunakan initial value dari server atau pasca-mount flag).
+2. **Protokol Git Push**:
+   Setiap menyelesaikan 1 blok fitur/perbaikan wajib menjalankan:
+   ```bash
+   npx tsc --noEmit && git add . && git commit -m "feat/fix: deskripsi" && git push origin main
+   ```
