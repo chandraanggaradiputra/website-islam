@@ -13,7 +13,7 @@ test.describe('Website Islam E2E Tests', () => {
     const themeButton = page.locator('button[aria-label="Ubah Tema"]');
     
     // Jika tidak dark, klik untuk membuatnya dark
-    let currentClass = await html.getAttribute('class');
+    const currentClass = await html.getAttribute('class');
     if (!currentClass || !currentClass.includes('dark')) {
       await themeButton.click();
     }

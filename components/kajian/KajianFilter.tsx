@@ -27,6 +27,7 @@ function KajianFilterContent({
 
   // Sinkronkan state jika URL berubah (misal saat klik tautan Kecamatan di Footer)
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setKecamatan(searchParams.get('kecamatan') || '');
     setJenis(searchParams.get('jenis') || '');
   }, [searchParams]);

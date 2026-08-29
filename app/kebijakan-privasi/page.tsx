@@ -1,4 +1,4 @@
-import { Lock, ShieldCheck, Database, Cookie, EyeOff, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, Database, EyeOff, CheckCircle2 } from 'lucide-react';
 
 export const metadata = {
   title: 'Kebijakan Privasi - Syiar Salaf Kota Serang',

@@ -27,7 +27,7 @@ interface TambahKajianFormProps {
   masjidName: string;
 }
 
-export function TambahKajianForm({ masjidId, masjidName }: TambahKajianFormProps) {
+export function TambahKajianForm({ masjidId: _masjidId, masjidName }: TambahKajianFormProps) {
   const router = useRouter();
   const [posterPreview, setPosterPreview] = useState<string | null>(null);
 
@@ -68,7 +68,7 @@ export function TambahKajianForm({ masjidId, masjidName }: TambahKajianFormProps
       } else {
         setErrorMessage(res.error || 'Terjadi kesalahan saat mengajukan kajian.');
       }
-    } catch (err) {
+    } catch {
       setErrorMessage('Terjadi kesalahan jaringan.');
     }
   };

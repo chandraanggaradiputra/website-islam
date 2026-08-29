@@ -14,7 +14,6 @@ import {
   LogOut,
   Landmark,
   ShieldCheck,
-  LayoutDashboard,
 } from 'lucide-react';
 
 const BASE_NAV_LINKS = [

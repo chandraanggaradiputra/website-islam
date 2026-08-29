@@ -27,7 +27,7 @@ export async function middleware(request: NextRequest) {
       }
       
       return NextResponse.next();
-    } catch (error) {
+    } catch {
       // Invalid token
       return NextResponse.redirect(new URL('/login', request.url));
     }

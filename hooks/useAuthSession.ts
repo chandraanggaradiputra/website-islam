@@ -34,6 +34,7 @@ export function useAuthSession(): UseAuthSessionResult {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchSession();
   }, [pathname, fetchSession]);
 

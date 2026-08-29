@@ -34,6 +34,7 @@ export function GlobalSearch() {
     if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 100);
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setQuery('');
       setResults([]);
     }
@@ -42,6 +43,7 @@ export function GlobalSearch() {
   // Debounced Search
   useEffect(() => {
     if (query.trim().length < 2) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setResults([]);
       return;
     }
@@ -51,7 +53,7 @@ export function GlobalSearch() {
       try {
         const data = await globalSearch(query);
         setResults(data || []);
-      } catch (err: unknown) {
+      } catch {
         setResults([]);
       } finally {
         setIsLoading(false);
