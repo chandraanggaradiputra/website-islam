@@ -6,6 +6,8 @@ import { ShareButton } from '@/components/ui/ShareButton';
 import { ArrowLeft, Calendar } from 'lucide-react';
 import htmlParser from 'html-react-parser';
 import Image from 'next/image';
+import { JsonLd } from '@/components/seo/JsonLd';
+import { generateArtikelSchema } from '@/lib/schema';
 
 export const revalidate = 60;
 
@@ -45,8 +47,11 @@ export default async function ArtikelDetailPage({ params }: { params: Promise<{ 
     notFound();
   }
 
+  const artikelSchema = generateArtikelSchema(artikel);
+
   return (
     <div className="max-w-3xl mx-auto space-y-6">
+      <JsonLd data={artikelSchema} />
       <Link href="/artikel" className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 transition-colors mb-4">
         <ArrowLeft className="w-4 h-4" /> Kembali ke Daftar Artikel
       </Link>

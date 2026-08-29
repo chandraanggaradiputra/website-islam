@@ -7,6 +7,8 @@ import { InfaqModal } from '@/components/masjid/InfaqModal';
 import { MapPin, Navigation, ArrowLeft, Phone, Globe } from 'lucide-react';
 import htmlParser from 'html-react-parser';
 import Image from 'next/image';
+import { JsonLd } from '@/components/seo/JsonLd';
+import { generateMasjidSchema } from '@/lib/schema';
 
 export const revalidate = 60;
 
@@ -52,9 +54,11 @@ export default async function MasjidDetailPage({ params }: { params: Promise<{ s
 
   const { acf, title, content, featured_media_url } = masjid;
   const fasilitas = acf.fasilitas || [];
+  const masjidSchema = generateMasjidSchema(masjid);
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+      <JsonLd data={masjidSchema} />
       <Link href="/masjid" className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 transition-colors mb-4">
         <ArrowLeft className="w-4 h-4" /> Kembali ke Direktori
       </Link>
