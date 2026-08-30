@@ -19,6 +19,7 @@ import {
 const BASE_NAV_LINKS = [
   { label: 'Beranda', href: '/' },
   { label: 'Jadwal Kajian', href: '/jadwal-kajian' },
+  { label: 'Jadwal Sholat', href: '/jadwal-sholat' },
   { label: 'Direktori Masjid', href: '/masjid' },
   { label: 'Artikel & Faedah', href: '/artikel' },
 ];

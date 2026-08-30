@@ -16,7 +16,23 @@ export async function globalSearch(query: string): Promise<SearchResultItem[]> {
 
     const results: SearchResultItem[] = [];
 
-    // 1. Cari di Jadwal Kajian (Mencari di Judul, Nama Ustadz, Kitab, & Nama Masjid)
+    // 0. Cek Pintasan Jadwal Sholat
+    if (
+      cleanQuery.includes('sholat') ||
+      cleanQuery.includes('shalat') ||
+      cleanQuery.includes('imsak') ||
+      cleanQuery.includes('subuh') ||
+      cleanQuery.includes('maghrib')
+    ) {
+      results.push({
+        id: 999999,
+        title: 'Jadwal Sholat & Imsakiyah Kota Serang',
+        subtitle: 'Jadwal 1 Bulan Penuh Resmi Standar Kemenag RI',
+        category: 'kajian',
+        url: '/jadwal-sholat',
+        badgeText: 'Jadwal Sholat',
+      });
+    }
     listKajian.forEach((kajian) => {
       const title = kajian.title?.rendered || '';
       const ustadz = kajian.acf?.nama_ustadz || '';

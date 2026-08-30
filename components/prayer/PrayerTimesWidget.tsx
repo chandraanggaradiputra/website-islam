@@ -2,8 +2,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { getSerangPrayerTimes } from '@/lib/prayerTimes';
-import { Clock, MapPin } from 'lucide-react';
+import { Clock, MapPin, CalendarDays, ArrowRight } from 'lucide-react';
 
 export function PrayerTimesWidget() {
   const [now, setNow] = useState<Date | null>(null);
@@ -61,6 +62,20 @@ export function PrayerTimesWidget() {
           </div>
         ))}
       </div>
+
+      <div className="mt-4 pt-3 border-t border-white/15 flex items-center justify-between">
+        <span className="text-xs text-blue-200 flex items-center gap-1.5">
+          <CalendarDays className="w-3.5 h-3.5 text-blue-300" />
+          <span>Jadwal Bimas Islam Kemenag</span>
+        </span>
+        <Link
+          href="/jadwal-sholat"
+          className="inline-flex items-center gap-1 text-xs font-semibold text-white bg-white/15 hover:bg-white/25 px-3 py-1 rounded-lg transition-colors group"
+        >
+          <span>Lihat Jadwal 1 Bulan Penuh</span>
+          <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+        </Link>
+      </div>
     </div>
   );
-}
+}

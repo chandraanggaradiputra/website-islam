@@ -53,6 +53,11 @@ export function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/jadwal-sholat" className={clsx('hover:text-[#093c96]', 'dark:hover:text-blue-400', 'transition-colors')}>
+                  Jadwal Sholat Bulanan
+                </Link>
+              </li>
+              <li>
                 <Link href="/masjid" className={clsx('hover:text-[#093c96]', 'dark:hover:text-blue-400', 'transition-colors')}>
                   Direktori Masjid Sunnah
                 </Link>

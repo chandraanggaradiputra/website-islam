@@ -1,5 +1,7 @@
 // types/index.ts
 
+export * from './prayer';
+
 export type UserRole = 'admin' | 'dkm';
 
 export interface UserSession {
