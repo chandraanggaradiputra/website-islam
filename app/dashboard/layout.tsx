@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 import { getSession, logout } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { LayoutDashboard, CalendarPlus, LogOut, Users, BookOpen } from 'lucide-react';
+import { LayoutDashboard, CalendarPlus, LogOut, Users, BookOpen, Building2 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
@@ -38,26 +38,40 @@ export default async function DashboardLayout({ children }: { children: ReactNod
                 <LayoutDashboard className="w-5 h-5" /> Dasbor
               </Link>
               {!isAdmin && (
-                <Link 
-                  href="/dashboard/dkm/tambah-kajian"
-                  className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                >
-                  <CalendarPlus className="w-5 h-5" /> Tambah Kajian
-                </Link>
+                <>
+                  <Link 
+                    href="/dashboard/dkm/profil-masjid"
+                    className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                  >
+                    <Building2 className="w-5 h-5" /> Profil Masjid Saya
+                  </Link>
+                  <Link 
+                    href="/dashboard/dkm/tambah-kajian"
+                    className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                  >
+                    <CalendarPlus className="w-5 h-5" /> Tambah Kajian
+                  </Link>
+                </>
               )}
               {isAdmin && (
                 <>
                   <Link 
-                    href="#"
+                    href="/dashboard/admin?tab=dkm"
                     className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                   >
-                    <Users className="w-5 h-5" /> Kelola DKM
+                    <Users className="w-5 h-5" /> Verifikasi DKM
                   </Link>
                   <Link 
-                    href="#"
+                    href="/dashboard/admin?tab=masjid"
                     className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                   >
-                    <BookOpen className="w-5 h-5" /> Semua Kajian
+                    <Building2 className="w-5 h-5" /> Kelola Masjid
+                  </Link>
+                  <Link 
+                    href="/dashboard/admin?tab=kajian"
+                    className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                  >
+                    <BookOpen className="w-5 h-5" /> Kelola Kajian
                   </Link>
                 </>
               )}

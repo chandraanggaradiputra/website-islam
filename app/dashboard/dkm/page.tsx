@@ -1,5 +1,5 @@
 import { getSession } from '@/lib/auth';
-import { Calendar, ArrowUpRight, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Calendar, ArrowUpRight, Clock, CheckCircle2, AlertCircle, Building2 } from 'lucide-react';
 import Link from 'next/link';
 import { WPKajian } from '@/types';
 import { getMasjidList, enrichKajianWithMasjid } from '@/lib/wordpress';
@@ -70,12 +70,20 @@ export default async function DKMDashboard() {
           <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Dasbor DKM</h2>
           <p className="text-slate-500 dark:text-slate-400">Ringkasan aktivitas kajian {session?.masjidName}</p>
         </div>
-        <Link 
-          href="/dashboard/dkm/tambah-kajian"
-          className="inline-flex items-center justify-center gap-2 bg-[#093c96] hover:bg-[#072a6b] text-white px-5 py-2.5 rounded-xl font-medium transition-colors"
-        >
-          <Calendar className="w-4 h-4" /> Tambah Jadwal
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link 
+            href="/dashboard/dkm/profil-masjid"
+            className="inline-flex items-center justify-center gap-2 border border-slate-300 bg-white hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 text-slate-700 px-4 py-2.5 rounded-xl font-medium transition-colors text-sm"
+          >
+            <Building2 className="w-4 h-4 text-[#093c96] dark:text-blue-400" /> Profil Masjid
+          </Link>
+          <Link 
+            href="/dashboard/dkm/tambah-kajian"
+            className="inline-flex items-center justify-center gap-2 bg-[#093c96] hover:bg-[#072a6b] text-white px-5 py-2.5 rounded-xl font-medium transition-colors text-sm"
+          >
+            <Calendar className="w-4 h-4" /> Tambah Jadwal
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

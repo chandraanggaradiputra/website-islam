@@ -18,8 +18,44 @@ export interface DKMRegistrationPayload {
   namaPengurus: string;
   email: string;
   noWhatsapp: string;
-  masjidId: number;
+  masjidOption: string; // 'NEW_MASJID' or mosque ID string
+  masjidId?: number;
+  isNewMasjid?: boolean;
+  namaMasjidBaru?: string;
+  kecamatan?: number;
+  kecamatanNama?: string;
+  alamatMasjid?: string;
+  googleMapsUrl?: string;
+  fasilitas?: string[];
+  namaBank?: string;
+  nomorRekening?: string;
+  atasNamaRekening?: string;
   catatan?: string;
+}
+
+export interface DKMRegistrationApplication {
+  id: string | number;
+  date: string;
+  namaPengurus: string;
+  email: string;
+  noWhatsapp: string;
+  masjidId?: number;
+  masjidName?: string;
+  isNewMasjid: boolean;
+  newMasjidData?: {
+    namaMasjid: string;
+    kecamatanId?: number;
+    kecamatanName?: string;
+    alamatLengkap: string;
+    googleMapsUrl?: string;
+    fasilitas?: string[];
+    namaBank?: string;
+    nomorRekening?: string;
+    atasNamaRekening?: string;
+  };
+  catatan?: string;
+  status: 'pending' | 'approved' | 'rejected';
+  createdMasjidId?: number;
 }
 
 export type JenisKajian = 'rutin' | 'tematik';
@@ -42,13 +78,22 @@ export interface MasjidACF {
 export interface WPMasjid {
   id: number;
   slug: string;
+  status?: 'publish' | 'pending' | 'draft' | 'future' | 'private' | 'trash';
   title: { rendered: string };
   content: { rendered: string };
+  featured_media?: number;
   featured_media_url?: string;
   kecamatan?: number[];
   acf: MasjidACF;
   post_title?: string;
   post_name?: string;
+  author?: number;
+  _embedded?: {
+    author?: { name: string; id?: number }[];
+    'wp:featuredmedia'?: Array<{ source_url?: string; id?: number }>;
+    'wp:term'?: Array<Array<{ id: number; name: string; slug: string; taxonomy: string }>>;
+    [key: string]: unknown;
+  };
 }
 
 export interface KajianACF {
