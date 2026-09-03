@@ -19,6 +19,7 @@ export interface DKMRegistrationPayload {
   namaPengurus: string;
   email: string;
   noWhatsapp: string;
+  kotaKabupaten?: KotaKabupatenBanten;
   masjidOption: string; // 'NEW_MASJID' or mosque ID string
   masjidId?: number;
   isNewMasjid?: boolean;
@@ -45,6 +46,7 @@ export interface DKMRegistrationApplication {
   isNewMasjid: boolean;
   newMasjidData?: {
     namaMasjid: string;
+    kotaKabupaten?: KotaKabupatenBanten;
     kecamatanId?: number;
     kecamatanName?: string;
     alamatLengkap: string;

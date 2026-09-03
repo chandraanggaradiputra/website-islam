@@ -88,6 +88,7 @@ export async function updateMasjidProfile(formData: FormData) {
     } = {
       content: formData.get('deskripsi')?.toString() || '',
       acf: {
+        kota_kabupaten: formData.get('kotaKabupaten')?.toString() || '',
         alamat_lengkap: formData.get('alamatLengkap')?.toString() || '',
         google_maps_url: formData.get('googleMapsUrl')?.toString() || '',
         no_wa_dkm: formData.get('noWaDkm')?.toString() || '',
@@ -191,6 +192,7 @@ export async function createMasjidByAdmin(formData: FormData) {
       status: 'publish',
       kecamatan: kecamatanId ? [kecamatanId] : [],
       acf: {
+        kota_kabupaten: formData.get('kotaKabupaten')?.toString() || '',
         alamat_lengkap: formData.get('alamatLengkap')?.toString() || '',
         google_maps_url: formData.get('googleMapsUrl')?.toString() || '',
         no_wa_dkm: formData.get('noWaDkm')?.toString() || '',
@@ -288,6 +290,7 @@ export async function updateMasjidByAdmin(formData: FormData) {
       acf: Record<string, unknown>;
     } = {
       acf: {
+        kota_kabupaten: formData.get('kotaKabupaten')?.toString() || '',
         alamat_lengkap: formData.get('alamatLengkap')?.toString() || '',
         google_maps_url: formData.get('googleMapsUrl')?.toString() || '',
         no_wa_dkm: formData.get('noWaDkm')?.toString() || '',
