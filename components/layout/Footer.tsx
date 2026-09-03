@@ -3,14 +3,9 @@ import Link from 'next/link';
 import { MapPin, Phone, Mail, Sparkles, Heart } from 'lucide-react';
 import clsx from 'clsx';
 
-const KECAMATAN_LIST = [
-  'Serang',
-  'Cipocok Jaya',
-  'Kasemen',
-  'Taktakan',
-  'Walantaka',
-  'Curug',
-];
+import { BANTEN_REGIONS } from '@/lib/constants/bantenRegions';
+
+const REGION_LIST = BANTEN_REGIONS.map((region) => region.name);
 
 export function Footer() {
   return (
@@ -24,15 +19,15 @@ export function Footer() {
                 <Sparkles className={clsx('w-4', 'h-4')} />
               </div>
               <span className={clsx('font-bold', 'text-[#093c96]', 'dark:text-blue-400', 'text-lg')}>
-                Syiar Salaf Serang
+                Banten Mengaji
               </span>
             </div>
             <p className={clsx('text-slate-600', 'dark:text-slate-400', 'text-sm', 'leading-relaxed')}>
-              Pusat informasi jadwal kajian ilmiah Islam bermanhaj Salafus Shalih, direktori masjid sunnah, dan faedah tholabul &apos;ilmi di wilayah Kota Serang dan sekitarnya.
+              Pusat informasi jadwal kajian ilmiah Islam bermanhaj Salafus Shalih, direktori masjid sunnah, dan faedah tholabul &apos;ilmi di wilayah Provinsi Banten dan sekitarnya.
             </p>
             <div className={clsx('flex', 'items-center', 'gap-2', 'text-slate-500', 'text-xs')}>
               <MapPin className={clsx('w-4', 'h-4', 'text-[#093c96]', 'dark:text-blue-400')} />
-              <span>Kota Serang, Banten, Indonesia</span>
+              <span>Provinsi Banten, Indonesia</span>
             </div>
           </div>
 
@@ -78,16 +73,16 @@ export function Footer() {
           {/* Kolom 3: Kajian Berdasarkan Kecamatan */}
           <div>
             <h4 className={clsx('mb-4', 'font-semibold', 'text-slate-900', 'dark:text-slate-200', 'text-sm', 'uppercase', 'tracking-wider')}>
-              Kecamatan di Serang
+              Wilayah Banten
             </h4>
             <ul className={clsx('gap-2', 'grid', 'grid-cols-2', 'text-sm')}>
-              {KECAMATAN_LIST.map((kec) => (
-                <li key={kec}>
+              {REGION_LIST.map((region) => (
+                <li key={region}>
                   <Link
-                    href={`/jadwal-kajian?kecamatan=${encodeURIComponent(kec)}`}
+                    href={`/jadwal-kajian?kota_kabupaten=${encodeURIComponent(region)}`}
                     className={clsx('hover:text-[#093c96]', 'dark:hover:text-blue-400', 'transition-colors')}
                   >
-                    Kec. {kec}
+                    {region}
                   </Link>
                 </li>
               ))}
@@ -126,10 +121,10 @@ export function Footer() {
         {/* Bottom Copyright Bar */}
         <div className={clsx('mt-12', 'pt-6', 'border-slate-200/80', 'dark:border-slate-800', 'border-t', 'text-slate-500', 'dark:text-slate-400', 'text-xs', 'text-center', 'space-y-2')}>
           <p className={clsx('flex', 'flex-wrap', 'justify-center', 'items-center', 'gap-1')}>
-            <span>© 2026 Syiar Salaf Kota Serang. All rights reserved.</span>
+            <span>© 2026 Banten Mengaji. All rights reserved.</span>
             <span>•</span>
             <span className={clsx('inline-flex', 'items-center', 'gap-1')}>
-              Developed with <Heart className={clsx('fill-red-500', 'w-3', 'h-3', 'text-red-500')} /> by
+              Banten Mengaji — Dikembangkan oleh
               <a
                 href="https://maschandigital.id"
                 target="_blank"

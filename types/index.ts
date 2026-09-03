@@ -1,6 +1,7 @@
 // types/index.ts
 
 export * from './prayer';
+import { KotaKabupatenBanten } from '@/lib/constants/bantenRegions';
 
 export type UserRole = 'admin' | 'dkm';
 
@@ -64,6 +65,7 @@ export type StatusKajian = 'aktif' | 'libur' | 'selesai';
 
 export interface MasjidACF {
   alamat_lengkap: string;
+  kota_kabupaten?: KotaKabupatenBanten;
   google_maps_url: string;
   no_wa_dkm: string;
   nama_kontak_dkm?: string;
@@ -103,6 +105,7 @@ export interface KajianACF {
   kitab_bahasan?: string;
   masjid_terkait: number | WPMasjid;
   nama_masjid_manual?: string;
+  kota_kabupaten?: KotaKabupatenBanten;
   hari_kajian?: string;
   tanggal_kajian?: string; // Format: YYYY-MM-DD
   waktu_keterangan: string;

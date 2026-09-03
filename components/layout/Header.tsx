@@ -45,10 +45,10 @@ export function Header() {
           </div>
           <div className="flex flex-col">
             <span className="text-base font-extrabold tracking-tight text-[#093c96] dark:text-blue-400 leading-tight">
-              Syiar Salaf
+              Banten Mengaji
             </span>
             <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
-              Kota Serang, Banten
+              Provinsi Banten
             </span>
           </div>
         </Link>
@@ -99,7 +99,7 @@ export function Header() {
                       Jadwal Kajian Sunnah
                     </p>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                      Kajian rutin & tematik di Serang
+                      Kajian rutin & tematik di Banten
                     </p>
                   </div>
                 </Link>
@@ -153,7 +153,7 @@ export function Header() {
                       Direktori Masjid Sunnah
                     </p>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                      Daftar masjid di wilayah Kota Serang
+                      Daftar masjid di wilayah Banten
                     </p>
                   </div>
                 </Link>
