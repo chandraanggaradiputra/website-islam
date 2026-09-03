@@ -1,6 +1,7 @@
 // types/index.ts
 
 export * from './prayer';
+import { KotaKabupatenBanten } from '@/lib/constants/bantenRegions';
 
 export type UserRole = 'admin' | 'dkm';
 
@@ -18,6 +19,7 @@ export interface DKMRegistrationPayload {
   namaPengurus: string;
   email: string;
   noWhatsapp: string;
+  kotaKabupaten?: KotaKabupatenBanten;
   masjidOption: string; // 'NEW_MASJID' or mosque ID string
   masjidId?: number;
   isNewMasjid?: boolean;
@@ -44,6 +46,7 @@ export interface DKMRegistrationApplication {
   isNewMasjid: boolean;
   newMasjidData?: {
     namaMasjid: string;
+    kotaKabupaten?: KotaKabupatenBanten;
     kecamatanId?: number;
     kecamatanName?: string;
     alamatLengkap: string;
@@ -64,6 +67,7 @@ export type StatusKajian = 'aktif' | 'libur' | 'selesai';
 
 export interface MasjidACF {
   alamat_lengkap: string;
+  kota_kabupaten?: KotaKabupatenBanten;
   google_maps_url: string;
   no_wa_dkm: string;
   nama_kontak_dkm?: string;
@@ -103,6 +107,7 @@ export interface KajianACF {
   kitab_bahasan?: string;
   masjid_terkait: number | WPMasjid;
   nama_masjid_manual?: string;
+  kota_kabupaten?: KotaKabupatenBanten;
   hari_kajian?: string;
   tanggal_kajian?: string; // Format: YYYY-MM-DD
   waktu_keterangan: string;

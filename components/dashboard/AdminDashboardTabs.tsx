@@ -264,9 +264,14 @@ export function AdminDashboardTabs({
                     filteredDKM.map((app) => {
                       const isPendingItem = app.status === 'pending';
                       const isNewMasjid = app.isNewMasjid;
+                      const existingMasjid = !isNewMasjid ? allMasjid.find(m => m.id === app.masjidId) : null;
                       const masjidTitle = isNewMasjid
                         ? app.newMasjidData?.namaMasjid || 'Usulan Masjid Baru'
                         : app.masjidName || `Masjid ID #${app.masjidId}`;
+                      
+                      const masjidKota = isNewMasjid 
+                        ? app.newMasjidData?.kotaKabupaten 
+                        : existingMasjid?.acf?.kota_kabupaten;
 
                       return (
                         <tr
@@ -306,6 +311,11 @@ export function AdminDashboardTabs({
                                   <span className="text-xs text-slate-400">
                                     Masjid Terdaftar
                                   </span>
+                                )}
+                                {masjidKota && (
+                                  <p className="mt-1 text-xs font-semibold text-[#093c96] dark:text-blue-400">
+                                    📍 {masjidKota}
+                                  </p>
                                 )}
                                 {isNewMasjid && app.newMasjidData && (
                                   <p className="text-xs text-slate-500 mt-1 line-clamp-2">
@@ -583,6 +593,11 @@ export function AdminDashboardTabs({
 
                           <td className="p-4 text-xs text-slate-700 dark:text-slate-300 min-w-[140px]">
                             <p className="font-medium line-clamp-1">{masjid}</p>
+                            {kajian.acf?.kota_kabupaten && (
+                              <p className="mt-1 text-xs font-semibold text-[#093c96] dark:text-blue-400">
+                                📍 {kajian.acf.kota_kabupaten}
+                              </p>
+                            )}
                           </td>
 
                           <td className="p-4 text-xs text-slate-600 dark:text-slate-400 whitespace-nowrap">

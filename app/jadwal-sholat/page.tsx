@@ -63,12 +63,9 @@ export default async function JadwalSholatPage({ searchParams }: PageProps) {
       ? parsedTahun
       : now.getFullYear();
 
-  const data = await getMonthlyShalatSerang(validBulan, validTahun);
-
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <MonthlyPrayerCalendar
-        initialData={data}
         bulan={validBulan}
         tahun={validTahun}
       />

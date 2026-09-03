@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { WPMasjid } from '@/types';
 import { submitDaftarDKM } from '@/lib/actions/dkm';
+import { BANTEN_REGIONS, KotaKabupatenBanten } from '@/lib/constants/bantenRegions';
 import {
   Building2,
   User,
@@ -20,16 +21,8 @@ import {
   Sparkles,
   AlertCircle,
   PlusCircle,
+  Map,
 } from 'lucide-react';
-
-const KECAMATAN_OPTIONS = [
-  { id: 2, name: 'Serang' },
-  { id: 3, name: 'Cipocok Jaya' },
-  { id: 4, name: 'Kasemen' },
-  { id: 5, name: 'Taktakan' },
-  { id: 6, name: 'Walantaka' },
-  { id: 7, name: 'Curug' },
-];
 
 const FASILITAS_OPTIONS = [
   'Parkir Mobil & Motor',
@@ -44,6 +37,7 @@ const dkmSchema = z
     namaPengurus: z.string().min(3, 'Nama pengurus minimal 3 karakter'),
     email: z.string().email('Format email tidak valid'),
     noWhatsapp: z.string().min(10, 'Nomor WhatsApp minimal 10 digit'),
+    kotaKabupaten: z.string().min(1, 'Pilih kota/kabupaten asal masjid'),
     masjidOption: z.string().min(1, 'Pilih masjid yang Anda kelola'),
     // Field Tambahan jika Masjid Belum Terdaftar (NEW_MASJID)
     namaMasjidBaru: z.string().optional(),
@@ -69,7 +63,7 @@ const dkmSchema = z
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['kecamatan'],
-          message: 'Pilih kecamatan lokasi masjid di Kota Serang',
+          message: 'Pilih kecamatan lokasi masjid',
         });
       }
       if (!data.alamatMasjid || data.alamatMasjid.trim().length < 5) {
@@ -102,6 +96,7 @@ export function DaftarDKMForm({ masjidList = [] }: { masjidList: WPMasjid[] }) {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
     reset,
   } = useForm<DKMFormValues>({
@@ -110,6 +105,7 @@ export function DaftarDKMForm({ masjidList = [] }: { masjidList: WPMasjid[] }) {
       namaPengurus: '',
       email: '',
       noWhatsapp: '',
+      kotaKabupaten: '',
       masjidOption: '0',
       namaMasjidBaru: '',
       kecamatan: '',
@@ -123,28 +119,39 @@ export function DaftarDKMForm({ masjidList = [] }: { masjidList: WPMasjid[] }) {
     },
   });
 
+  const selectedKota = watch('kotaKabupaten') as KotaKabupatenBanten;
   const selectedMasjidOption = watch('masjidOption');
   const isNewMasjid = selectedMasjidOption === 'NEW_MASJID';
+
+  const filteredKecamatans = useMemo(() => {
+    if (!selectedKota) return [];
+    const region = BANTEN_REGIONS.find((r) => r.name === selectedKota);
+    return region ? region.kecamatan : [];
+  }, [selectedKota]);
+
+  const filteredMasjidList = useMemo(() => {
+    if (!selectedKota) return masjidList;
+    return masjidList.filter(m => (m.acf?.kota_kabupaten || 'Kota Serang') === selectedKota);
+  }, [selectedKota, masjidList]);
 
   const onSubmit = async (data: DKMFormValues) => {
     setIsSubmitting(true);
     setErrorMessage(null);
 
     try {
-      const selectedKec = KECAMATAN_OPTIONS.find(
-        (k) => k.id.toString() === data.kecamatan
-      );
+      const selectedKec = data.kecamatan; // because now it is just a string name
 
       const payload = {
         namaPengurus: data.namaPengurus,
         email: data.email,
         noWhatsapp: data.noWhatsapp,
+        kotaKabupaten: data.kotaKabupaten as KotaKabupatenBanten,
         masjidOption: data.masjidOption,
         masjidId: isNewMasjid ? undefined : Number(data.masjidOption),
         isNewMasjid,
         namaMasjidBaru: isNewMasjid ? data.namaMasjidBaru : undefined,
-        kecamatan: isNewMasjid && data.kecamatan ? Number(data.kecamatan) : undefined,
-        kecamatanNama: selectedKec?.name,
+        kecamatan: undefined, // ID tidak lagi dipakai
+        kecamatanNama: isNewMasjid ? data.kecamatan : undefined, // string nama
         alamatMasjid: isNewMasjid ? data.alamatMasjid : undefined,
         googleMapsUrl: isNewMasjid ? data.googleMapsUrl : undefined,
         fasilitas: isNewMasjid ? data.fasilitas : undefined,
@@ -287,22 +294,51 @@ export function DaftarDKMForm({ masjidList = [] }: { masjidList: WPMasjid[] }) {
 
         <div>
           <label className="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+            Kota / Kabupaten Asal Masjid *
+          </label>
+          <div className="relative">
+            <Map className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+            <select
+              {...register('kotaKabupaten')}
+              onChange={(e) => {
+                register('kotaKabupaten').onChange(e);
+                setValue('masjidOption', '0'); // Reset masjid when kota changes
+                setValue('kecamatan', '');     // Reset kecamatan
+              }}
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3.5 text-sm text-slate-900 focus:border-[#093c96] focus:bg-white focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:border-blue-500 transition-colors"
+            >
+              <option value="">-- Pilih Kota / Kabupaten --</option>
+              {BANTEN_REGIONS.map((r) => (
+                <option key={r.id} value={r.name}>
+                  {r.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          {errors.kotaKabupaten && (
+            <p className="mt-1 text-xs text-red-500">{errors.kotaKabupaten.message}</p>
+          )}
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">
             Pilih Masjid *
           </label>
           <div className="relative">
             <Building2 className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
             <select
               {...register('masjidOption')}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3.5 text-sm text-slate-900 focus:border-[#093c96] focus:bg-white focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:border-blue-500 transition-colors"
+              disabled={!selectedKota}
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3.5 text-sm text-slate-900 focus:border-[#093c96] focus:bg-white focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:border-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <option value="0">-- Pilih Masjid Terdaftar di Kota Serang --</option>
+              <option value="0">{selectedKota ? `-- Pilih Masjid Terdaftar di ${selectedKota} --` : '-- Pilih Kota / Kabupaten Dulu --'}</option>
               <option
                 value="NEW_MASJID"
                 className="font-bold text-[#093c96] bg-blue-50 dark:bg-blue-950/60 dark:text-blue-300"
               >
                 ➕ Masjid Saya Belum Terdaftar (Daftarkan Masjid Baru)
               </option>
-              {masjidList.map((m) => (
+              {filteredMasjidList.map((m) => (
                 <option key={m.id} value={m.id}>
                   {m.title?.rendered}
                 </option>
@@ -341,7 +377,7 @@ export function DaftarDKMForm({ masjidList = [] }: { masjidList: WPMasjid[] }) {
             {/* Kecamatan */}
             <div>
               <label className="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                Kecamatan di Kota Serang *
+                Kecamatan di {selectedKota || 'Kota Serang'} *
               </label>
               <div className="relative">
                 <Compass className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
@@ -349,10 +385,10 @@ export function DaftarDKMForm({ masjidList = [] }: { masjidList: WPMasjid[] }) {
                   {...register('kecamatan')}
                   className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-3.5 text-sm text-slate-900 focus:border-[#093c96] focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                 >
-                  <option value="">-- Pilih Kecamatan di Kota Serang --</option>
-                  {KECAMATAN_OPTIONS.map((kec) => (
-                    <option key={kec.id} value={kec.id}>
-                      Kec. {kec.name}
+                  <option value="">-- Pilih Kecamatan --</option>
+                  {filteredKecamatans.map((kecName) => (
+                    <option key={kecName} value={kecName}>
+                      Kec. {kecName}
                     </option>
                   ))}
                 </select>

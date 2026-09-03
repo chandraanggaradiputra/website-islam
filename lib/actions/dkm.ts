@@ -63,6 +63,7 @@ export async function submitDaftarDKM(payload: DKMRegistrationPayload) {
           status: 'pending',
           kecamatan: payload.kecamatan ? [Number(payload.kecamatan)] : [],
           acf: {
+            kota_kabupaten: payload.kotaKabupaten || '',
             alamat_lengkap: payload.alamatMasjid || '',
             google_maps_url: payload.googleMapsUrl || '',
             no_wa_dkm: payload.noWhatsapp || '',
@@ -101,6 +102,7 @@ export async function submitDaftarDKM(payload: DKMRegistrationPayload) {
       newMasjidData: isNewMasjid
         ? {
             namaMasjid: payload.namaMasjidBaru || '',
+            kotaKabupaten: payload.kotaKabupaten,
             kecamatanId: payload.kecamatan ? Number(payload.kecamatan) : undefined,
             kecamatanName: payload.kecamatanNama,
             alamatLengkap: payload.alamatMasjid || '',
@@ -184,6 +186,7 @@ export async function approveDKMRegistration(registrationId: string | number) {
             status: 'publish',
             kecamatan: app.newMasjidData.kecamatanId ? [app.newMasjidData.kecamatanId] : [],
             acf: {
+              kota_kabupaten: app.newMasjidData.kotaKabupaten || '',
               alamat_lengkap: app.newMasjidData.alamatLengkap,
               google_maps_url: app.newMasjidData.googleMapsUrl || '',
               no_wa_dkm: app.noWhatsapp,

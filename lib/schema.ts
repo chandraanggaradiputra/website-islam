@@ -9,10 +9,10 @@ export function generateOrganizationSchema() {
   return {
     '@context': 'https://schema.org',
     '@type': 'Organization',
-    name: 'Syiar Salaf Kota Serang',
+    name: 'Banten Mengaji',
     url: BASE_URL,
     logo: `${BASE_URL}/logo.png`,
-    description: 'Pusat informasi jadwal kajian Islam bermanhaj Salafus Shalih dan direktori masjid di Kota Serang, Banten.',
+    description: 'Pusat informasi jadwal kajian Islam bermanhaj Salafus Shalih dan direktori masjid di seluruh Provinsi Banten.',
     address: {
       '@type': 'PostalAddress',
       streetAddress: 'Banten Indah Permai Blok E1 No.12A, Kelurahan Unyur',
@@ -98,11 +98,11 @@ export function generateArtikelSchema(artikel: WPArtikel) {
     image: artikel.featured_media_url ? [artikel.featured_media_url] : [],
     author: {
       '@type': 'Person',
-      name: artikel.author_name || 'Redaksi Syiar Salaf Serang',
+      name: artikel.author_name || 'Redaksi Banten Mengaji',
     },
     publisher: {
       '@type': 'Organization',
-      name: 'Syiar Salaf Kota Serang',
+      name: 'Banten Mengaji',
     },
   };
 }

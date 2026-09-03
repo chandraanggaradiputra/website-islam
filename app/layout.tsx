@@ -21,10 +21,10 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Syiar Salaf Kota Serang - Portal Kajian & Direktori Masjid",
-    template: "%s - Syiar Salaf Kota Serang",
+    default: "Banten Mengaji | Direktori Masjid & Jadwal Kajian Sunnah Banten",
+    template: "%s - Banten Mengaji",
   },
-  description: "Pusat informasi jadwal kajian Islam ilmiah bermanhaj Salafus Shalih dan direktori masjid di Kota Serang, Banten.",
+  description: "Pusat informasi jadwal kajian Islam ilmiah bermanhaj Salafus Shalih dan direktori masjid di seluruh Provinsi Banten.",
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://maschandigital.id'),
 };
 

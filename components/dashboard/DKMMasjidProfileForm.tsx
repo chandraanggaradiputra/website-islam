@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useRef, ChangeEvent } from 'react';
+import { useState, useRef, ChangeEvent, useMemo } from 'react';
 import Image from 'next/image';
 import { WPMasjid } from '@/types';
 import { updateMasjidProfile } from '@/lib/actions/masjid';
+import { BANTEN_REGIONS, KotaKabupatenBanten } from '@/lib/constants/bantenRegions';
 import {
   Building2,
   MapPin,
@@ -17,6 +18,8 @@ import {
   AlertCircle,
   Loader2,
   Save,
+  Map,
+  Compass,
 } from 'lucide-react';
 
 const FASILITAS_CHOICES = [
@@ -44,6 +47,22 @@ export function DKMMasjidProfileForm({ masjid }: { masjid: WPMasjid }) {
     : [];
   const [selectedFasilitas, setSelectedFasilitas] = useState<string[]>(initialFasilitas);
 
+  // State Wilayah
+  const [kota, setKota] = useState<KotaKabupatenBanten | ''>(masjid.acf?.kota_kabupaten || '');
+
+  const availableKecamatans = useMemo(() => {
+    if (!kota) return [];
+    const region = BANTEN_REGIONS.find((r) => r.name === kota);
+    return region ? region.kecamatan : [];
+  }, [kota]);
+
+  // Kita tidak perlu state "kecamatan" spesifik untuk dikendalikan penuh karena akan diambil nilainya dari formData.
+  // Tapi untuk inisialisasi default dari WP yang hanya ada alamat, kita bisa mencoba mengekstrak.
+  // Jika masjid.acf.alamat_lengkap berisi string kecamatan, kita coba cocokkan. Tapi untuk saat ini kita biarkan kosong atau minta diisi ulang.
+  // Idealnya jika ada tax kecamatan, kita ambil, tapi untuk form kita biarkan input string manual / pilihan.
+  
+  // Karena WPMasjid dari API belum memiliki ACF 'kecamatan' (hanya array ID term), kita asumsikan DKM akan memilihnya.
+  
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -191,13 +210,60 @@ export function DKMMasjidProfileForm({ masjid }: { masjid: WPMasjid }) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">
-              Alamat Lengkap Masjid
+              Kota / Kabupaten *
+            </label>
+            <div className="relative">
+              <Map className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+              <select
+                name="kotaKabupaten"
+                value={kota}
+                onChange={(e) => setKota(e.target.value as KotaKabupatenBanten | '')}
+                required
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3.5 text-sm text-slate-900 focus:border-[#093c96] focus:bg-white focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              >
+                <option value="">-- Pilih Kota / Kabupaten --</option>
+                {BANTEN_REGIONS.map((r) => (
+                  <option key={r.id} value={r.name}>
+                    {r.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Kecamatan *
+            </label>
+            <div className="relative">
+              <Compass className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+              <select
+                name="kecamatan"
+                required
+                disabled={!kota}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3.5 text-sm text-slate-900 focus:border-[#093c96] focus:bg-white focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <option value="">{kota ? '-- Pilih Kecamatan --' : '-- Pilih Kota Dulu --'}</option>
+                {availableKecamatans.map((kecName) => (
+                  <option key={kecName} value={kecName}>
+                    Kec. {kecName}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Alamat Lengkap Masjid *
             </label>
             <textarea
               name="alamatLengkap"
               rows={3}
+              required
               defaultValue={masjid.acf?.alamat_lengkap || ''}
-              placeholder="Jalan, RT/RW, Kelurahan, Kecamatan, Kota Serang..."
+              placeholder="Jalan, RT/RW, Kelurahan, Kecamatan..."
               className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-3.5 text-sm text-slate-900 focus:border-[#093c96] focus:bg-white focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
             />
           </div>

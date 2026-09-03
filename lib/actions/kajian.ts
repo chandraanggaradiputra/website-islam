@@ -2,6 +2,7 @@
 
 import { getSession } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
+import { getMasjidById } from '@/lib/actions/masjid';
 
 const WP_API_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || 'https://salaf.maschandigital.id/wp-json/wp/v2';
 
@@ -39,12 +40,22 @@ export async function submitKajian(formData: FormData) {
       mediaId = mediaData.id;
     }
 
+    // Dapatkan data masjid untuk mengambil kota_kabupaten dan otomatis menyematkannya ke kajian
+    let kotaKabupaten = '';
+    if (session.masjidId) {
+      const masjid = await getMasjidById(session.masjidId);
+      if (masjid && masjid.acf?.kota_kabupaten) {
+        kotaKabupaten = masjid.acf.kota_kabupaten;
+      }
+    }
+
     // 2. Buat Postingan Kajian Baru
     const payload = {
       title: formData.get('judul'),
       status: 'pending',
       featured_media: mediaId,
       acf: {
+        kota_kabupaten: kotaKabupaten,
         nama_ustadz: formData.get('penceramah'),
         jenis_kajian: formData.get('jenisKajian'),
         kategori_jamaah: formData.get('kategoriJamaah'),
@@ -243,6 +254,14 @@ export async function updateKajianByAdmin(formData: FormData) {
     }
 
     const masjidTerkait = Number(formData.get('masjidTerkait')) || undefined;
+    
+    let kotaKabupaten = '';
+    if (masjidTerkait) {
+      const masjid = await getMasjidById(masjidTerkait);
+      if (masjid && masjid.acf?.kota_kabupaten) {
+        kotaKabupaten = masjid.acf.kota_kabupaten;
+      }
+    }
 
     const payload: {
       title?: string;
@@ -266,6 +285,10 @@ export async function updateKajianByAdmin(formData: FormData) {
         link_streaming: formData.get('linkStreaming')?.toString() || '',
       },
     };
+
+    if (kotaKabupaten) {
+      payload.acf.kota_kabupaten = kotaKabupaten;
+    }
 
     if (masjidTerkait) {
       payload.acf.masjid_terkait = [masjidTerkait];

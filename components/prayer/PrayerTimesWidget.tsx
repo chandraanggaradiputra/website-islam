@@ -3,13 +3,21 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { getSerangPrayerTimes } from '@/lib/prayerTimes';
+import { getRegionPrayerTimes } from '@/lib/prayerTimes';
 import { Clock, MapPin, CalendarDays, ArrowRight } from 'lucide-react';
+import { BANTEN_REGIONS, KotaKabupatenBanten } from '@/lib/constants/bantenRegions';
 
 export function PrayerTimesWidget() {
   const [now, setNow] = useState<Date | null>(null);
+  const [region, setRegion] = useState<KotaKabupatenBanten>('Kota Serang');
 
   useEffect(() => {
+    // Sinkronisasi region dari localStorage (Hydration Safe)
+    const storedRegion = typeof window !== 'undefined' ? localStorage.getItem('banten_mengaji_region') : null;
+    if (storedRegion && BANTEN_REGIONS.some((r) => r.name === storedRegion)) {
+      setRegion(storedRegion as KotaKabupatenBanten);
+    }
+
     const timeout = setTimeout(() => setNow(new Date()), 0);
 
     const interval = setInterval(() => {
@@ -22,13 +30,21 @@ export function PrayerTimesWidget() {
     };
   }, []);
 
+  const handleRegionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newRegion = e.target.value as KotaKabupatenBanten;
+    setRegion(newRegion);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('banten_mengaji_region', newRegion);
+    }
+  };
+
   if (!now) {
     return (
       <div className="bg-slate-100 dark:bg-slate-900 rounded-2xl w-full h-24 animate-pulse" />
     );
   }
 
-  const data = getSerangPrayerTimes(now);
+  const data = getRegionPrayerTimes(now, region);
   const times = data.items;
   const nextPrayer = data.nextPrayerName;
 
@@ -36,10 +52,21 @@ export function PrayerTimesWidget() {
     <div className="bg-gradient-to-br from-[#093c96] to-blue-900 shadow-lg p-5 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden text-white">
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-2 text-blue-100">
-          <MapPin className="w-4 h-4" />
-          <span className="font-medium text-sm">Kota Serang, Banten</span>
+          <MapPin className="w-4 h-4 shrink-0" />
+          <select
+            value={region}
+            onChange={handleRegionChange}
+            className="bg-transparent border-none text-white font-medium text-sm focus:ring-0 cursor-pointer outline-none appearance-none hover:text-blue-200 transition-colors"
+            style={{ WebkitAppearance: 'none', MozAppearance: 'none' }}
+          >
+            {BANTEN_REGIONS.map((r) => (
+              <option key={r.id} value={r.name} className="text-slate-900">
+                {r.name}
+              </option>
+            ))}
+          </select>
         </div>
-        <div className="flex items-center gap-1.5 bg-white/10 backdrop-blur px-3 py-1 rounded-full text-xs">
+        <div className="flex items-center gap-1.5 bg-white/10 backdrop-blur px-3 py-1 rounded-full text-xs shrink-0">
           <Clock className="w-3.5 h-3.5" />
           <span>Menuju {nextPrayer}</span>
         </div>
@@ -63,7 +90,7 @@ export function PrayerTimesWidget() {
         ))}
       </div>
 
-      <div className="mt-4 pt-3 border-t border-white/15 flex items-center justify-between">
+      <div className="mt-4 pt-3 border-t border-white/15 flex flex-wrap items-center justify-between gap-2">
         <span className="text-xs text-blue-200 flex items-center gap-1.5">
           <CalendarDays className="w-3.5 h-3.5 text-blue-300" />
           <span>Jadwal Bimas Islam Kemenag</span>
@@ -78,4 +105,4 @@ export function PrayerTimesWidget() {
       </div>
     </div>
   );
-}
+}
