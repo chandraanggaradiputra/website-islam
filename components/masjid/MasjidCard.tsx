@@ -23,9 +23,16 @@ export function MasjidCard({ masjid }: { masjid: WPMasjid }) {
         </div>
       )}
       <div className="p-5 flex-grow">
-        <h3 className="font-bold text-lg leading-tight mb-2 text-slate-900 dark:text-slate-100">
-          {title.rendered}
-        </h3>
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+          <h3 className="font-bold text-lg leading-tight text-slate-900 dark:text-slate-100">
+            {title.rendered}
+          </h3>
+          {acf.kota_kabupaten && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300">
+              {acf.kota_kabupaten}
+            </span>
+          )}
+        </div>
         
         <div className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-400 mb-4">
           <MapPin className="w-4 h-4 mt-0.5 shrink-0" />
