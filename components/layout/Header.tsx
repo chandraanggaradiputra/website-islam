@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
@@ -29,20 +29,6 @@ import {
 export function Header() {
   const pathname = usePathname();
   const { user, role, logout } = useAuthSession();
-  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
-  const profileRef = useRef<HTMLDivElement>(null);
-
-  // Close profile dropdown on click outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
-        setProfileDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
   const isAgendaActive = pathname === '/jadwal-kajian' || pathname === '/jadwal-sholat';
   const isKhazanahActive = pathname === '/masjid' || pathname === '/artikel' || pathname === '/donasi';
 
@@ -254,121 +240,34 @@ export function Header() {
             </div>
           )}
 
-          {/* Kondisi 2: LOGGED IN (SUPER ADMIN / DKM MASJID) - Avatar Profile Dropdown */}
+          {/* Kondisi 2: LOGGED IN (SUPER ADMIN / DKM MASJID) */}
           {(role === 'admin' || role === 'dkm') && (
-            <div className="relative ml-1" ref={profileRef}>
+            <div className="hidden sm:flex items-center gap-2 ml-1">
+              <div className="flex flex-col text-right mr-1">
+                <span className="text-xs font-bold text-slate-900 dark:text-white leading-tight">
+                  {user?.name || (role === 'admin' ? 'Admin' : 'Pengurus')}
+                </span>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 -mt-0.5">
+                  {role === 'admin' ? 'Super Admin' : user?.masjidName || 'Pengurus DKM'}
+                </span>
+              </div>
+              <Link
+                href={role === 'admin' ? '/dashboard/admin' : '/dashboard/dkm'}
+                className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-semibold text-white transition-colors shadow-sm whitespace-nowrap ${
+                  role === 'admin' ? 'bg-[#093c96] hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700' : 'bg-emerald-600 hover:bg-emerald-700'
+                }`}
+              >
+                <LayoutDashboard className="h-3.5 w-3.5" />
+                <span>Dasbor</span>
+              </Link>
               <button
                 type="button"
-                onClick={() => setProfileDropdownOpen((prev) => !prev)}
-                className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-1.5 pr-2.5 text-left hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900 dark:hover:bg-slate-800 transition-all cursor-pointer"
-                aria-label="Menu Profil Akun"
+                onClick={logout}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-red-950/40 transition-colors shadow-sm whitespace-nowrap cursor-pointer"
               >
-                <div
-                  className={`flex h-7 w-7 items-center justify-center rounded-lg text-white font-bold text-xs shadow-sm ${
-                    role === 'admin' ? 'bg-[#093c96]' : 'bg-emerald-600'
-                  }`}
-                >
-                  {user?.name ? user.name.charAt(0).toUpperCase() : role === 'admin' ? 'A' : 'D'}
-                </div>
-                <div className="hidden md:flex flex-col max-w-[110px]">
-                  <span className="text-xs font-bold text-slate-900 dark:text-white truncate leading-tight">
-                    {user?.name || (role === 'admin' ? 'Super Admin' : 'DKM')}
-                  </span>
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400 truncate -mt-0.5">
-                    {role === 'admin' ? 'Administrator' : user?.masjidName || 'DKM Masjid'}
-                  </span>
-                </div>
-                <ChevronDown
-                  className={`h-3.5 w-3.5 text-slate-400 transition-transform duration-200 ${
-                    profileDropdownOpen ? 'rotate-180' : ''
-                  }`}
-                />
+                <LogOut className="h-3.5 w-3.5" />
+                <span>Logout</span>
               </button>
-
-              {/* Profile Dropdown Menu */}
-              {profileDropdownOpen && (
-                <div className="absolute right-0 top-full mt-2 w-60 rounded-2xl border border-slate-200 bg-white/95 p-2 shadow-2xl backdrop-blur-lg dark:border-slate-800 dark:bg-slate-900/95 z-50 animate-in fade-in zoom-in-95 duration-150">
-                  {/* User Profile Header */}
-                  <div className="p-2.5 border-b border-slate-100 dark:border-slate-800/80">
-                    <div className="flex items-center gap-2">
-                      {role === 'admin' ? (
-                        <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-[#093c96] dark:bg-blue-950/60 dark:text-blue-300">
-                          <ShieldCheck className="h-3 w-3" /> Super Admin
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
-                          <Landmark className="h-3 w-3" /> DKM Masjid
-                        </span>
-                      )}
-                    </div>
-                    <p className="mt-1.5 text-xs font-bold text-slate-900 dark:text-white truncate">
-                      {user?.name}
-                    </p>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                      {user?.email || (role === 'dkm' && user?.masjidName ? user.masjidName : '')}
-                    </p>
-                  </div>
-
-                  {/* Navigation Links */}
-                  <div className="py-1 space-y-0.5">
-                    <Link
-                      href={role === 'admin' ? '/dashboard/admin' : '/dashboard/dkm'}
-                      onClick={() => setProfileDropdownOpen(false)}
-                      className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white transition-colors"
-                    >
-                      <LayoutDashboard className="h-3.5 w-3.5 text-[#093c96] dark:text-blue-400" />
-                      <span>Dasbor Utama</span>
-                    </Link>
-
-                    {role === 'admin' && (
-                      <Link
-                        href="/dashboard/admin?tab=dkm"
-                        onClick={() => setProfileDropdownOpen(false)}
-                        className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white transition-colors"
-                      >
-                        <ShieldAlert className="h-3.5 w-3.5 text-amber-500" />
-                        <span>Antrean Moderasi DKM</span>
-                      </Link>
-                    )}
-
-                    {role === 'dkm' && (
-                      <>
-                        <Link
-                          href="/dashboard/dkm/profil-masjid"
-                          onClick={() => setProfileDropdownOpen(false)}
-                          className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white transition-colors"
-                        >
-                          <Building2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                          <span>Profil Masjid Saya</span>
-                        </Link>
-                        <Link
-                          href="/dashboard/dkm/tambah-kajian"
-                          onClick={() => setProfileDropdownOpen(false)}
-                          className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white transition-colors"
-                        >
-                          <PlusCircle className="h-3.5 w-3.5 text-[#093c96] dark:text-blue-400" />
-                          <span>+ Tambah Kajian</span>
-                        </Link>
-                      </>
-                    )}
-                  </div>
-
-                  {/* Logout Button */}
-                  <div className="pt-1 border-t border-slate-100 dark:border-slate-800/80">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setProfileDropdownOpen(false);
-                        logout();
-                      }}
-                      className="flex items-center gap-2.5 w-full rounded-xl px-2.5 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40 transition-colors cursor-pointer"
-                    >
-                      <LogOut className="h-3.5 w-3.5" />
-                      <span>Keluar Akun</span>
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
           )}
 

@@ -49,7 +49,7 @@
 | `nama_bank` | Text | Nama Bank Infaq (contoh: `Bank Syariah Indonesia (BSI)`) |
 | `nomor_rekening` | Text | Nomor rekening infaq operasional |
 | `atas_nama_rekening` | Text | Nama rekening (contoh: `DKM Masjid Al-Ikhlas Serang`) |
-| `fasilitas` | Checkbox / Array | Pilihan: `Parkir Mobil & Motor`, `Tempat Wudhu Terpisah`, `Ruangan Ber-AC`, `Area Khusus Akhawat`, `Perpustakaan Kitab` |
+| `fasilitas` | Checkbox / Array | Pilihan: `Parkir Mobil & Motor`, `Tempat Wudhu Terpisah`, `Ruangan Ber-AC`, `Area Khusus Akhwat`, `Perpustakaan Kitab` |
 | `instagram_url` | URL | Link akun Instagram resmi DKM (opsional) |
 | `youtube_url` | URL | Link channel YouTube streaming (opsional) |
 
@@ -72,7 +72,7 @@
   1. `Kajian Rutin Pekanan`  
   2. `Kajian Rutin Bulanan`  
   3. `Tabligh Akbar / Tematik`  
-  4. `Kajian Khusus Akhawat`  
+  4. `Kajian Khusus Akhwat`  
   5. `Kajian Bahasa Arab & Tajwid`
 
 ### C. Custom Fields (`acf` object)
@@ -80,7 +80,7 @@
 | Field Key (Slug) | Tipe Data | Deskripsi & Pilihan Nilai |
 | :---- | :---- | :---- |
 | `jenis_kajian` | Radio Button | `rutin` (Kajian Rutin) | `tematik` (Kajian Tematik / Akbar) |
-| `kategori_jamaah` | Radio Button | `umum` (Ikhwan & Akhawat) | `khusus_ikhwan` | `khusus_akhawat` |
+| `kategori_jamaah` | Radio Button | `umum` (Ikhwan & Akhwat) | `khusus_ikhwan` | `khusus_akhwat` |
 | `nama_ustadz` | Text | Nama lengkap asatidz pengisi materi (contoh: `Ustadz Abu Fulan, Lc.`) |
 | `kitab_bahasan` | Text | Judul kitab yang dibahas (contoh: `Kitab Tauhid`, `Bulughul Maram`) |
 | `masjid_terkait` | Post Object / ID | Relasi ke CPT `masjid` (ID atau Object Post Masjid) |
@@ -113,7 +113,7 @@
 
 export type JenisKajian \= 'rutin' | 'tematik';
 
-export type KategoriJamaah \= 'umum' | 'khusus\_ikhwan' | 'khusus\_akhawat';
+export type KategoriJamaah \= 'umum' | 'khusus\_ikhwan' | 'khusus\_akhwat';
 
 export type StatusKajian \= 'aktif' | 'libur' | 'selesai';
 

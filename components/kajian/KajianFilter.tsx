@@ -18,19 +18,20 @@ function KajianFilterContent({
   const pathname = usePathname();
 
   // Baca parameter awal dari URL (misal dari tautan Footer)
-  const urlKecamatan = searchParams.get('kecamatan') || '';
-  const urlJenis = searchParams.get('jenis') || '';
-
-  const [kecamatan, setKecamatan] = useState(urlKecamatan);
-  const [jenis, setJenis] = useState(urlJenis);
+  const [kecamatan, setKecamatan] = useState(searchParams.get('kecamatan') || '');
+  const [jenis, setJenis] = useState(searchParams.get('jenis') || '');
+  const [jamaah, setJamaah] = useState(searchParams.get('jamaah') || '');
   const [ustadz, setUstadz] = useState('');
 
-  // Sinkronkan state jika URL berubah (misal saat klik tautan Kecamatan di Footer)
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+  // Sinkronkan URL awal jika parameter berubah via navigasi Next.js (tanpa useEffect sync berlebihan)
+  const currentSearch = searchParams.toString();
+  const [prevSearch, setPrevSearch] = useState(currentSearch);
+  if (currentSearch !== prevSearch) {
+    setPrevSearch(currentSearch);
     setKecamatan(searchParams.get('kecamatan') || '');
     setJenis(searchParams.get('jenis') || '');
-  }, [searchParams]);
+    setJamaah(searchParams.get('jamaah') || '');
+  }
 
   // Logika Filter Presisi
   const displayedKajian = useMemo(() => {
@@ -65,8 +66,15 @@ function KajianFilterContent({
           return false;
         }
       }
+      
+      // 3. Filter Kategori Jamaah (umum / khusus_ikhwan / khusus_akhwat)
+      if (jamaah && jamaah.trim() !== '' && jamaah !== 'semua') {
+        if (item.acf?.kategori_jamaah?.toLowerCase() !== jamaah.toLowerCase()) {
+          return false;
+        }
+      }
 
-      // 3. Filter Nama Ustadz
+      // 4. Filter Nama Ustadz
       if (ustadz && ustadz.trim() !== '') {
         const nama = item.acf?.nama_ustadz || '';
         if (!nama.toLowerCase().includes(ustadz.toLowerCase())) {
@@ -76,11 +84,12 @@ function KajianFilterContent({
 
       return true;
     });
-  }, [initialKajian, kecamatan, jenis, ustadz]);
+  }, [initialKajian, kecamatan, jenis, jamaah, ustadz]);
 
   const handleReset = () => {
     setKecamatan('');
     setJenis('');
+    setJamaah('');
     setUstadz('');
     router.push(pathname);
   };
@@ -105,7 +114,7 @@ function KajianFilterContent({
           )}
         </div>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
           <select
             value={kecamatan}
             onChange={(e) => setKecamatan(e.target.value)}
@@ -138,6 +147,17 @@ function KajianFilterContent({
             <option value="">Semua Jenis Kajian</option>
             <option value="rutin">Kajian Rutin</option>
             <option value="tematik">Kajian Tematik</option>
+          </select>
+
+          <select
+            value={jamaah}
+            onChange={(e) => setJamaah(e.target.value)}
+            className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-800 focus:border-[#093c96] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+          >
+            <option value="">Semua Jamaah</option>
+            <option value="umum">Umum</option>
+            <option value="khusus_ikhwan">Khusus Ikhwan</option>
+            <option value="khusus_akhwat">Khusus Akhwat</option>
           </select>
 
           <input

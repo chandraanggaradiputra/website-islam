@@ -10,8 +10,18 @@ export function KajianCard({ kajian }: { kajian: WPKajian }) {
 
   const isRutin = acf?.jenis_kajian === 'rutin';
   
-  // Format tanggal jika ada
-  const tanggalDisplay = acf?.tanggal_kajian ? new Date(acf.tanggal_kajian).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : '';
+  // Format tanggal jika ada tanpa menyebabkan hydration mismatch (hindari toLocaleDateString bawaan)
+  let tanggalDisplay = '';
+  if (acf?.tanggal_kajian) {
+    const [year, month, day] = acf.tanggal_kajian.split('-');
+    if (year && month && day) {
+      const monthNames = [
+        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+      ];
+      tanggalDisplay = `${parseInt(day, 10)} ${monthNames[parseInt(month, 10) - 1]} ${year}`;
+    }
+  }
   
   return (
     <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden hover:shadow-md transition-shadow flex flex-col h-full">
