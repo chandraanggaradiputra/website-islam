@@ -66,6 +66,11 @@ export function enrichKajianWithMasjid(kajianList: unknown[], masjidList: WPMasj
     if (kajian.acf) {
       kajian.acf.tanggal_kajian = normalizeACFDate(kajian.acf.tanggal_kajian);
       kajian.acf.hari_kajian = normalizeACFHari(kajian.acf.hari_kajian);
+      
+      // Standardisasi Terminologi: Normalisasi typo 'khusus_akhawat' dari backend
+      if (kajian.acf.kategori_jamaah === ('khusus_akhawat' as unknown)) {
+        kajian.acf.kategori_jamaah = 'khusus_akhwat';
+      }
     }
     
     kajian.featured_media_url = extractFeaturedImage(kajian) || kajian.featured_media_url;
@@ -81,15 +86,18 @@ export function enrichKajianWithMasjid(kajianList: unknown[], masjidList: WPMasj
 export async function getKajianList(): Promise<WPKajian[]> {
   try {
     const [resKajian, resMasjid] = await Promise.all([
-      fetch(`${WP_BASE_URL}/kajian?_embed&per_page=100`, { next: { revalidate: 60 } }),
+      fetch(`${WP_BASE_URL}/kajian?_embed&per_page=50`, { next: { revalidate: 60 } }),
       fetch(`${WP_BASE_URL}/masjid?_embed&per_page=100`, { next: { revalidate: 60 } })
     ]);
 
     if (!resKajian.ok) return [];
+    
     const listKajian: WPKajian[] = await resKajian.json();
+    if (!Array.isArray(listKajian)) return [];
+
     const listMasjid: WPMasjid[] = resMasjid.ok ? await resMasjid.json() : [];
 
-    return enrichKajianWithMasjid(listKajian, listMasjid);
+    return enrichKajianWithMasjid(listKajian, Array.isArray(listMasjid) ? listMasjid : []);
   } catch (err: unknown) {
     if (err instanceof Error) {
       console.error('Error fetching Kajian list:', err.message);
