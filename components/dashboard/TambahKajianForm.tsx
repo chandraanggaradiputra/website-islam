@@ -68,8 +68,12 @@ export function TambahKajianForm({ masjidName }: TambahKajianFormProps) {
       } else {
         setErrorMessage(res.error || 'Terjadi kesalahan saat mengajukan kajian.');
       }
-    } catch {
-      setErrorMessage('Terjadi kesalahan jaringan.');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setErrorMessage(err.message);
+      } else {
+        setErrorMessage('Terjadi kesalahan jaringan.');
+      }
     }
   };
 

@@ -81,8 +81,11 @@ export async function submitKajian(formData: FormData) {
     revalidatePath('/dashboard/admin');
 
     return { success: true };
-  } catch (error) {
-    console.error('Submit kajian error:', error);
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      console.error('Submit kajian error:', err.message);
+      return { success: false, error: err.message };
+    }
     return { success: false, error: 'Terjadi kesalahan sistem.' };
   }
 }
@@ -189,8 +192,11 @@ export async function updateKajianStatus(
     revalidatePath('/dashboard/admin');
 
     return { success: true, message: 'Status kajian berhasil diperbarui!' };
-  } catch (error) {
-    console.error('Error in updateKajianStatus:', error);
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      console.error('Error in updateKajianStatus:', err.message);
+      return { success: false, error: err.message };
+    }
     return { success: false, error: 'Terjadi kesalahan sistem.' };
   }
 }
@@ -288,8 +294,11 @@ export async function updateKajianByAdmin(formData: FormData) {
     revalidatePath('/dashboard/admin');
 
     return { success: true, message: 'Jadwal kajian berhasil diperbarui!' };
-  } catch (error) {
-    console.error('Error in updateKajianByAdmin:', error);
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      console.error('Error in updateKajianByAdmin:', err.message);
+      return { success: false, error: err.message };
+    }
     return { success: false, error: 'Terjadi kesalahan sistem.' };
   }
 }
@@ -322,8 +331,11 @@ export async function deleteKajian(id: number) {
     revalidatePath('/dashboard/admin');
 
     return { success: true, message: 'Kajian berhasil dihapus.' };
-  } catch (error) {
-    console.error('Error in deleteKajian:', error);
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      console.error('Error in deleteKajian:', err.message);
+      return { success: false, error: err.message };
+    }
     return { success: false, error: 'Terjadi kesalahan sistem.' };
   }
 }

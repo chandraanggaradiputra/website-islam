@@ -747,8 +747,12 @@ function AdminMasjidModal({
       } else {
         setError(res.error || 'Gagal memproses data masjid.');
       }
-    } catch {
-      setError('Terjadi kesalahan koneksi.');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Terjadi kesalahan koneksi.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -990,8 +994,12 @@ function AdminKajianModal({
       } else {
         setError(res.error || 'Gagal memperbarui kajian.');
       }
-    } catch {
-      setError('Terjadi kesalahan koneksi.');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Terjadi kesalahan koneksi.');
+      }
     } finally {
       setIsSubmitting(false);
     }

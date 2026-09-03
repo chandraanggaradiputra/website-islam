@@ -126,8 +126,11 @@ export async function submitDaftarDKM(payload: DKMRegistrationPayload) {
       success: true,
       message: 'Permohonan pendaftaran DKM berhasil diajukan.',
     };
-  } catch (error) {
-    console.error('Error in submitDaftarDKM:', error);
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      console.error('Error in submitDaftarDKM:', err.message);
+      return { success: false, error: err.message };
+    }
     return {
       success: false,
       error: 'Terjadi kesalahan sistem saat memproses permohonan.',
@@ -214,8 +217,11 @@ export async function approveDKMRegistration(registrationId: string | number) {
       success: true,
       message: 'Akun DKM berhasil diverifikasi dan data masjid diterbitkan.',
     };
-  } catch (error) {
-    console.error('Error in approveDKMRegistration:', error);
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      console.error('Error in approveDKMRegistration:', err.message);
+      return { success: false, error: err.message };
+    }
     return { success: false, error: 'Terjadi kesalahan sistem saat menyetujui pendaftaran.' };
   }
 }
@@ -260,8 +266,11 @@ export async function rejectDKMRegistration(registrationId: string | number) {
     revalidatePath('/dashboard/admin');
 
     return { success: true, message: 'Permohonan DKM telah ditolak.' };
-  } catch (error) {
-    console.error('Error in rejectDKMRegistration:', error);
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      console.error('Error in rejectDKMRegistration:', err.message);
+      return { success: false, error: err.message };
+    }
     return { success: false, error: 'Terjadi kesalahan sistem saat menolak pendaftaran.' };
   }
 }
