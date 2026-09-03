@@ -55,7 +55,7 @@ const FASILITAS_OPTIONS = [
   'Parkir Mobil & Motor',
   'Tempat Wudhu Terpisah',
   'Ruangan Ber-AC',
-  'Area Khusus Akhawat',
+  'Area Khusus Akhwat',
   'Perpustakaan Kitab',
 ];
 
