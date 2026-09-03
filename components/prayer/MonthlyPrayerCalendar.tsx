@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { EQuranShalatData, EQuranDailyShalat } from '@/types/prayer';
+import { EQuranDailyShalat } from '@/types/prayer';
+import { getMonthlyRegionPrayerTimes } from '@/lib/prayerTimes';
+import { BANTEN_REGIONS, KotaKabupatenBanten } from '@/lib/constants/bantenRegions';
 import {
   Printer,
   Calendar,
@@ -16,7 +18,6 @@ import {
 import clsx from 'clsx';
 
 interface MonthlyPrayerCalendarProps {
-  initialData: EQuranShalatData;
   bulan: number;
   tahun: number;
 }
@@ -37,7 +38,6 @@ const MONTH_NAMES = [
 ];
 
 export function MonthlyPrayerCalendar({
-  initialData,
   bulan,
   tahun,
 }: MonthlyPrayerCalendarProps) {
@@ -47,6 +47,27 @@ export function MonthlyPrayerCalendar({
 
   const currentMonth = bulan;
   const currentYear = tahun;
+
+  const [region, setRegion] = useState<KotaKabupatenBanten>('Kota Serang');
+
+  useEffect(() => {
+    const storedRegion = typeof window !== 'undefined' ? localStorage.getItem('banten_mengaji_region') : null;
+    if (storedRegion && BANTEN_REGIONS.some((r) => r.name === storedRegion)) {
+      setRegion(storedRegion as KotaKabupatenBanten);
+    }
+  }, []);
+
+  const handleRegionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newRegion = e.target.value as KotaKabupatenBanten;
+    setRegion(newRegion);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('banten_mengaji_region', newRegion);
+    }
+  };
+
+  const currentData = useMemo(() => {
+    return getMonthlyRegionPrayerTimes(currentMonth, currentYear, region);
+  }, [currentMonth, currentYear, region]);
 
   // Tanggal Hari Ini (dalam format YYYY-MM-DD)
   const now = new Date();
@@ -88,7 +109,7 @@ export function MonthlyPrayerCalendar({
     }
   };
 
-  const todaySchedule = initialData.jadwal.find(
+  const todaySchedule = currentData.jadwal.find(
     (item) => item.tanggal_lengkap === todayStr
   );
 
@@ -104,11 +125,11 @@ export function MonthlyPrayerCalendar({
               <span>Standar Bimas Islam Kemenag RI</span>
             </div>
             <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
-              Jadwal Sholat & Imsakiyah Kota Serang
+              Jadwal Sholat & Imsakiyah {region}
             </h1>
             <p className="text-blue-100/90 text-sm max-w-2xl leading-relaxed flex items-center gap-1.5">
               <MapPin className="w-4 h-4 shrink-0 text-blue-300" />
-              <span>Wilayah Kota Serang, Banten dan sekitarnya (WIB / UTC+7)</span>
+              <span>Wilayah {region}, Banten dan sekitarnya (WIB / UTC+7)</span>
             </p>
           </div>
 
@@ -177,31 +198,45 @@ export function MonthlyPrayerCalendar({
       {/* Header Khusus Tampilan Cetak (Print Version Header) */}
       <div className="hidden print:block text-center border-b-2 border-slate-900 pb-4 mb-4">
         <h1 className="text-xl font-bold uppercase tracking-wider text-slate-900">
-          Jadwal Sholat & Imsakiyah Kota Serang
+          Jadwal Sholat & Imsakiyah {region}
         </h1>
         <p className="text-sm font-semibold text-slate-700">
           Bulan {MONTH_NAMES[currentMonth - 1]} {currentYear} • Provinsi Banten (Kemenag RI)
         </p>
         <p className="text-xs text-slate-500 mt-1">
-          Diterbitkan oleh Syiar Salaf Serang (maschandigital.id)
+          Diterbitkan oleh Banten Mengaji (maschandigital.id)
         </p>
       </div>
 
-      {/* Navigasi Pilihan Bulan */}
+      {/* Navigasi Pilihan Bulan & Wilayah */}
       <div className="print:hidden bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-[#093c96] dark:text-blue-400" />
-            <h2 className="font-bold text-base md:text-lg text-slate-900 dark:text-slate-100">
-              {MONTH_NAMES[currentMonth - 1]} {currentYear}
-            </h2>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-[#093c96] dark:text-blue-400 shrink-0" />
+              <h2 className="font-bold text-base md:text-lg text-slate-900 dark:text-slate-100 whitespace-nowrap">
+                {MONTH_NAMES[currentMonth - 1]} {currentYear}
+              </h2>
+            </div>
+            {/* Region Selector */}
+            <select
+              value={region}
+              onChange={handleRegionChange}
+              className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 font-medium text-sm rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-[#093c96]/20 outline-none hover:border-[#093c96]/50 transition-colors cursor-pointer"
+            >
+              {BANTEN_REGIONS.map((r) => (
+                <option key={r.id} value={r.name}>
+                  {r.name}
+                </option>
+              ))}
+            </select>
             {isPending && (
               <span className="text-xs text-slate-400 animate-pulse">Memuat...</span>
             )}
           </div>
 
           {/* Tombol Panah Prev / Next */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 self-end md:self-auto">
             <button
               onClick={handlePrevMonth}
               disabled={isPending}
@@ -263,7 +298,7 @@ export function MonthlyPrayerCalendar({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 print:divide-slate-300">
-              {initialData.jadwal.map((item: EQuranDailyShalat) => {
+              {currentData.jadwal.map((item: EQuranDailyShalat) => {
                 const isToday = item.tanggal_lengkap === todayStr;
                 const isJumat = item.hari.toLowerCase() === 'jumat';
 
@@ -336,12 +371,12 @@ export function MonthlyPrayerCalendar({
           <div className="flex items-start gap-1.5">
             <Info className="w-4 h-4 text-[#093c96] dark:text-blue-400 shrink-0 mt-0.5 print:hidden" />
             <p className="leading-relaxed">
-              <strong>Sumber Data:</strong> Bimbingan Masyarakat Islam (Bimas Islam) Kementerian Agama RI melalui EQuran.id.
-              Waktu sholat berlaku untuk wilayah Kota Serang dan sekitarnya (WIB).
+              <strong>Sumber Data:</strong> Kalkulasi lokal akurasi tinggi menggunakan Adhan Library standar Bimas Islam Kemenag RI.
+              Waktu sholat berlaku untuk wilayah {region} dan sekitarnya (WIB).
             </p>
           </div>
           <p className="text-[11px] text-slate-400 dark:text-slate-500">
-            * Imsak ditetapkan 10 menit sebelum waktu Subuh. Waktu Dhuha dianjurkan dimulai sekitar 20-25 menit setelah matahari terbit (tinggi matahari ± 4°30&apos;).
+            * Imsak ditetapkan 10 menit sebelum waktu Subuh. Waktu Dhuha dianjurkan dimulai sekitar 20-25 menit setelah matahari terbit (tinggi matahari ± 4°30').
           </p>
         </div>
       </div>
