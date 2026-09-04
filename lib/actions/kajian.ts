@@ -213,6 +213,122 @@ export async function updateKajianStatus(
 }
 
 /**
+ * Server Action: Super Admin Membuat Jadwal Kajian Baru
+ */
+export async function createKajianByAdmin(formData: FormData) {
+  const session = await getSession();
+  if (!session || session.role !== 'admin' || !session.token) {
+    return { success: false, error: 'Akses ditolak. Anda bukan Administrator.' };
+  }
+
+  const judul = formData.get('judul')?.toString()?.trim();
+  if (!judul) {
+    return { success: false, error: 'Judul / Tema kajian wajib diisi.' };
+  }
+
+  try {
+    let mediaId: number | undefined = undefined;
+
+    // Upload poster jika ada
+    const poster = formData.get('poster') as File | null;
+    if (poster && poster.size > 0 && typeof poster.arrayBuffer === 'function') {
+      try {
+        const arrayBuffer = await poster.arrayBuffer();
+        const mediaRes = await fetch(`${WP_API_URL}/media`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${session.token}`,
+            'Content-Disposition': `attachment; filename="${encodeURIComponent(poster.name)}"`,
+            'Content-Type': poster.type || 'image/jpeg',
+          },
+          body: Buffer.from(arrayBuffer),
+        });
+
+        if (mediaRes.ok) {
+          const mediaData = await mediaRes.json();
+          mediaId = mediaData.id;
+        }
+      } catch (err) {
+        console.error('Error saat upload poster:', err);
+      }
+    }
+
+    const masjidTerkait = Number(formData.get('masjidTerkait')) || undefined;
+    
+    let kotaKabupaten = '';
+    if (masjidTerkait) {
+      const masjid = await getMasjidById(masjidTerkait);
+      if (masjid && masjid.acf?.kota_kabupaten) {
+        kotaKabupaten = masjid.acf.kota_kabupaten;
+      }
+    }
+
+    const payload: {
+      title: string;
+      status: string;
+      featured_media?: number;
+      acf: Record<string, unknown>;
+    } = {
+      title: judul,
+      status: formData.get('postStatus')?.toString() || 'publish',
+      acf: {
+        nama_ustadz: formData.get('namaUstadz')?.toString() || '',
+        jenis_kajian: formData.get('jenisKajian')?.toString() || 'rutin',
+        kategori_jamaah: formData.get('kategoriJamaah')?.toString() || 'umum',
+        kitab_bahasan: formData.get('kitabBahasan')?.toString() || '',
+        hari_kajian: formData.get('hariKajian')?.toString() || '',
+        tanggal_kajian: formData.get('tanggalKajian')?.toString().split('-').join('') || '',
+        jam_mulai: formData.get('jamMulai')?.toString() || '',
+        jam_selesai: formData.get('jamSelesai')?.toString() || '',
+        waktu_keterangan:
+          formData.get('waktuKeterangan')?.toString() ||
+          (formData.get('jamMulai') ? `${formData.get('jamMulai')} WIB` : ''),
+        status_kajian: formData.get('statusKajian')?.toString() || 'aktif',
+        link_streaming: formData.get('linkStreaming')?.toString() || '',
+      },
+    };
+
+    if (kotaKabupaten) {
+      payload.acf.kota_kabupaten = kotaKabupaten;
+    }
+
+    if (masjidTerkait) {
+      payload.acf.masjid_terkait = [masjidTerkait];
+    }
+    if (mediaId) {
+      payload.featured_media = mediaId;
+    }
+
+    const res = await fetch(`${WP_API_URL}/kajian`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${session.token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      return { success: false, error: `Gagal membuat kajian: ${err}` };
+    }
+
+    revalidatePath('/');
+    revalidatePath('/jadwal-kajian');
+    revalidatePath('/masjid');
+    revalidatePath('/dashboard/admin');
+
+    return { success: true, message: 'Jadwal kajian baru berhasil diterbitkan!' };
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      console.error('Error in createKajianByAdmin:', err.message);
+      return { success: false, error: err.message };
+    }
+    return { success: false, error: 'Terjadi kesalahan sistem.' };
+  }
+}
+
+/**
  * Server Action: Super Admin Mengedit Data Kajian
  */
 export async function updateKajianByAdmin(formData: FormData) {

@@ -18,6 +18,7 @@ import {
   approveKajian,
   rejectKajian,
   updateKajianStatus,
+  createKajianByAdmin,
   updateKajianByAdmin,
   deleteKajian,
 } from '@/lib/actions/kajian';
@@ -89,6 +90,7 @@ export function AdminDashboardTabs({
   // Modals state
   const [isAddMasjidOpen, setIsAddMasjidOpen] = useState(false);
   const [editingMasjid, setEditingMasjid] = useState<WPMasjid | null>(null);
+  const [isAddKajianOpen, setIsAddKajianOpen] = useState(false);
   const [editingKajian, setEditingKajian] = useState<WPKajian | null>(null);
 
   // Filtered lists
@@ -534,13 +536,17 @@ export function AdminDashboardTabs({
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3.5 text-sm text-slate-900 focus:border-[#093c96] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               />
             </div>
-            <Link
-              href="/dashboard/dkm/tambah-kajian"
+            <button
+              type="button"
+              onClick={() => {
+                setEditingKajian(null);
+                setIsAddKajianOpen(true);
+              }}
               className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#093c96] text-white text-xs font-semibold hover:bg-blue-800 shadow-md shadow-blue-900/20 transition-all cursor-pointer whitespace-nowrap"
             >
               <Plus className="w-4 h-4" />
               <span>+ Buat Jadwal Kajian</span>
-            </Link>
+            </button>
           </div>
 
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
@@ -694,14 +700,18 @@ export function AdminDashboardTabs({
       )}
 
       {/* ========================================================================= */}
-      {/* MODAL: Edit Kajian oleh Admin */}
+      {/* MODAL: Tambah / Edit Kajian oleh Admin */}
       {/* ========================================================================= */}
-      {editingKajian && (
+      {(isAddKajianOpen || editingKajian) && (
         <AdminKajianModal
           kajian={editingKajian}
           masjidList={allMasjid}
-          onClose={() => setEditingKajian(null)}
+          onClose={() => {
+            setIsAddKajianOpen(false);
+            setEditingKajian(null);
+          }}
           onSuccess={() => {
+            setIsAddKajianOpen(false);
             setEditingKajian(null);
             router.refresh();
           }}
@@ -978,7 +988,7 @@ function AdminMasjidModal({
 }
 
 /* ========================================================================= */
-/* Modal Edit Jadwal Kajian oleh Admin */
+/* Modal Form Jadwal Kajian (Tambah Baru / Edit) oleh Admin */
 /* ========================================================================= */
 function AdminKajianModal({
   kajian,
@@ -986,11 +996,12 @@ function AdminKajianModal({
   onClose,
   onSuccess,
 }: {
-  kajian: WPKajian;
+  kajian?: WPKajian | null;
   masjidList: WPMasjid[];
   onClose: () => void;
   onSuccess: () => void;
 }) {
+  const isEdit = Boolean(kajian && kajian.id);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -1000,20 +1011,25 @@ function AdminKajianModal({
     setError(null);
 
     const formData = new FormData(e.currentTarget);
-    formData.set('id', kajian.id.toString());
+    if (isEdit && kajian) {
+      formData.set('id', kajian.id.toString());
+    }
 
     try {
-      const res = await updateKajianByAdmin(formData);
+      const res = isEdit
+        ? await updateKajianByAdmin(formData)
+        : await createKajianByAdmin(formData);
+
       if (res.success) {
         onSuccess();
       } else {
-        setError(res.error || 'Gagal memperbarui kajian.');
+        setError(res.error || `Gagal ${isEdit ? 'memperbarui' : 'membuat'} jadwal kajian.`);
       }
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError('Terjadi kesalahan koneksi.');
+        setError('Terjadi kesalahan sistem saat memproses jadwal kajian.');
       }
     } finally {
       setIsSubmitting(false);
@@ -1021,13 +1037,24 @@ function AdminKajianModal({
   };
 
   const currentMasjidId =
-    typeof kajian.acf?.masjid_terkait === 'number'
-      ? kajian.acf.masjid_terkait
-      : Array.isArray(kajian.acf?.masjid_terkait)
-      ? Number(kajian.acf.masjid_terkait[0])
-      : typeof kajian.acf?.masjid_terkait === 'object' && kajian.acf.masjid_terkait !== null
-      ? Number((kajian.acf.masjid_terkait as { id?: number; ID?: number }).id || (kajian.acf.masjid_terkait as { id?: number; ID?: number }).ID)
+    kajian?.acf?.masjid_terkait !== undefined
+      ? typeof kajian.acf.masjid_terkait === 'number'
+        ? kajian.acf.masjid_terkait
+        : Array.isArray(kajian.acf.masjid_terkait)
+        ? Number(kajian.acf.masjid_terkait[0])
+        : typeof kajian.acf.masjid_terkait === 'object' && kajian.acf.masjid_terkait !== null
+        ? Number(
+            (kajian.acf.masjid_terkait as { id?: number; ID?: number }).id ||
+              (kajian.acf.masjid_terkait as { id?: number; ID?: number }).ID
+          )
+        : undefined
       : undefined;
+
+  const rawDate = kajian?.acf?.tanggal_kajian || '';
+  const formattedDate =
+    rawDate.length === 8
+      ? `${rawDate.slice(0, 4)}-${rawDate.slice(4, 6)}-${rawDate.slice(6, 8)}`
+      : rawDate;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
@@ -1035,11 +1062,11 @@ function AdminKajianModal({
         <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
           <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <BookOpen className="w-5 h-5 text-[#093c96] dark:text-blue-400" />
-            <span>Edit Jadwal Kajian</span>
+            <span>{isEdit ? 'Edit Jadwal Kajian' : 'Buat Jadwal Kajian Baru'}</span>
           </h3>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="p-1 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -1060,7 +1087,8 @@ function AdminKajianModal({
               type="text"
               name="judul"
               required
-              defaultValue={kajian.title?.rendered || ''}
+              defaultValue={kajian?.title?.rendered || ''}
+              placeholder="Contoh: Kajian Tafsir Ibnu Katsir"
               className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 px-3.5 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
             />
           </div>
@@ -1068,49 +1096,80 @@ function AdminKajianModal({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                Nama Asatidz / Pengisi
+                Nama Asatidz / Pengisi *
               </label>
               <input
                 type="text"
                 name="namaUstadz"
-                defaultValue={kajian.acf?.nama_ustadz || ''}
+                required
+                defaultValue={kajian?.acf?.nama_ustadz || ''}
                 placeholder="Ustadz Abu Fulan"
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 px-3.5 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               />
             </div>
             <div>
               <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                Masjid Penyelenggara
+                Masjid Penyelenggara *
               </label>
               <select
                 name="masjidTerkait"
+                required
                 defaultValue={currentMasjidId || ''}
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 px-3.5 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               >
-                <option value="">-- Pilih Masjid --</option>
+                <option value="">-- Pilih Masjid Terkait (se-Banten) --</option>
                 {masjidList.map((m) => (
                   <option key={m.id} value={m.id}>
-                    {m.title?.rendered}
+                    {m.title?.rendered} {m.acf?.kota_kabupaten ? `(${m.acf.kota_kabupaten})` : ''}
                   </option>
                 ))}
               </select>
             </div>
           </div>
 
-          <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
-              Kitab yang Dibahas
-            </label>
-            <input
-              type="text"
-              name="kitabBahasan"
-              defaultValue={kajian.acf?.kitab_bahasan || ''}
-              placeholder="Contoh: Kitab Tauhid"
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 px-3.5 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Kitab yang Dibahas
+              </label>
+              <input
+                type="text"
+                name="kitabBahasan"
+                defaultValue={kajian?.acf?.kitab_bahasan || ''}
+                placeholder="Contoh: Kitab Tauhid"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 px-3 text-xs text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Jenis Kajian
+              </label>
+              <select
+                name="jenisKajian"
+                defaultValue={kajian?.acf?.jenis_kajian || 'rutin'}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 px-3 text-xs text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              >
+                <option value="rutin">Kajian Rutin</option>
+                <option value="tematik">Kajian Tematik</option>
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Kategori Jamaah
+              </label>
+              <select
+                name="kategoriJamaah"
+                defaultValue={kajian?.acf?.kategori_jamaah || 'umum'}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 px-3 text-xs text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              >
+                <option value="umum">Umum (Ikhwan & Akhwat)</option>
+                <option value="khusus_ikhwan">Khusus Ikhwan</option>
+                <option value="khusus_akhwat">Khusus Akhwat</option>
+              </select>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
             <div>
               <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
                 Hari Kajian
@@ -1118,31 +1177,44 @@ function AdminKajianModal({
               <input
                 type="text"
                 name="hariKajian"
-                defaultValue={kajian.acf?.hari_kajian || ''}
+                defaultValue={kajian?.acf?.hari_kajian || ''}
                 placeholder="Ahad / Sabtu"
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 px-3 text-xs text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               />
             </div>
             <div>
               <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                Tanggal Kajian (Y-m-d)
+                Tanggal (Opsional)
               </label>
               <input
                 type="date"
                 name="tanggalKajian"
-                defaultValue={kajian.acf?.tanggal_kajian || ''}
+                defaultValue={formattedDate}
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 px-3 text-xs text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               />
             </div>
             <div>
               <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                Jam Mulai
+                Jam Mulai *
               </label>
               <input
                 type="text"
                 name="jamMulai"
-                defaultValue={kajian.acf?.jam_mulai || ''}
-                placeholder="18:30"
+                required
+                defaultValue={kajian?.acf?.jam_mulai || ''}
+                placeholder="18:30 / Ba'da Maghrib"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 px-3 text-xs text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Jam Selesai
+              </label>
+              <input
+                type="text"
+                name="jamSelesai"
+                defaultValue={kajian?.acf?.jam_selesai || ''}
+                placeholder="20:00 / Selesai"
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 px-3 text-xs text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               />
             </div>
@@ -1155,10 +1227,10 @@ function AdminKajianModal({
               </label>
               <select
                 name="postStatus"
-                defaultValue={kajian.status || 'publish'}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 px-3.5 text-xs text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                defaultValue={kajian?.status || 'publish'}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 px-3.5 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               >
-                <option value="publish">Publish (Tayang)</option>
+                <option value="publish">Publish (Tayang di Web)</option>
                 <option value="pending">Pending (Menunggu Moderasi)</option>
                 <option value="draft">Draft (Draf)</option>
               </select>
@@ -1169,8 +1241,8 @@ function AdminKajianModal({
               </label>
               <select
                 name="statusKajian"
-                defaultValue={kajian.acf?.status_kajian || 'aktif'}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 px-3.5 text-xs text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                defaultValue={kajian?.acf?.status_kajian || 'aktif'}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 px-3.5 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               >
                 <option value="aktif">Aktif (Berjalan Normal)</option>
                 <option value="libur">Libur (Sementara Diliburkan)</option>
@@ -1179,18 +1251,31 @@ function AdminKajianModal({
             </div>
           </div>
 
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Link Live Streaming (Opsional)
+            </label>
+            <input
+              type="url"
+              name="linkStreaming"
+              defaultValue={kajian?.acf?.link_streaming || ''}
+              placeholder="https://youtube.com/live/..."
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 px-3.5 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            />
+          </div>
+
           <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 transition-colors"
+              className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 transition-colors cursor-pointer"
             >
               Batal
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-[#093c96] text-white text-xs font-semibold hover:bg-blue-800 transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-[#093c96] text-white text-xs font-semibold hover:bg-blue-800 transition-colors disabled:opacity-50 cursor-pointer"
             >
               {isSubmitting ? (
                 <>
@@ -1200,7 +1285,7 @@ function AdminKajianModal({
               ) : (
                 <>
                   <Save className="w-3.5 h-3.5" />
-                  <span>Simpan Perubahan</span>
+                  <span>{isEdit ? 'Simpan Perubahan' : 'Terbitkan Jadwal Kajian'}</span>
                 </>
               )}
             </button>
