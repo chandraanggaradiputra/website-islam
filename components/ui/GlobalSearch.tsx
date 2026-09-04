@@ -6,7 +6,13 @@ import { useRouter } from 'next/navigation';
 import { globalSearch } from '@/lib/actions/search';
 import { SearchResultItem } from '@/types';
 
-export function GlobalSearch() {
+interface GlobalSearchProps {
+  triggerClassName?: string;
+  triggerText?: string;
+  iconOnly?: boolean;
+}
+
+export function GlobalSearch({ triggerClassName, triggerText = "Cari...", iconOnly = false }: GlobalSearchProps = {}) {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResultItem[]>([]);
@@ -98,14 +104,18 @@ export function GlobalSearch() {
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm text-slate-500 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400 dark:hover:bg-slate-800 transition-colors"
+        className={triggerClassName || "flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm text-slate-500 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400 dark:hover:bg-slate-800 transition-colors"}
         aria-label="Pencarian Global"
       >
-        <Search className="h-4 w-4" />
-        <span className="hidden sm:inline-block">Cari...</span>
-        <kbd className="hidden sm:inline-block pointer-events-none rounded border border-slate-300 bg-slate-100 px-1.5 font-mono text-[10px] font-medium text-slate-500 opacity-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
-          <span className="text-xs">⌘</span>K
-        </kbd>
+        <Search className="h-4 w-4 shrink-0" />
+        {!iconOnly && (
+          <>
+            <span className="hidden sm:inline-block flex-1 text-left truncate">{triggerText}</span>
+            <kbd className="hidden sm:inline-flex items-center gap-0.5 rounded border border-slate-300 bg-slate-100 px-1.5 font-mono text-[10px] font-medium text-slate-500 opacity-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 shrink-0">
+              <span className="text-xs">⌘</span>K
+            </kbd>
+          </>
+        )}
       </button>
 
       {isOpen && (

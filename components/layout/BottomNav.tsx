@@ -416,27 +416,27 @@ export function BottomNav() {
               </div>
             </div>
 
-            {/* 4. Kartu Ekosistem Terhubung: Pasar Mas Chan Digital */}
+            {/* 4. Kartu Ekosistem Terhubung: Mas Chan Digital */}
             <div className="my-4">
               <a
                 href="https://maschandigital.id"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block rounded-2xl bg-gradient-to-br from-amber-500/10 via-orange-500/10 to-amber-500/5 border border-amber-200/90 dark:border-amber-900/60 p-4 hover:border-amber-400 dark:hover:border-amber-700 transition-all group shadow-sm"
+                className="block rounded-2xl bg-blue-50/50 border border-blue-200/90 dark:bg-[#093c96]/10 dark:border-[#093c96]/30 p-4 hover:border-[#093c96]/50 transition-all group shadow-sm"
               >
                 <div className="flex items-center justify-between gap-2 mb-2">
                   <div className="flex items-center gap-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-sm shadow-orange-500/20 group-hover:scale-105 transition-transform">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#093c96] text-white shadow-sm shadow-blue-900/20 group-hover:scale-105 transition-transform">
                       <ShoppingBag className="h-4 w-4" />
                     </div>
-                    <span className="inline-block rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-extrabold text-amber-800 dark:bg-amber-950/80 dark:text-amber-300">
-                      Marketplace UMKM Banten
+                    <span className="inline-block rounded-full bg-blue-100 px-2.5 py-0.5 text-[10px] font-extrabold text-[#093c96] dark:bg-[#093c96]/30 dark:text-blue-300">
+                      Ekosistem Digital
                     </span>
                   </div>
-                  <ExternalLink className="h-4 w-4 text-amber-600 dark:text-amber-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                  <ExternalLink className="h-4 w-4 text-[#093c96] dark:text-blue-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
                 </div>
-                <h4 className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-orange-600 dark:group-hover:text-amber-400 transition-colors">
-                  Pasar Mas Chan Digital 🛍️
+                <h4 className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-[#093c96] dark:group-hover:text-blue-400 transition-colors">
+                  Mas Chan Digital
                 </h4>
                 <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-1">
                   Temukan produk halal, busana muslim, buku & kitab sunnah, dan aneka usaha kaum muslimin di Provinsi Banten.
