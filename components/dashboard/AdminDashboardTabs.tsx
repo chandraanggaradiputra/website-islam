@@ -540,17 +540,13 @@ export function AdminDashboardTabs({
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3.5 text-sm text-slate-900 focus:border-[#093c96] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               />
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                setEditingKajian(null);
-                setIsAddKajianOpen(true);
-              }}
+            <Link
+              href="/dashboard/admin/tambah-kajian"
               className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#093c96] text-white text-xs font-semibold hover:bg-blue-800 shadow-sm cursor-pointer whitespace-nowrap"
             >
               <Plus className="w-4 h-4" />
               <span>+ Buat Jadwal Kajian</span>
-            </button>
+            </Link>
           </div>
 
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
@@ -1040,16 +1036,17 @@ function AdminKajianModal({
     }
   };
 
+  const masjidVal = kajian?.acf?.masjid_terkait;
   const currentMasjidId =
-    kajian?.acf?.masjid_terkait !== undefined
-      ? typeof kajian.acf.masjid_terkait === 'number'
-        ? kajian.acf.masjid_terkait
-        : Array.isArray(kajian.acf.masjid_terkait)
-        ? Number(kajian.acf.masjid_terkait[0])
-        : typeof kajian.acf.masjid_terkait === 'object' && kajian.acf.masjid_terkait !== null
+    masjidVal !== undefined
+      ? typeof masjidVal === 'number'
+        ? masjidVal
+        : Array.isArray(masjidVal)
+        ? Number(masjidVal[0])
+        : typeof masjidVal === 'object' && masjidVal !== null
         ? Number(
-            (kajian.acf.masjid_terkait as { id?: number; ID?: number }).id ||
-              (kajian.acf.masjid_terkait as { id?: number; ID?: number }).ID
+            (masjidVal as { id?: number; ID?: number })?.id ||
+              (masjidVal as { id?: number; ID?: number })?.ID
           )
         : undefined
       : undefined;
