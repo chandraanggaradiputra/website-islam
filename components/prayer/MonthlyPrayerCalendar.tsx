@@ -235,49 +235,74 @@ export function MonthlyPrayerCalendar({
 
       {/* Navigasi Pilihan Bulan & Wilayah */}
       <div className="print:hidden bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4">
+          {/* Baris Judul Bulan (dan Dropdown di Desktop) */}
+          <div className="flex items-center gap-2 md:gap-4">
             <div className="flex items-center gap-2">
               <Calendar className="w-5 h-5 text-[#093c96] dark:text-blue-400 shrink-0" />
               <h2 className="font-bold text-base md:text-lg text-slate-900 dark:text-slate-100 whitespace-nowrap">
                 {MONTH_NAMES[currentMonth - 1]} {currentYear}
               </h2>
             </div>
-            {/* Region Selector */}
-            <select
-              value={region}
-              onChange={handleRegionChange}
-              className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 font-medium text-sm rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-[#093c96]/20 outline-none hover:border-[#093c96]/50 transition-colors cursor-pointer"
-            >
-              {BANTEN_REGIONS.map((r) => (
-                <option key={r.id} value={r.name}>
-                  {r.name}
-                </option>
-              ))}
-            </select>
-            {isPending && (
-              <span className="text-xs text-slate-400 animate-pulse">Memuat...</span>
-            )}
+
+            {/* Dropdown khusus Desktop (md:flex) */}
+            <div className="hidden md:flex items-center gap-2">
+              <select
+                value={region}
+                onChange={handleRegionChange}
+                className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 font-medium text-sm rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-[#093c96]/20 outline-none hover:border-[#093c96]/50 transition-colors cursor-pointer"
+              >
+                {BANTEN_REGIONS.map((r) => (
+                  <option key={r.id} value={r.name}>
+                    {r.name}
+                  </option>
+                ))}
+              </select>
+              {isPending && (
+                <span className="text-xs text-slate-400 animate-pulse">Memuat...</span>
+              )}
+            </div>
           </div>
 
-          {/* Tombol Panah Prev / Next */}
-          <div className="flex items-center gap-1.5 self-end md:self-auto">
-            <button
-              onClick={handlePrevMonth}
-              disabled={isPending}
-              aria-label="Bulan Sebelumnya"
-              className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors disabled:opacity-50"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button
-              onClick={handleNextMonth}
-              disabled={isPending}
-              aria-label="Bulan Selanjutnya"
-              className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors disabled:opacity-50"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
+          {/* Baris Kontrol: Dropdown di kiri (Mobile Only) + Tombol Panah di kanan */}
+          <div className="flex items-center justify-between md:justify-end gap-2 w-full md:w-auto">
+            {/* Dropdown khusus Mobile (md:hidden) berdampingan di kiri tombol pagination */}
+            <div className="flex items-center gap-2 flex-1 max-w-[200px] sm:max-w-xs md:hidden">
+              <select
+                value={region}
+                onChange={handleRegionChange}
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 font-medium text-xs sm:text-sm rounded-lg px-2.5 py-1.5 focus:ring-2 focus:ring-[#093c96]/20 outline-none hover:border-[#093c96]/50 transition-colors cursor-pointer truncate"
+              >
+                {BANTEN_REGIONS.map((r) => (
+                  <option key={r.id} value={r.name}>
+                    {r.name}
+                  </option>
+                ))}
+              </select>
+              {isPending && (
+                <span className="text-[10px] text-slate-400 animate-pulse shrink-0">...</span>
+              )}
+            </div>
+
+            {/* Tombol Panah Prev / Next */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                onClick={handlePrevMonth}
+                disabled={isPending}
+                aria-label="Bulan Sebelumnya"
+                className="p-1.5 sm:p-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors disabled:opacity-50"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={handleNextMonth}
+                disabled={isPending}
+                aria-label="Bulan Selanjutnya"
+                className="p-1.5 sm:p-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors disabled:opacity-50"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
 
