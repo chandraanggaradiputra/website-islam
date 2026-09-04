@@ -4,8 +4,7 @@ import { cookies } from 'next/headers';
 import { SignJWT, jwtVerify } from 'jose';
 import { UserSession } from '@/types';
 import { redirect } from 'next/navigation';
-
-const SECRET_KEY = new TextEncoder().encode(process.env.JWT_SECRET || 'super-secret-key-for-development-only-12345');
+import { SECRET_KEY } from '@/lib/env';
 
 export async function createSession(sessionData: UserSession) {
   const token = await new SignJWT({ ...sessionData })
