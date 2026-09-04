@@ -69,8 +69,7 @@ export function KajianCard({ kajian }: { kajian: WPKajian }) {
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4 text-slate-400" />
               <span>
-                {acf?.jam_mulai ? `${acf.jam_mulai} - ${acf.jam_selesai || 'Selesai'}` : ''}
-                {acf?.waktu_keterangan ? ` (${acf.waktu_keterangan})` : ''}
+                {acf?.waktu_keterangan || (acf?.jam_mulai ? `${acf.jam_mulai} - ${acf.jam_selesai || 'Selesai'}` : '')}
               </span>
             </div>
           )}

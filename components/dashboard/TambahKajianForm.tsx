@@ -12,7 +12,9 @@ const kajianSchema = z.object({
   judul: z.string().min(5, 'Judul kajian minimal 5 karakter'),
   penceramah: z.string().min(3, 'Nama penceramah minimal 3 karakter'),
   tanggal: z.string().min(1, 'Tanggal wajib diisi'),
-  waktu: z.string().min(1, 'Waktu wajib diisi'),
+  hariKajian: z.string().optional(),
+  jamMulai: z.string().min(1, 'Jam mulai wajib diisi'),
+  jamSelesai: z.string().optional(),
   lokasi: z.string().min(1, 'Lokasi wajib diisi'),
   linkStreaming: z.string().url('URL tidak valid').optional().or(z.literal('')),
   jenisKajian: z.enum(['rutin', 'tematik']),
@@ -144,7 +146,23 @@ export function TambahKajianForm({ masjidName }: TambahKajianFormProps) {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Tanggal</label>
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Hari (Opsional / Rutin)</label>
+                <select
+                  {...register('hariKajian')}
+                  className="block w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#093c96]"
+                >
+                  <option value="">-- Pilih Hari --</option>
+                  <option value="Senin">Senin</option>
+                  <option value="Selasa">Selasa</option>
+                  <option value="Rabu">Rabu</option>
+                  <option value="Kamis">Kamis</option>
+                  <option value="Jumat">Jumat</option>
+                  <option value="Sabtu">Sabtu</option>
+                  <option value="Ahad">Ahad</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Tanggal Pelaksanaan</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                     <Calendar className="h-5 w-5 text-slate-400" />
@@ -157,19 +175,37 @@ export function TambahKajianForm({ masjidName }: TambahKajianFormProps) {
                 </div>
                 {errors.tanggal && <p className="mt-1.5 text-sm text-red-500">{errors.tanggal.message}</p>}
               </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Waktu</label>
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Jam Mulai *</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                     <Clock className="h-5 w-5 text-slate-400" />
                   </div>
                   <input
-                    type="time"
-                    {...register('waktu')}
+                    type="text"
+                    {...register('jamMulai')}
+                    placeholder="18:30 / Ba'da Maghrib"
                     className="block w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:ring-[#093c96] rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2"
                   />
                 </div>
-                {errors.waktu && <p className="mt-1.5 text-sm text-red-500">{errors.waktu.message}</p>}
+                {errors.jamMulai && <p className="mt-1.5 text-sm text-red-500">{errors.jamMulai.message}</p>}
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Jam Selesai</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                    <Clock className="h-5 w-5 text-slate-400" />
+                  </div>
+                  <input
+                    type="text"
+                    {...register('jamSelesai')}
+                    placeholder="20:00 / Selesai"
+                    className="block w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:ring-[#093c96] rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2"
+                  />
+                </div>
               </div>
             </div>
 
