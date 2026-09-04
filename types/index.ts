@@ -108,6 +108,7 @@ export interface KajianACF {
   masjid_terkait: number | WPMasjid;
   nama_masjid_manual?: string;
   kota_kabupaten?: KotaKabupatenBanten;
+  kota__kabupaten?: KotaKabupatenBanten;
   hari_kajian?: string;
   tanggal_kajian?: string; // Format: YYYY-MM-DD
   waktu_keterangan: string;

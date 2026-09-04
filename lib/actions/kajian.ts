@@ -56,6 +56,7 @@ export async function submitKajian(formData: FormData) {
       featured_media: mediaId,
       acf: {
         kota_kabupaten: kotaKabupaten,
+        kota__kabupaten: kotaKabupaten,
         nama_ustadz: formData.get('penceramah'),
         jenis_kajian: formData.get('jenisKajian'),
         kategori_jamaah: formData.get('kategoriJamaah'),
@@ -290,6 +291,7 @@ export async function createKajianByAdmin(formData: FormData) {
 
     if (kotaKabupaten) {
       payload.acf.kota_kabupaten = kotaKabupaten;
+      payload.acf.kota__kabupaten = kotaKabupaten;
     }
 
     if (masjidTerkait) {
@@ -404,6 +406,7 @@ export async function updateKajianByAdmin(formData: FormData) {
 
     if (kotaKabupaten) {
       payload.acf.kota_kabupaten = kotaKabupaten;
+      payload.acf.kota__kabupaten = kotaKabupaten;
     }
 
     if (masjidTerkait) {

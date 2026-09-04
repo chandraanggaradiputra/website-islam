@@ -64,6 +64,12 @@ export function enrichKajianWithMasjid(kajianList: unknown[], masjidList: WPMasj
     }
 
     if (kajian.acf) {
+      if (!kajian.acf.kota_kabupaten && kajian.acf.kota__kabupaten) {
+        kajian.acf.kota_kabupaten = kajian.acf.kota__kabupaten;
+      }
+      if (!kajian.acf.kota_kabupaten && matchedMasjid?.acf?.kota_kabupaten) {
+        kajian.acf.kota_kabupaten = matchedMasjid.acf.kota_kabupaten;
+      }
       kajian.acf.tanggal_kajian = normalizeACFDate(kajian.acf.tanggal_kajian);
       kajian.acf.hari_kajian = normalizeACFHari(kajian.acf.hari_kajian);
       
