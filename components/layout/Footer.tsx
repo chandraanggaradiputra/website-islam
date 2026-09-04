@@ -1,6 +1,6 @@
-// components/layout/Footer.tsx
+import Image from 'next/image';
 import Link from 'next/link';
-import { MapPin, Phone, Mail, Sparkles, Heart } from 'lucide-react';
+import { MapPin, Phone, Mail, Heart } from 'lucide-react';
 import clsx from 'clsx';
 
 import { BANTEN_REGIONS } from '@/lib/constants/bantenRegions';
@@ -15,9 +15,13 @@ export function Footer() {
           {/* Kolom 1: Profil Portal */}
           <div className="space-y-4">
             <div className={clsx('flex', 'items-center', 'gap-2.5')}>
-              <div className={clsx('flex', 'justify-center', 'items-center', 'bg-[#093c96]', 'rounded-lg', 'w-8', 'h-8', 'text-white')}>
-                <Sparkles className={clsx('w-4', 'h-4')} />
-              </div>
+              <Image
+                src="/banten-mengaji.jpeg"
+                alt="Logo Banten Mengaji"
+                width={36}
+                height={36}
+                className="rounded-xl object-cover shadow-sm border border-slate-200/60 dark:border-slate-800 shrink-0"
+              />
               <span className={clsx('font-bold', 'text-[#093c96]', 'dark:text-blue-400', 'text-lg')}>
                 Banten Mengaji
               </span>

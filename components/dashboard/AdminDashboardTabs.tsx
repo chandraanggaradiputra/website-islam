@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -75,10 +75,16 @@ export function AdminDashboardTabs({
 }: AdminDashboardTabsProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const activeTabParam = searchParams.get('tab') || initialTab;
+  const tabFromUrl = searchParams.get('tab') || initialTab;
   const [activeTab, setActiveTab] = useState<'dkm' | 'masjid' | 'kajian'>(
-    (activeTabParam as 'dkm' | 'masjid' | 'kajian') || 'dkm'
+    (tabFromUrl as 'dkm' | 'masjid' | 'kajian') || 'dkm'
   );
+
+  useEffect(() => {
+    if (tabFromUrl && (tabFromUrl === 'dkm' || tabFromUrl === 'masjid' || tabFromUrl === 'kajian')) {
+      setActiveTab(tabFromUrl as 'dkm' | 'masjid' | 'kajian');
+    }
+  }, [tabFromUrl]);
 
   const [isPending, startTransition] = useTransition();
 
@@ -126,9 +132,7 @@ export function AdminDashboardTabs({
 
   const handleTabChange = (tab: 'dkm' | 'masjid' | 'kajian') => {
     setActiveTab(tab);
-    const params = new URLSearchParams(searchParams.toString());
-    params.set('tab', tab);
-    router.replace(`/dashboard/admin?${params.toString()}`);
+    router.push(`/dashboard/admin?tab=${tab}`);
   };
 
   // Action Handlers
@@ -542,7 +546,7 @@ export function AdminDashboardTabs({
                 setEditingKajian(null);
                 setIsAddKajianOpen(true);
               }}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#093c96] text-white text-xs font-semibold hover:bg-blue-800 shadow-md shadow-blue-900/20 transition-all cursor-pointer whitespace-nowrap"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#093c96] text-white text-xs font-semibold hover:bg-blue-800 shadow-sm cursor-pointer whitespace-nowrap"
             >
               <Plus className="w-4 h-4" />
               <span>+ Buat Jadwal Kajian</span>

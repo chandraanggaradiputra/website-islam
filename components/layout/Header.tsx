@@ -1,12 +1,12 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { GlobalSearch } from '@/components/ui/GlobalSearch';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import {
-  Sparkles,
   ExternalLink,
   LayoutDashboard,
   LogOut,
@@ -28,9 +28,14 @@ export function Header() {
         
         {/* Bagian Kiri: Brand Logo */}
         <Link href="/" className="flex items-center gap-2.5 font-bold text-slate-900 dark:text-white group shrink-0">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#093c96] to-blue-700 text-white shadow-md shadow-blue-900/20 group-hover:scale-105 transition-transform">
-            <Sparkles className="h-5 w-5" />
-          </div>
+          <Image
+            src="/banten-mengaji.jpeg"
+            alt="Logo Banten Mengaji"
+            width={40}
+            height={40}
+            className="rounded-xl object-cover shadow-sm border border-slate-200/60 dark:border-slate-800 group-hover:scale-105 transition-transform shrink-0"
+            priority
+          />
           <div className="flex flex-col">
             <span className="text-base font-extrabold tracking-tight text-[#093c96] dark:text-blue-400 leading-tight">
               Banten Mengaji

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuthSession } from '@/hooks/useAuthSession';
@@ -23,7 +24,6 @@ import {
   UserPlus,
   LayoutDashboard,
   LogOut,
-  Sparkles,
   User
 } from 'lucide-react';
 
@@ -189,9 +189,13 @@ export function BottomNav() {
 
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800/80">
               <div className="flex items-center gap-2.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-[#093c96] to-blue-700 text-white shadow-sm shadow-blue-900/20">
-                  <Sparkles className="h-4 w-4" />
-                </div>
+                <Image
+                  src="/banten-mengaji.jpeg"
+                  alt="Logo Banten Mengaji"
+                  width={32}
+                  height={32}
+                  className="rounded-xl object-cover shadow-sm border border-slate-200/60 dark:border-slate-800 shrink-0"
+                />
                 <div>
                   <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">
                     Menu & Layanan Banten Mengaji

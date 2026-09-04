@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import Image from 'next/image';
 import { getSession, logout } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
@@ -16,15 +17,20 @@ export default async function DashboardLayout({ children }: { children: ReactNod
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col md:flex-row">
-      {/* Sidebar */}
-      <aside className="w-full md:w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col flex-shrink-0">
+      {/* Sidebar (Desktop Only) */}
+      <aside className="hidden md:flex flex-col md:w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex-shrink-0">
         <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-          <Link href="/" className="font-bold text-xl text-[#093c96] dark:text-blue-400">
-            {isAdmin ? 'Admin Panel' : 'DKM Panel'}
+          <Link href="/" className="flex items-center gap-2.5 font-bold text-xl text-[#093c96] dark:text-blue-400 group">
+            <Image
+              src="/banten-mengaji.jpeg"
+              alt="Logo Banten Mengaji"
+              width={32}
+              height={32}
+              className="rounded-lg object-cover shadow-sm border border-slate-200/60 dark:border-slate-800 group-hover:scale-105 transition-transform shrink-0"
+              priority
+            />
+            <span>{isAdmin ? 'Admin Panel' : 'DKM Panel'}</span>
           </Link>
-          <div className="md:hidden">
-            <ThemeToggle />
-          </div>
         </div>
         
         <div className="p-4 flex-grow">
@@ -90,7 +96,35 @@ export default async function DashboardLayout({ children }: { children: ReactNod
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
-        {/* Top Header */}
+        {/* Mobile Header (< md) */}
+        <header className="h-14 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 shrink-0 md:hidden">
+          <Link href="/" className="flex items-center gap-2 font-bold text-base text-[#093c96] dark:text-blue-400">
+            <Image
+              src="/banten-mengaji.jpeg"
+              alt="Logo Banten Mengaji"
+              width={28}
+              height={28}
+              className="rounded-lg object-cover shadow-sm border border-slate-200/60 dark:border-slate-800 shrink-0"
+              priority
+            />
+            <span>{isAdmin ? 'Admin Panel' : 'DKM Panel'}</span>
+          </Link>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <form action={logout}>
+              <button
+                type="submit"
+                title="Logout"
+                className="flex items-center gap-1.5 p-2 rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 text-xs font-semibold transition-colors cursor-pointer"
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="hidden sm:inline">Logout</span>
+              </button>
+            </form>
+          </div>
+        </header>
+
+        {/* Desktop Top Header (md+) */}
         <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-6 shrink-0 hidden md:flex">
           <div className="flex items-center gap-4">
             <h1 className="font-semibold text-lg text-slate-900 dark:text-white">
@@ -112,7 +146,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         </header>
         
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-8">
+        <main className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8">
           {children}
         </main>
       </div>

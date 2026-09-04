@@ -26,6 +26,11 @@ export const metadata: Metadata = {
   },
   description: "Pusat informasi jadwal kajian Islam ilmiah bermanhaj Salafus Shalih dan direktori masjid di seluruh Provinsi Banten.",
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://maschandigital.id'),
+  icons: {
+    icon: '/banten-mengaji.jpeg',
+    shortcut: '/banten-mengaji.jpeg',
+    apple: '/banten-mengaji.jpeg',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
