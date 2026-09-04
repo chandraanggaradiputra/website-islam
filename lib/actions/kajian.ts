@@ -60,7 +60,7 @@ export async function submitKajian(formData: FormData) {
         nama_ustadz: formData.get('penceramah'),
         jenis_kajian: formData.get('jenisKajian'),
         kategori_jamaah: formData.get('kategoriJamaah'),
-        kitab_bahasan: formData.get('deskripsi'),
+        kitab_bahasan: formData.get('kitabBahasan') || formData.get('kitab_bahasan') || '',
         tanggal_kajian: formData.get('tanggal')?.toString().split('-').join('') || '',
         jam_mulai: formData.get('waktu'),
         jam_selesai: formData.get('waktu'),

@@ -17,7 +17,7 @@ const kajianSchema = z.object({
   linkStreaming: z.string().url('URL tidak valid').optional().or(z.literal('')),
   jenisKajian: z.enum(['rutin', 'tematik']),
   kategoriJamaah: z.enum(['umum', 'khusus_ikhwan', 'khusus_akhwat']),
-  deskripsi: z.string().optional(),
+  kitabBahasan: z.string().optional(),
 });
 
 type KajianValues = z.infer<typeof kajianSchema>;
@@ -258,12 +258,12 @@ export function TambahKajianForm({ masjidName }: TambahKajianFormProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Deskripsi Tambahan (Opsional)</label>
+              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Kitab yang Dibahas (Opsional)</label>
               <textarea
-                {...register('deskripsi')}
+                {...register('kitabBahasan')}
                 rows={3}
                 className="block w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:ring-[#093c96] rounded-xl text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2"
-                placeholder="Informasi kitab yang dibahas, catatan, dll."
+                placeholder="Contoh: Kitab Tauhid, Bulughul Maram, dll."
               />
             </div>
           </div>
