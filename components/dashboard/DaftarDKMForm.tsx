@@ -139,26 +139,27 @@ export function DaftarDKMForm({ masjidList = [] }: { masjidList: WPMasjid[] }) {
     setErrorMessage(null);
 
     try {
-      const selectedKec = data.kecamatan; // because now it is just a string name
+      const cleanUrl = data.googleMapsUrl?.trim();
+      const validUrl = cleanUrl && cleanUrl.startsWith('http') ? cleanUrl : undefined;
 
       const payload = {
-        namaPengurus: data.namaPengurus,
-        email: data.email,
-        noWhatsapp: data.noWhatsapp,
+        namaPengurus: data.namaPengurus.trim(),
+        email: data.email.trim(),
+        noWhatsapp: data.noWhatsapp.trim(),
         kotaKabupaten: data.kotaKabupaten as KotaKabupatenBanten,
         masjidOption: data.masjidOption,
         masjidId: isNewMasjid ? undefined : Number(data.masjidOption),
         isNewMasjid,
-        namaMasjidBaru: isNewMasjid ? data.namaMasjidBaru : undefined,
-        kecamatan: undefined, // ID tidak lagi dipakai
-        kecamatanNama: isNewMasjid ? data.kecamatan : undefined, // string nama
-        alamatMasjid: isNewMasjid ? data.alamatMasjid : undefined,
-        googleMapsUrl: isNewMasjid ? data.googleMapsUrl : undefined,
-        fasilitas: isNewMasjid ? data.fasilitas : undefined,
-        namaBank: isNewMasjid ? data.namaBank : undefined,
-        nomorRekening: isNewMasjid ? data.nomorRekening : undefined,
-        atasNamaRekening: isNewMasjid ? data.atasNamaRekening : undefined,
-        catatan: data.catatan,
+        namaMasjidBaru: isNewMasjid ? data.namaMasjidBaru?.trim() : undefined,
+        kecamatan: undefined,
+        kecamatanNama: isNewMasjid ? data.kecamatan : undefined,
+        alamatMasjid: isNewMasjid ? data.alamatMasjid?.trim() : undefined,
+        googleMapsUrl: isNewMasjid ? validUrl : undefined,
+        fasilitas: isNewMasjid && data.fasilitas && data.fasilitas.length > 0 ? data.fasilitas : undefined,
+        namaBank: isNewMasjid && data.namaBank?.trim() ? data.namaBank.trim() : undefined,
+        nomorRekening: isNewMasjid && data.nomorRekening?.trim() ? data.nomorRekening.trim() : undefined,
+        atasNamaRekening: isNewMasjid && data.atasNamaRekening?.trim() ? data.atasNamaRekening.trim() : undefined,
+        catatan: data.catatan?.trim() || undefined,
       };
 
       const res = await submitDaftarDKM(payload);
