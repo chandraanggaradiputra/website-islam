@@ -65,9 +65,25 @@ export function MonthlyPrayerCalendar({
     }
   };
 
-  const currentData = useMemo(() => {
-    return getMonthlyRegionPrayerTimes(currentMonth, currentYear, region);
-  }, [currentMonth, currentYear, region]);
+  const [currentData, setCurrentData] = useState<any>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    startTransition(async () => {
+      try {
+        const { fetchMonthlyPrayerTimesAction } = await import('@/app/actions/prayer');
+        const data = await fetchMonthlyPrayerTimesAction(region, currentMonth, currentYear);
+        if (isMounted) {
+          setCurrentData(data);
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [region, currentMonth, currentYear]);
 
   // Tanggal Hari Ini (dalam format YYYY-MM-DD)
   const now = new Date();
@@ -109,9 +125,18 @@ export function MonthlyPrayerCalendar({
     }
   };
 
-  const todaySchedule = currentData.jadwal.find(
-    (item) => item.tanggal_lengkap === todayStr
+  const todaySchedule = currentData?.jadwal.find(
+    (item: EQuranDailyShalat) => item.tanggal_lengkap === todayStr
   );
+
+  if (!currentData) {
+    return (
+      <div className="flex flex-col items-center justify-center p-12 text-slate-500 animate-pulse">
+        <Clock className="w-8 h-8 mb-4 opacity-50" />
+        <p>Memuat jadwal sholat...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

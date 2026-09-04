@@ -1,6 +1,5 @@
 // app/jadwal-sholat/page.tsx
 import { Metadata } from 'next';
-import { getMonthlyShalatSerang } from '@/lib/equranShalat';
 import { MonthlyPrayerCalendar } from '@/components/prayer/MonthlyPrayerCalendar';
 
 export const revalidate = 86400; // 24 jam revalidasi
