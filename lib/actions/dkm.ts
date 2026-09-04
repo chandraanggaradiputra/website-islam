@@ -51,13 +51,15 @@ export async function getStoredRegistrations(): Promise<DKMRegistrationApplicati
       let appData: Partial<DKMRegistrationApplication> = {};
       try {
         if (masjid.content.rendered) {
-          // Bersihkan tag HTML <p> dari content
-          const rawContent = masjid.content.rendered.replace(/<[^>]*>?/gm, '').trim();
-          if (rawContent.startsWith('{') && rawContent.endsWith('}')) {
-             appData = JSON.parse(rawContent);
+          const rawContent = masjid.content.rendered;
+          const match = rawContent.match(/DKM_METADATA_START:(.*?):DKM_METADATA_END/);
+          if (match && match[1]) {
+             appData = JSON.parse(Buffer.from(match[1], 'base64').toString('utf-8'));
           }
         }
-      } catch (e) {}
+      } catch (e) {
+        console.error('Failed parsing metadata:', e);
+      }
 
       return {
         id: masjid.id,
@@ -121,14 +123,20 @@ export async function submitDaftarDKM(payload: DKMRegistrationPayload) {
       catatan: payload.catatan,
     };
 
+    const base64Content = Buffer.from(JSON.stringify(appData)).toString('base64');
+    const contentPayload = `<!-- DKM_METADATA_START:${base64Content}:DKM_METADATA_END -->`;
+
     let wpMasjidPayload: any = {};
+    
+    const rawKecId = Number(payload.kecamatan);
+    const validKecamatan = !isNaN(rawKecId) && rawKecId > 0 ? [rawKecId] : [];
 
     if (isNewMasjid) {
       wpMasjidPayload = {
         title: payload.namaMasjidBaru,
         status: 'pending',
-        content: JSON.stringify(appData),
-        kecamatan: payload.kecamatan ? [Number(payload.kecamatan)] : [],
+        content: contentPayload,
+        kecamatan: validKecamatan,
         acf: {
           kota_kabupaten: payload.kotaKabupaten || '',
           alamat_lengkap: payload.alamatMasjid || '',
@@ -144,9 +152,9 @@ export async function submitDaftarDKM(payload: DKMRegistrationPayload) {
     } else {
       // Klaim masjid yang sudah ada
       wpMasjidPayload = {
-        title: `KLAIM: Masjid ID ${payload.masjidOption} - ${payload.namaPengurus}`,
+        title: `KLAIM: ${payload.namaMasjidBaru || 'Masjid #' + payload.masjidOption} - ${payload.namaPengurus}`,
         status: 'pending',
-        content: JSON.stringify(appData),
+        content: contentPayload,
         // Kita isi ACF minimal
         acf: {
           kota_kabupaten: payload.kotaKabupaten || '',
