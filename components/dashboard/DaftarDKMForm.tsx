@@ -20,8 +20,13 @@ import {
   CreditCard,
   Sparkles,
   AlertCircle,
-  PlusCircle,
   Map,
+  Lock,
+  Eye,
+  EyeOff,
+  Upload,
+  X,
+  ImageIcon,
 } from 'lucide-react';
 
 const FASILITAS_OPTIONS = [
@@ -36,6 +41,8 @@ const dkmSchema = z
   .object({
     namaPengurus: z.string().min(3, 'Nama pengurus minimal 3 karakter'),
     email: z.string().email('Format email tidak valid'),
+    password: z.string().min(6, 'Password minimal 6 karakter'),
+    confirmPassword: z.string().min(6, 'Konfirmasi password minimal 6 karakter'),
     noWhatsapp: z.string().min(10, 'Nomor WhatsApp minimal 10 digit'),
     kotaKabupaten: z.string().min(1, 'Pilih kota/kabupaten asal masjid'),
     masjidOption: z.string().min(1, 'Pilih masjid yang Anda kelola'),
@@ -51,6 +58,13 @@ const dkmSchema = z
     catatan: z.string().optional(),
   })
   .superRefine((data, ctx) => {
+    if (data.password !== data.confirmPassword) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['confirmPassword'],
+        message: 'Konfirmasi password tidak cocok dengan password',
+      });
+    }
     if (data.masjidOption === 'NEW_MASJID') {
       if (!data.namaMasjidBaru || data.namaMasjidBaru.trim().length < 3) {
         ctx.addIssue({
@@ -92,6 +106,12 @@ export function DaftarDKMForm({ masjidList = [] }: { masjidList: WPMasjid[] }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [fotoMasjid, setFotoMasjid] = useState<File | null>(null);
+  const [fotoPreview, setFotoPreview] = useState<string | null>(null);
+  const [fotoError, setFotoError] = useState<string | null>(null);
+
   const {
     register,
     handleSubmit,
@@ -104,6 +124,8 @@ export function DaftarDKMForm({ masjidList = [] }: { masjidList: WPMasjid[] }) {
     defaultValues: {
       namaPengurus: '',
       email: '',
+      password: '',
+      confirmPassword: '',
       noWhatsapp: '',
       kotaKabupaten: '',
       masjidOption: '0',
@@ -134,39 +156,81 @@ export function DaftarDKMForm({ masjidList = [] }: { masjidList: WPMasjid[] }) {
     return masjidList.filter(m => (m.acf?.kota_kabupaten || 'Kota Serang') === selectedKota);
   }, [selectedKota, masjidList]);
 
+  const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFotoError(null);
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setFotoError('File harus berupa gambar (JPG, PNG, WEBP).');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setFotoError('Ukuran file foto maksimal 5MB.');
+      return;
+    }
+
+    setFotoMasjid(file);
+    const objectUrl = URL.createObjectURL(file);
+    setFotoPreview(objectUrl);
+  };
+
+  const handleRemoveFoto = () => {
+    if (fotoPreview) {
+      URL.revokeObjectURL(fotoPreview);
+    }
+    setFotoMasjid(null);
+    setFotoPreview(null);
+    setFotoError(null);
+  };
+
   const onSubmit = async (data: DKMFormValues) => {
     setIsSubmitting(true);
     setErrorMessage(null);
 
     try {
-      const cleanUrl = data.googleMapsUrl?.trim();
-      const validUrl = cleanUrl && cleanUrl.startsWith('http') ? cleanUrl : undefined;
+      const formData = new FormData();
+      formData.append('namaPengurus', data.namaPengurus.trim());
+      formData.append('email', data.email.trim());
+      formData.append('password', data.password);
+      formData.append('noWhatsapp', data.noWhatsapp.trim());
+      formData.append('kotaKabupaten', data.kotaKabupaten);
+      formData.append('masjidOption', data.masjidOption);
 
-      const payload = {
-        namaPengurus: data.namaPengurus.trim(),
-        email: data.email.trim(),
-        noWhatsapp: data.noWhatsapp.trim(),
-        kotaKabupaten: data.kotaKabupaten as KotaKabupatenBanten,
-        masjidOption: data.masjidOption,
-        masjidId: isNewMasjid ? undefined : Number(data.masjidOption),
-        isNewMasjid,
-        namaMasjidBaru: isNewMasjid ? data.namaMasjidBaru?.trim() : undefined,
-        kecamatan: undefined,
-        kecamatanNama: isNewMasjid ? data.kecamatan : undefined,
-        alamatMasjid: isNewMasjid ? data.alamatMasjid?.trim() : undefined,
-        googleMapsUrl: isNewMasjid ? validUrl : undefined,
-        fasilitas: isNewMasjid && data.fasilitas && data.fasilitas.length > 0 ? data.fasilitas : undefined,
-        namaBank: isNewMasjid && data.namaBank?.trim() ? data.namaBank.trim() : undefined,
-        nomorRekening: isNewMasjid && data.nomorRekening?.trim() ? data.nomorRekening.trim() : undefined,
-        atasNamaRekening: isNewMasjid && data.atasNamaRekening?.trim() ? data.atasNamaRekening.trim() : undefined,
-        catatan: data.catatan?.trim() || undefined,
-      };
+      if (isNewMasjid) {
+        formData.append('isNewMasjid', 'true');
+        if (data.namaMasjidBaru) formData.append('namaMasjidBaru', data.namaMasjidBaru.trim());
+        if (data.kecamatan) formData.append('kecamatanNama', data.kecamatan);
+        if (data.alamatMasjid) formData.append('alamatMasjid', data.alamatMasjid.trim());
+        
+        const cleanUrl = data.googleMapsUrl?.trim();
+        if (cleanUrl && cleanUrl.startsWith('http')) {
+          formData.append('googleMapsUrl', cleanUrl);
+        }
 
-      const res = await submitDaftarDKM(payload);
+        if (data.fasilitas && data.fasilitas.length > 0) {
+          data.fasilitas.forEach((f) => formData.append('fasilitas', f));
+        }
+        if (data.namaBank?.trim()) formData.append('namaBank', data.namaBank.trim());
+        if (data.nomorRekening?.trim()) formData.append('nomorRekening', data.nomorRekening.trim());
+        if (data.atasNamaRekening?.trim()) formData.append('atasNamaRekening', data.atasNamaRekening.trim());
+
+        if (fotoMasjid) {
+          formData.append('fotoMasjid', fotoMasjid);
+        }
+      }
+
+      if (data.catatan?.trim()) {
+        formData.append('catatan', data.catatan.trim());
+      }
+
+      const res = await submitDaftarDKM(formData);
 
       if (res.success) {
         setIsSuccess(true);
         reset();
+        handleRemoveFoto();
       } else {
         setErrorMessage(res.error || 'Gagal mengajukan pendaftaran DKM.');
       }
@@ -197,8 +261,8 @@ export function DaftarDKMForm({ masjidList = [] }: { masjidList: WPMasjid[] }) {
             Langkah Selanjutnya:
           </p>
           <ul className="list-disc pl-4 space-y-1">
-            <li>Admin akan meninjau data masjid dan keaslian nomor WhatsApp.</li>
-            <li>Anda akan menerima konfirmasi aktivasi akun DKM via WhatsApp/Email.</li>
+            <li>Admin akan meninjau data masjid dan keaslian data kontak DKM.</li>
+            <li>Saat disetujui, akun pengurus WordPress Anda akan otomatis diaktifkan dengan email dan password yang Anda daftarkan.</li>
           </ul>
         </div>
         <button
@@ -224,7 +288,7 @@ export function DaftarDKMForm({ masjidList = [] }: { masjidList: WPMasjid[] }) {
       <div className="space-y-4">
         <h3 className="text-sm font-bold uppercase tracking-wider text-[#093c96] dark:text-blue-400 flex items-center gap-2">
           <User className="w-4 h-4" />
-          <span>1. Data Pengurus / Penanggung Jawab DKM</span>
+          <span>1. Data Pengurus & Akun DKM</span>
         </h3>
 
         <div>
@@ -248,7 +312,7 @@ export function DaftarDKMForm({ masjidList = [] }: { masjidList: WPMasjid[] }) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">
-              Email Resmi Pengurus *
+              Email Resmi Pengurus (Untuk Login) *
             </label>
             <div className="relative">
               <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
@@ -279,6 +343,61 @@ export function DaftarDKMForm({ masjidList = [] }: { masjidList: WPMasjid[] }) {
             </div>
             {errors.noWhatsapp && (
               <p className="mt-1 text-xs text-red-500">{errors.noWhatsapp.message}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Input Password & Konfirmasi Password */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Password Akun DKM (Untuk Login) *
+            </label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+              <input
+                {...register('password')}
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Minimal 6 karakter"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-10 text-sm text-slate-900 focus:border-[#093c96] focus:bg-white focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:border-blue-500 transition-colors"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                title={showPassword ? 'Sembunyikan password' : 'Lihat password'}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+            {errors.password && (
+              <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Konfirmasi Password *
+            </label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+              <input
+                {...register('confirmPassword')}
+                type={showConfirmPassword ? 'text' : 'password'}
+                placeholder="Ulangi password"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-10 text-sm text-slate-900 focus:border-[#093c96] focus:bg-white focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:border-blue-500 transition-colors"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                title={showConfirmPassword ? 'Sembunyikan password' : 'Lihat password'}
+              >
+                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+            {errors.confirmPassword && (
+              <p className="mt-1 text-xs text-red-500">{errors.confirmPassword.message}</p>
             )}
           </div>
         </div>
@@ -372,6 +491,63 @@ export function DaftarDKMForm({ masjidList = [] }: { masjidList: WPMasjid[] }) {
               />
               {errors.namaMasjidBaru && (
                 <p className="mt-1 text-xs text-red-500">{errors.namaMasjidBaru.message}</p>
+              )}
+            </div>
+
+            {/* Media Uploader Foto Profil Masjid */}
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Foto / Profil Masjid (Opsional, Maks. 5MB)
+              </label>
+              {fotoPreview ? (
+                <div className="relative rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-2.5 flex items-center gap-3">
+                  <img
+                    src={fotoPreview}
+                    alt="Pratinjau Masjid"
+                    className="w-16 h-16 rounded-lg object-cover border border-slate-200 dark:border-slate-700 shrink-0"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">
+                      {fotoMasjid?.name}
+                    </p>
+                    <p className="text-[11px] text-slate-400">
+                      {(fotoMasjid ? (fotoMasjid.size / 1024 / 1024).toFixed(2) : 0)} MB
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleRemoveFoto}
+                    className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/50 rounded-lg transition-colors cursor-pointer"
+                    title="Hapus foto"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="relative">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    id="fotoMasjidInput"
+                    onChange={handleFotoChange}
+                    className="hidden"
+                  />
+                  <label
+                    htmlFor="fotoMasjidInput"
+                    className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-[#093c96] dark:hover:border-blue-500 rounded-xl p-4 bg-white dark:bg-slate-900 cursor-pointer transition-colors text-center"
+                  >
+                    <Upload className="w-6 h-6 text-slate-400 mb-1" />
+                    <span className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                      Klik untuk mengunggah foto masjid
+                    </span>
+                    <span className="text-[10px] text-slate-400 mt-0.5">
+                      Format: JPG, PNG, WEBP (Maksimal 5MB)
+                    </span>
+                  </label>
+                </div>
+              )}
+              {fotoError && (
+                <p className="mt-1 text-xs text-red-500">{fotoError}</p>
               )}
             </div>
 

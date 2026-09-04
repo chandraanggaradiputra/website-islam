@@ -18,6 +18,7 @@ export interface UserSession {
 export interface DKMRegistrationPayload {
   namaPengurus: string;
   email: string;
+  password?: string;
   noWhatsapp: string;
   kotaKabupaten?: KotaKabupatenBanten;
   masjidOption: string; // 'NEW_MASJID' or mosque ID string
@@ -33,6 +34,7 @@ export interface DKMRegistrationPayload {
   nomorRekening?: string;
   atasNamaRekening?: string;
   catatan?: string;
+  fotoMasjid?: File | null;
 }
 
 export interface DKMRegistrationApplication {
@@ -40,6 +42,7 @@ export interface DKMRegistrationApplication {
   date: string;
   namaPengurus: string;
   email: string;
+  password?: string;
   noWhatsapp: string;
   masjidId?: number;
   masjidName?: string;
@@ -55,6 +58,8 @@ export interface DKMRegistrationApplication {
     namaBank?: string;
     nomorRekening?: string;
     atasNamaRekening?: string;
+    featuredMediaId?: number;
+    featuredMediaUrl?: string;
   };
   catatan?: string;
   status: 'pending' | 'approved' | 'rejected';
