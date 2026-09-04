@@ -9,8 +9,8 @@ import path from 'path';
 const WP_API_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || 'https://salaf.maschandigital.id/wp-json/wp/v2';
 const REGISTRATIONS_FILE = path.join(process.cwd(), 'data', 'dkm-registrations.json');
 
-// Helper untuk membaca pendaftaran DKM yang tersimpan
-export async function getStoredRegistrations(): Promise<DKMRegistrationApplication[]> {
+// Helper internal untuk membaca file data pendaftaran
+async function readRegistrationsFile(): Promise<DKMRegistrationApplication[]> {
   try {
     if (!fs.existsSync(path.dirname(REGISTRATIONS_FILE))) {
       fs.mkdirSync(path.dirname(REGISTRATIONS_FILE), { recursive: true });
@@ -26,6 +26,18 @@ export async function getStoredRegistrations(): Promise<DKMRegistrationApplicati
     return [];
   }
 }
+
+// Server Action: Membaca data pendaftaran DKM dengan validasi sesi Admin eksplisit (Defense in Depth)
+export async function getStoredRegistrations(): Promise<DKMRegistrationApplication[]> {
+  const session = await getSession();
+  if (!session || session.role !== 'admin') {
+    console.warn('[Security Alert] Unauthorized access attempt to getStoredRegistrations.');
+    return [];
+  }
+  return readRegistrationsFile();
+}
+
+export const getDKMRegistrations = getStoredRegistrations;
 
 // Helper untuk menyimpan pendaftaran DKM
 async function saveRegistrations(list: DKMRegistrationApplication[]) {
@@ -118,7 +130,7 @@ export async function submitDaftarDKM(payload: DKMRegistrationPayload) {
       createdMasjidId,
     };
 
-    const currentList = await getStoredRegistrations();
+    const currentList = await readRegistrationsFile();
     currentList.unshift(application);
     await saveRegistrations(currentList);
 
@@ -150,7 +162,7 @@ export async function approveDKMRegistration(registrationId: string | number) {
   }
 
   try {
-    const list = await getStoredRegistrations();
+    const list = await readRegistrationsFile();
     const itemIndex = list.findIndex((r) => r.id.toString() === registrationId.toString());
 
     if (itemIndex === -1) {
@@ -239,7 +251,7 @@ export async function rejectDKMRegistration(registrationId: string | number) {
   }
 
   try {
-    const list = await getStoredRegistrations();
+    const list = await readRegistrationsFile();
     const itemIndex = list.findIndex((r) => r.id.toString() === registrationId.toString());
 
     if (itemIndex === -1) {

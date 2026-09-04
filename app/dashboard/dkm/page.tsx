@@ -44,6 +44,20 @@ async function getDKMKajian(token: string, masjidId?: number) {
   }
 }
 
+// Sanitasi dan decoding entitas HTML untuk pencegahan XSS (Prinsip 6 SECURITY_STANDARDS.md)
+function decodeHtmlEntities(str: string): string {
+  if (!str) return '';
+  return str
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(dec))
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;|&#039;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/<[^>]*>/g, ''); // strip any potential HTML tags
+}
+
 function StatusBadge({ status }: { status?: string }) {
   if (status === 'publish') {
     return <span className="px-3 py-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-lg text-xs font-bold flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5"/> Sedang Tayang</span>
@@ -122,7 +136,9 @@ export default async function DKMDashboard() {
                       <span className="text-xl font-bold text-slate-900 dark:text-white leading-none mt-1">{dateObj ? dateObj.getDate() : '-'}</span>
                     </div>
                     <div>
-                      <h4 className="font-bold text-slate-900 dark:text-white text-lg line-clamp-1" dangerouslySetInnerHTML={{ __html: kajian.title.rendered }}></h4>
+                      <h4 className="font-bold text-slate-900 dark:text-white text-lg line-clamp-1">
+                        {decodeHtmlEntities(kajian.title.rendered)}
+                      </h4>
                       <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-1">
                         <span className="w-2 h-2 rounded-full bg-blue-500"></span> {kajian.acf.nama_ustadz || 'Ustadz Tidak Diketahui'}
                       </p>
