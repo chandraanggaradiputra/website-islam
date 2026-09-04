@@ -179,33 +179,26 @@ export function TambahKajianForm({ masjidName }: TambahKajianFormProps) {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Jam Mulai *</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                    <Clock className="h-5 w-5 text-slate-400" />
-                  </div>
-                  <input
-                    type="text"
-                    {...register('jamMulai')}
-                    placeholder="18:30 / Ba'da Maghrib"
-                    className="block w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:ring-[#093c96] rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2"
-                  />
-                </div>
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                  Jam Mulai *
+                </label>
+                <input
+                  type="time"
+                  {...register('jamMulai')}
+                  required
+                  className="block w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:ring-[#093c96] rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2"
+                />
                 {errors.jamMulai && <p className="mt-1.5 text-sm text-red-500">{errors.jamMulai.message}</p>}
               </div>
               <div>
-                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Jam Selesai</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                    <Clock className="h-5 w-5 text-slate-400" />
-                  </div>
-                  <input
-                    type="text"
-                    {...register('jamSelesai')}
-                    placeholder="20:00 / Selesai"
-                    className="block w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:ring-[#093c96] rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2"
-                  />
-                </div>
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                  Jam Selesai (Opsional)
+                </label>
+                <input
+                  type="time"
+                  {...register('jamSelesai')}
+                  className="block w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:ring-[#093c96] rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2"
+                />
               </div>
             </div>
 

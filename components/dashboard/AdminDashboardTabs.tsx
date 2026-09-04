@@ -1199,11 +1199,10 @@ function AdminKajianModal({
                 Jam Mulai *
               </label>
               <input
-                type="text"
+                type="time"
                 name="jamMulai"
                 required
                 defaultValue={kajian?.acf?.jam_mulai || ''}
-                placeholder="18:30 / Ba'da Maghrib"
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 px-3 text-xs text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               />
             </div>
@@ -1212,10 +1211,9 @@ function AdminKajianModal({
                 Jam Selesai
               </label>
               <input
-                type="text"
+                type="time"
                 name="jamSelesai"
                 defaultValue={kajian?.acf?.jam_selesai || ''}
-                placeholder="20:00 / Selesai"
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 px-3 text-xs text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               />
             </div>

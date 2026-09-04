@@ -281,10 +281,9 @@ export function AdminTambahKajianForm({ masjidList }: AdminTambahKajianFormProps
                   Jam Mulai *
                 </label>
                 <input
-                  type="text"
+                  type="time"
                   name="jamMulai"
                   required
-                  placeholder="18:30 / Ba'da Maghrib"
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-3.5 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                 />
               </div>
@@ -294,9 +293,8 @@ export function AdminTambahKajianForm({ masjidList }: AdminTambahKajianFormProps
                   Jam Selesai
                 </label>
                 <input
-                  type="text"
+                  type="time"
                   name="jamSelesai"
-                  placeholder="20:00 / Selesai"
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-3.5 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                 />
               </div>
