@@ -77,3 +77,33 @@ export const BANTEN_REGIONS: BantenRegion[] = [
     kecamatan: ['Balaraja', 'Cikupa', 'Cisauk', 'Cisoka', 'Curug', 'Gunung Kaler', 'Jambe', 'Jayanti', 'Kelapa Dua', 'Kemiri', 'Kosambi', 'Kresek', 'Kronjo', 'Legok', 'Mauk', 'Mekar Baru', 'Pagedangan', 'Pakuhaji', 'Panongan', 'Pasar Kemis', 'Rajeg', 'Sepatan', 'Sepatan Timur', 'Sindang Jaya', 'Solear', 'Sukadiri', 'Sukamulya', 'Teluknaga', 'Tigaraksa'],
   },
 ];
+
+/**
+ * Haversine formula to calculate distance between two coordinates in km
+ */
+function getDistanceFromLatLonInKm(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 6371; // Radius of the earth in km
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a = 
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * 
+    Math.sin(dLon / 2) * Math.sin(dLon / 2); 
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)); 
+  return R * c; 
+}
+
+export function findNearestBantenRegion(lat: number, lng: number): KotaKabupatenBanten {
+  let nearestRegion = BANTEN_REGIONS[0];
+  let minDistance = Infinity;
+
+  for (const region of BANTEN_REGIONS) {
+    const distance = getDistanceFromLatLonInKm(lat, lng, region.coordinates.lat, region.coordinates.lng);
+    if (distance < minDistance) {
+      minDistance = distance;
+      nearestRegion = region;
+    }
+  }
+
+  return nearestRegion.name;
+}

@@ -4,12 +4,13 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { getRegionPrayerTimes } from '@/lib/prayerTimes';
-import { Clock, MapPin, CalendarDays, ArrowRight } from 'lucide-react';
-import { BANTEN_REGIONS, KotaKabupatenBanten } from '@/lib/constants/bantenRegions';
+import { Clock, MapPin, CalendarDays, ArrowRight, LocateFixed, Loader2 } from 'lucide-react';
+import { BANTEN_REGIONS, KotaKabupatenBanten, findNearestBantenRegion } from '@/lib/constants/bantenRegions';
 
 export function PrayerTimesWidget() {
   const [now, setNow] = useState<Date | null>(null);
   const [region, setRegion] = useState<KotaKabupatenBanten>('Kota Serang');
+  const [isLocating, setIsLocating] = useState(false);
 
   useEffect(() => {
     // Sinkronisasi region dari localStorage (Hydration Safe)
@@ -38,6 +39,32 @@ export function PrayerTimesWidget() {
     }
   };
 
+  const handleLocateMe = () => {
+    if (!navigator.geolocation) {
+      alert("Browser Anda tidak mendukung deteksi lokasi otomatis.");
+      return;
+    }
+    
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        const nearest = findNearestBantenRegion(latitude, longitude);
+        setRegion(nearest);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('banten_mengaji_region', nearest);
+        }
+        setIsLocating(false);
+      },
+      (error) => {
+        console.error(error);
+        alert("Gagal mendeteksi lokasi. Pastikan izin akses lokasi diberikan.");
+        setIsLocating(false);
+      },
+      { timeout: 10000, maximumAge: 60000 }
+    );
+  };
+
   if (!now) {
     return (
       <div className="bg-slate-100 dark:bg-slate-900 rounded-2xl w-full h-24 animate-pulse" />
@@ -50,13 +77,13 @@ export function PrayerTimesWidget() {
 
   return (
     <div className="bg-gradient-to-br from-[#093c96] to-blue-900 shadow-lg p-5 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden text-white">
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex items-center gap-2 text-blue-100">
+      <div className="flex justify-between items-center mb-4 gap-2">
+        <div className="flex items-center gap-2 text-blue-100 min-w-0">
           <MapPin className="w-4 h-4 shrink-0" />
           <select
             value={region}
             onChange={handleRegionChange}
-            className="bg-transparent border-none text-white font-medium text-sm focus:ring-0 cursor-pointer outline-none appearance-none hover:text-blue-200 transition-colors"
+            className="bg-transparent border-none text-white font-medium text-sm focus:ring-0 cursor-pointer outline-none appearance-none hover:text-blue-200 transition-colors truncate"
             style={{ WebkitAppearance: 'none', MozAppearance: 'none' }}
           >
             {BANTEN_REGIONS.map((r) => (
@@ -65,6 +92,14 @@ export function PrayerTimesWidget() {
               </option>
             ))}
           </select>
+          <button
+            onClick={handleLocateMe}
+            disabled={isLocating}
+            title="Deteksi Lokasi Saya"
+            className="shrink-0 p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors disabled:opacity-50"
+          >
+            {isLocating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <LocateFixed className="w-3.5 h-3.5" />}
+          </button>
         </div>
         <div className="flex items-center gap-1.5 bg-white/10 backdrop-blur px-3 py-1 rounded-full text-xs shrink-0">
           <Clock className="w-3.5 h-3.5" />
@@ -72,22 +107,27 @@ export function PrayerTimesWidget() {
         </div>
       </div>
 
-      <div className="gap-2 grid grid-cols-5 text-center">
-        {times.map((item) => (
-          <div
-            key={item.name}
-            className={`rounded-xl p-2.5 transition-all ${
-              item.isNext
-                ? 'bg-white text-[#093c96] shadow-md font-bold scale-105'
-                : 'bg-white/10 text-white hover:bg-white/15'
-            }`}
-          >
-            <p className={`text-xs ${item.isNext ? 'text-[#093c96]' : 'text-blue-200'}`}>
-              {item.name}
-            </p>
-            <p className="mt-1 font-semibold text-sm tracking-tight">{item.time}</p>
-          </div>
-        ))}
+      <div className="grid grid-cols-6 gap-2 min-[450px]:grid-cols-5 mb-4">
+        {times.map((item, index) => {
+          const isFirstThree = index < 3;
+          const colSpanClass = isFirstThree 
+            ? 'col-span-2 min-[450px]:col-span-1' 
+            : 'col-span-3 min-[450px]:col-span-1';
+
+          return (
+            <div
+              key={item.name}
+              className={`flex flex-col items-center justify-center rounded-xl p-2.5 transition-all text-center ${colSpanClass} ${
+                item.isNext
+                  ? 'bg-white text-[#093c96] shadow-md scale-105 font-bold'
+                  : 'bg-white/10 text-blue-100 hover:bg-white/15'
+              }`}
+            >
+              <span className="text-xs font-semibold tracking-tight">{item.name}</span>
+              <span className="text-sm font-extrabold mt-0.5">{item.time}</span>
+            </div>
+          );
+        })}
       </div>
 
       <div className="mt-4 pt-3 border-t border-white/15 flex flex-wrap items-center justify-between gap-2">

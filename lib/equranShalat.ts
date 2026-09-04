@@ -1,12 +1,10 @@
-// lib/equranShalat.ts
-import { Coordinates, CalculationMethod, PrayerTimes } from 'adhan';
-import { format, getDaysInMonth, addMinutes, subMinutes } from 'date-fns';
+import { Coordinates } from 'adhan';
 import { EQuranDailyShalat, EQuranShalatData, EQuranShalatResponse } from '@/types/prayer';
+import { KotaKabupatenBanten } from './constants/bantenRegions';
+import { getMonthlyRegionPrayerTimes } from './prayerTimes';
 
-// Koordinat Resmi Kota Serang, Banten
 export const SERANG_COORDINATES = new Coordinates(-6.1104, 106.1640);
 
-const INDONESIAN_DAYS = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 const INDONESIAN_MONTHS = [
   'Januari',
   'Februari',
@@ -23,61 +21,31 @@ const INDONESIAN_MONTHS = [
 ];
 
 /**
- * Fallback generator jadwal sholat lokal menggunakan perhitungan astronomi (Adhan library)
- * Menggunakan standar hisab Kementerian Agama RI (Fajr 20°, Isha 18°)
- * Menyediakan Zero Downtime jika API pihak ketiga tidak merespons.
+ * Fallback generator jadwal sholat lokal menggunakan perhitungan astronomi
  */
-export function getFallbackMonthlyShalat(bulan: number, tahun: number): EQuranShalatData {
-  const targetDate = new Date(tahun, bulan - 1, 1);
-  const daysInMonth = getDaysInMonth(targetDate);
-  const jadwal: EQuranDailyShalat[] = [];
-
-  const params = CalculationMethod.MuslimWorldLeague();
-  params.fajrAngle = 20.0; // Standar Kemenag RI
-  params.ishaAngle = 18.0; // Standar Kemenag RI
-
-  for (let day = 1; day <= daysInMonth; day++) {
-    const currentDate = new Date(tahun, bulan - 1, day);
-    const pt = new PrayerTimes(SERANG_COORDINATES, currentDate, params);
-
-    // Kemenag standard: Imsak 10 menit sebelum Subuh, Dhuha ~25 menit setelah Terbit (Matahari 4°30')
-    const imsakDate = subMinutes(pt.fajr, 10);
-    const dhuhaDate = addMinutes(pt.sunrise, 25);
-
-    const pad = (n: number) => n.toString().padStart(2, '0');
-    const tanggalLengkap = `${tahun}-${pad(bulan)}-${pad(day)}`;
-    const hari = INDONESIAN_DAYS[currentDate.getDay()];
-
-    jadwal.push({
-      tanggal: day,
-      tanggal_lengkap: tanggalLengkap,
-      hari,
-      imsak: format(imsakDate, 'HH:mm'),
-      subuh: format(pt.fajr, 'HH:mm'),
-      terbit: format(pt.sunrise, 'HH:mm'),
-      dhuha: format(dhuhaDate, 'HH:mm'),
-      dzuhur: format(pt.dhuhr, 'HH:mm'),
-      ashar: format(pt.asr, 'HH:mm'),
-      maghrib: format(pt.maghrib, 'HH:mm'),
-      isya: format(pt.isha, 'HH:mm'),
-    });
-  }
+export function getFallbackMonthlyShalat(
+  bulan: number,
+  tahun: number,
+  regionName: KotaKabupatenBanten
+): EQuranShalatData {
+  const { jadwal } = getMonthlyRegionPrayerTimes(bulan, tahun, regionName);
 
   return {
     provinsi: 'Banten',
-    kabkota: 'Kota Serang',
+    kabkota: regionName,
     bulan,
     tahun,
     bulan_nama: INDONESIAN_MONTHS[bulan - 1] || `Bulan ${bulan}`,
-    jadwal,
+    jadwal: jadwal as EQuranDailyShalat[],
   };
 }
 
 /**
- * Fetcher Jadwal Sholat Bulanan Kota Serang dari API Resmi EQuran (Bimas Islam Kemenag RI)
+ * Fetcher Jadwal Sholat Bulanan dari API Resmi EQuran (Bimas Islam Kemenag RI)
  * Dilengkapi dengan Next.js Cache Revalidation 24 Jam dan Fallback Adhan.
  */
-export async function getMonthlyShalatSerang(
+export async function getMonthlyShalat(
+  regionName: KotaKabupatenBanten = 'Kota Serang',
   bulan?: number,
   tahun?: number
 ): Promise<EQuranShalatData> {
@@ -93,18 +61,19 @@ export async function getMonthlyShalatSerang(
       },
       body: JSON.stringify({
         provinsi: 'Banten',
-        kabkota: 'Kota Serang',
+        kabkota: regionName,
         bulan: targetBulan,
         tahun: targetTahun,
       }),
       next: {
         revalidate: 86400, // 24 jam cache
+        tags: ['prayer-times', regionName],
       },
     });
 
     if (!response.ok) {
-      console.warn(`[getMonthlyShalatSerang] API HTTP ${response.status}. Menggunakan fallback kalkulasi lokal.`);
-      return getFallbackMonthlyShalat(targetBulan, targetTahun);
+      console.warn(`[getMonthlyShalat] API HTTP ${response.status}. Menggunakan fallback kalkulasi lokal.`);
+      return getFallbackMonthlyShalat(targetBulan, targetTahun, regionName);
     }
 
     const result: EQuranShalatResponse = await response.json();
@@ -113,10 +82,10 @@ export async function getMonthlyShalatSerang(
       return result.data;
     }
 
-    console.warn('[getMonthlyShalatSerang] Format data API tidak sesuai. Menggunakan fallback lokal.');
-    return getFallbackMonthlyShalat(targetBulan, targetTahun);
+    console.warn('[getMonthlyShalat] Format data API tidak sesuai. Menggunakan fallback lokal.');
+    return getFallbackMonthlyShalat(targetBulan, targetTahun, regionName);
   } catch (error) {
-    console.error('[getMonthlyShalatSerang] Terjadi kesalahan saat fetch API:', error);
-    return getFallbackMonthlyShalat(targetBulan, targetTahun);
+    console.error('[getMonthlyShalat] Terjadi kesalahan saat fetch API:', error);
+    return getFallbackMonthlyShalat(targetBulan, targetTahun, regionName);
   }
 }
