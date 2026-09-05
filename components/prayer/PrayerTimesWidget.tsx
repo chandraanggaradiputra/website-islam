@@ -3,14 +3,18 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { getRegionPrayerTimes } from '@/lib/prayerTimes';
+import { fetchMonthlyPrayerTimesAction } from '@/app/actions/prayer';
 import { Clock, MapPin, CalendarDays, ArrowRight, LocateFixed, Loader2 } from 'lucide-react';
 import { BANTEN_REGIONS, KotaKabupatenBanten, findNearestBantenRegion } from '@/lib/constants/bantenRegions';
+import { EQuranDailyShalat } from '@/types/prayer';
 
 export function PrayerTimesWidget() {
   const [now, setNow] = useState<Date | null>(null);
   const [region, setRegion] = useState<KotaKabupatenBanten>('Kota Serang');
   const [isLocating, setIsLocating] = useState(false);
+  const [todaySchedule, setTodaySchedule] = useState<EQuranDailyShalat | null>(null);
+  const [nextPrayer, setNextPrayer] = useState('Subuh');
+  const [prayerItems, setPrayerItems] = useState<{name: string, time: string, isPassed: boolean, isNext: boolean}[]>([]);
 
   useEffect(() => {
     // Sinkronisasi region dari localStorage (Hydration Safe)
@@ -30,6 +34,68 @@ export function PrayerTimesWidget() {
       clearInterval(interval);
     };
   }, []);
+
+  useEffect(() => {
+    if (!now) return;
+    const fetchPrayerTimes = async () => {
+      const month = now.getMonth() + 1;
+      const year = now.getFullYear();
+      
+      const pad = (n: number) => n.toString().padStart(2, '0');
+      const dateStr = `${year}-${pad(month)}-${pad(now.getDate())}`;
+      
+      try {
+        const data = await fetchMonthlyPrayerTimesAction(region, month, year);
+        const today = data.jadwal.find(d => d.tanggal_lengkap === dateStr) || data.jadwal[now.getDate() - 1];
+        if (today) setTodaySchedule(today);
+      } catch (error) {
+        console.error("Failed to fetch prayer times", error);
+      }
+    };
+    
+    fetchPrayerTimes();
+  }, [region, now?.getDate(), now?.getMonth(), now?.getFullYear()]);
+
+  useEffect(() => {
+    if (!now || !todaySchedule) return;
+
+    const [year, month, day] = todaySchedule.tanggal_lengkap.split('-');
+    
+    const parseTime = (timeStr: string) => {
+      const [h, m] = timeStr.split(':').map(Number);
+      return new Date(Number(year), Number(month) - 1, Number(day), h, m);
+    };
+
+    const rawTimes = [
+      { name: 'Subuh', time: todaySchedule.subuh, dateObj: parseTime(todaySchedule.subuh) },
+      { name: 'Dzuhur', time: todaySchedule.dzuhur, dateObj: parseTime(todaySchedule.dzuhur) },
+      { name: 'Ashar', time: todaySchedule.ashar, dateObj: parseTime(todaySchedule.ashar) },
+      { name: 'Maghrib', time: todaySchedule.maghrib, dateObj: parseTime(todaySchedule.maghrib) },
+      { name: 'Isya', time: todaySchedule.isya, dateObj: parseTime(todaySchedule.isya) },
+    ];
+
+    let nextFound = false;
+    let nextName = 'Subuh';
+
+    const items = rawTimes.map((item) => {
+      const isPassed = now > item.dateObj;
+      let isNext = false;
+      if (!isPassed && !nextFound) {
+        isNext = true;
+        nextFound = true;
+        nextName = item.name;
+      }
+      return {
+        name: item.name,
+        time: item.time,
+        isPassed,
+        isNext,
+      };
+    });
+
+    setPrayerItems(items);
+    setNextPrayer(nextName);
+  }, [now, todaySchedule]);
 
   const handleRegionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newRegion = e.target.value as KotaKabupatenBanten;
@@ -65,15 +131,13 @@ export function PrayerTimesWidget() {
     );
   };
 
-  if (!now) {
+  if (!now || !prayerItems.length) {
     return (
-      <div className="bg-slate-100 dark:bg-slate-900 rounded-2xl w-full h-24 animate-pulse" />
+      <div className="bg-slate-100 dark:bg-slate-900 rounded-2xl w-full h-40 animate-pulse flex items-center justify-center">
+        <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+      </div>
     );
   }
-
-  const data = getRegionPrayerTimes(now, region);
-  const times = data.items;
-  const nextPrayer = data.nextPrayerName;
 
   return (
     <div className="bg-gradient-to-br from-[#093c96] to-blue-900 shadow-lg p-5 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden text-white">
@@ -108,7 +172,7 @@ export function PrayerTimesWidget() {
       </div>
 
       <div className="grid grid-cols-6 gap-2 min-[450px]:grid-cols-5 mb-4">
-        {times.map((item, index) => {
+        {prayerItems.map((item, index) => {
           const isFirstThree = index < 3;
           const colSpanClass = isFirstThree 
             ? 'col-span-2 min-[450px]:col-span-1' 

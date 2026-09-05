@@ -29,6 +29,12 @@ export function getRegionPrayerTimes(
   const params = CalculationMethod.MuslimWorldLeague();
   params.fajrAngle = 20.0; // Standar Kemenag RI
   params.ishaAngle = 18.0; // Standar Kemenag RI
+  // Penyesuaian Ihtiyath Standar Kemenag RI (+2 s/d +3 menit)
+  params.adjustments.fajr = 3;
+  params.adjustments.dhuhr = 2;
+  params.adjustments.asr = 2;
+  params.adjustments.maghrib = 2;
+  params.adjustments.isha = 2;
 
   const prayerTimes = new PrayerTimes(coords, date, params);
   const now = new Date();
@@ -96,6 +102,12 @@ export function getMonthlyRegionPrayerTimes(
     const params = CalculationMethod.MuslimWorldLeague();
     params.fajrAngle = 20.0;
     params.ishaAngle = 18.0;
+    // Penyesuaian Ihtiyath Standar Kemenag RI (+2 s/d +3 menit)
+    params.adjustments.fajr = 3;
+    params.adjustments.dhuhr = 2;
+    params.adjustments.asr = 2;
+    params.adjustments.maghrib = 2;
+    params.adjustments.isha = 2;
 
     const prayerTimes = new PrayerTimes(coords, date, params);
 
