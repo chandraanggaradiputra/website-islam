@@ -234,9 +234,10 @@ export function DaftarDKMForm({ masjidList = [] }: { masjidList: WPMasjid[] }) {
       } else {
         setErrorMessage(res.error || 'Gagal mengajukan pendaftaran DKM.');
       }
-    } catch (err) {
-      console.error(err);
-      setErrorMessage('Terjadi kesalahan koneksi saat mengirim formulir.');
+    } catch (err: unknown) {
+      console.error('[onSubmit Error]:', err);
+      const errorText = err instanceof Error ? err.message : 'Terjadi kesalahan koneksi saat mengirim formulir.';
+      setErrorMessage(errorText);
     } finally {
       setIsSubmitting(false);
     }

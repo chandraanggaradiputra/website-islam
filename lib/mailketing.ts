@@ -11,6 +11,8 @@ const MAILKETING_API_TOKEN = process.env.MAILKETING_API_TOKEN || 'fd5208fcad3c4e
 const MAILKETING_FROM_EMAIL = process.env.MAILKETING_FROM_EMAIL || 'admin@maschandigital.id';
 const MAILKETING_DKM_LIST_ID = process.env.MAILKETING_DKM_LIST_ID || '92693';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://banten-mengaji.vercel.app';
+const MAILKETING_SEND_URL = 'https://api.mailketing.co.id/api/v2/send';
+const MAILKETING_SUBSCRIBER_URL = 'https://api.mailketing.co.id/api/v1/addsubtolist';
 
 export async function sendMailketingEmail({
   recipient,
@@ -18,7 +20,6 @@ export async function sendMailketingEmail({
   content,
   fromName = 'Banten Mengaji',
 }: MailketingEmailParams): Promise<boolean> {
-  const endpoint = 'https://api.mailketing.co.id/api/v1/send';
 
   const formData = new URLSearchParams();
   formData.append('api_token', MAILKETING_API_TOKEN);
@@ -29,12 +30,13 @@ export async function sendMailketingEmail({
   formData.append('content', content);
 
   try {
-    const res = await fetch(endpoint, {
+    const res = await fetch(MAILKETING_SEND_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: formData.toString(),
+      signal: AbortSignal.timeout(7000), // Mencegah Vercel timeout 504
     });
 
     if (!res.ok) {
@@ -56,7 +58,6 @@ export async function addDKMSubscriberToMailketing(data: {
   kotaKabupaten: string;
   noWhatsapp: string;
 }): Promise<boolean> {
-  const endpoint = 'https://api.mailketing.co.id/api/v1/addsubtolist';
 
   const formData = new URLSearchParams();
   formData.append('api_token', MAILKETING_API_TOKEN);
@@ -68,12 +69,13 @@ export async function addDKMSubscriberToMailketing(data: {
   formData.append('mobile', data.noWhatsapp);
 
   try {
-    const res = await fetch(endpoint, {
+    const res = await fetch(MAILKETING_SUBSCRIBER_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: formData.toString(),
+      signal: AbortSignal.timeout(7000),
     });
 
     if (!res.ok) {
