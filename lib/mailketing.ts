@@ -44,6 +44,9 @@ export async function sendMailketingEmail({
       return false;
     }
 
+    const resData = await res.json().catch(() => ({}));
+    console.log(`[Mailketing Send to ${recipient}]:`, resData);
+
     return true;
   } catch (error) {
     console.error('[Mailketing] Error fetch:', error);
@@ -139,12 +142,19 @@ export async function sendNewDKMNotificationToAdmin(data: {
     `
   );
 
+  const adminRecipients = (
+    process.env.ADMIN_NOTIFICATION_EMAIL || 
+    'admin@maschandigital.id,anggarasixteen@gmail.com'
+  ).split(',').map(e => e.trim()).filter(Boolean);
+
   try {
-    await sendMailketingEmail({
-      recipient: 'admin@maschandigital.id',
-      subject: `[Pendaftaran Baru] Permohonan Akun DKM ${data.namaMasjid} - ${data.namaPengurus}`,
-      content,
-    });
+    for (const recipient of adminRecipients) {
+      await sendMailketingEmail({
+        recipient,
+        subject: `[Pendaftaran Baru] Permohonan Akun DKM ${data.namaMasjid} - ${data.namaPengurus}`,
+        content,
+      });
+    }
   } catch (error) {
     console.error('Gagal sendNewDKMNotificationToAdmin:', error);
   }

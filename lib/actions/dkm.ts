@@ -351,9 +351,11 @@ export async function submitDaftarDKM(formDataOrPayload: FormData | DKMRegistrat
       fasilitas,
     };
 
-    // Panggil secara asinkron non-blocking
-    sendNewDKMNotificationToAdmin(pendaftaranData).catch((e) => console.error('[Mailketing Error di submitDaftarDKM - sendNewDKMNotificationToAdmin]', e));
-    addDKMSubscriberToMailketing(pendaftaranData).catch((e) => console.error('[Mailketing Error di submitDaftarDKM - addDKMSubscriberToMailketing]', e));
+    // Kirim notifikasi email ke admin & daftarkan ke list Mailketing secara aman di serverless
+    await Promise.allSettled([
+      sendNewDKMNotificationToAdmin(pendaftaranData),
+      addDKMSubscriberToMailketing(pendaftaranData),
+    ]);
     return {
       success: true,
       message: 'Permohonan pendaftaran DKM berhasil diajukan.',
