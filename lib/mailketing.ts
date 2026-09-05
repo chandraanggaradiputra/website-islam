@@ -10,6 +10,7 @@ export interface MailketingEmailParams {
 const MAILKETING_API_TOKEN = process.env.MAILKETING_API_TOKEN || 'fd5208fcad3c4e08653a7709bd47f58c';
 const MAILKETING_FROM_EMAIL = process.env.MAILKETING_FROM_EMAIL || 'admin@maschandigital.id';
 const MAILKETING_DKM_LIST_ID = process.env.MAILKETING_DKM_LIST_ID || '92693';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://banten-mengaji.vercel.app';
 
 export async function sendMailketingEmail({
   recipient,
@@ -131,7 +132,7 @@ export async function sendNewDKMNotificationToAdmin(data: {
     </table>
     <p>Silakan login ke dashboard Super Admin untuk memeriksa kelengkapan data dan menyetujui pendaftaran tersebut.</p>
     <div style="text-align: center; margin: 30px 0;">
-      <a href="https://banten-mengaji.vercel.app/dashboard/admin?tab=dkm" style="background-color: #093c96; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 12px; font-weight: bold; display: inline-block;">Buka Dashboard Admin</a>
+      <a href="${SITE_URL}/dashboard/admin?tab=dkm" style="background-color: #093c96; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 12px; font-weight: bold; display: inline-block;">Buka Dashboard Admin</a>
     </div>
     `
   );
@@ -160,7 +161,7 @@ export async function sendDKMApprovalEmail(data: { email: string; namaMasjid: st
     </ul>
     <p>Sekarang Anda dapat mengelola profil masjid, menjadwalkan kajian rutin, dan memperbarui informasi kajian secara mandiri melalui dasbor DKM.</p>
     <div style="text-align: center; margin: 30px 0;">
-      <a href="https://bantenmengaji.com/login" style="background-color: #093c96; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 12px; font-weight: bold; display: inline-block;">Login ke Dashboard DKM</a>
+      <a href="${SITE_URL}/login" style="background-color: #093c96; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 12px; font-weight: bold; display: inline-block;">Login ke Dashboard DKM</a>
     </div>
     <p>Terima kasih atas partisipasi Anda dalam memakmurkan syiar dakwah di Provinsi Banten.</p>
     `
