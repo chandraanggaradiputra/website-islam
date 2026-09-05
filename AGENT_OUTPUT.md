@@ -1,89 +1,91 @@
-RINGKASAN TINDAKAN:
-1. **Pengembalian Endpoint API ke v1**: Sesuai dengan spesifikasi dokumentasi _form-urlencoded_ Mailketing, _endpoint_ URL `MAILKETING_SEND_URL` di `lib/mailketing.ts` telah dikembalikan ke `https://api.mailketing.co.id/api/v1/send`.
-2. **Validasi Respons 200 OK Semu**: Mailketing selalu merespons HTTP 200 meskipun pengiriman sebenarnya gagal. Untuk mengatasi hal ini, logika fungsi `sendMailketingEmail` telah diperbarui untuk memvalidasi isi respon secara ketat, yakni mengecek apakah `resData.status === 'success'`. Jika tidak, fungsi akan mengembalikan `false` dan mencetak pesan eror _response_ ke dalam log dasbor.
-3. **Route Handler Pengujian Instan**: File _route handler_ baru telah dibuat di `app/api/test-email/route.ts` (`/api/test-email`). Fitur ini memungkinkan super admin untuk melakukan pengujian pengiriman email notifikasi langsung dari _browser_ tanpa perlu mengisi formulir pendaftaran DKM terlebih dahulu.
-4. **Verifikasi & Integrasi**:
-   - Pengecekan kompilator Typescript `tsc --noEmit` lolos.
-   - Turbopack sukses membuat _build_ produksi yang stabil dan cepat.
-   - Pengerjaan selesai, telah di-_commit_, _merge_ ke branch `main`, dan disinkronkan.
+Laporan Hasil Kerja:
+Berdasarkan instruksi dari `AGENT_INSTRUCTION.md`, berikut adalah tindakan perbaikan yang telah diselesaikan:
 
-HASIL GIT DIFF & STATUS PUSH:
+1. **Rekonstruksi Shell Email (`lib/mailketing.ts`)**: Fungsi `bantenMengajiEmailShell` telah diperbarui dari layout berbasis div biasa menjadi layout HTML berbasis `<table role="presentation">` dengan deklarasi `<!DOCTYPE html>` dan `<html lang="id">`. Format standar ini tahan terhadap batasan render (seperti *height collapse*) pada aplikasi Gmail Mobile dan sekaligus menghilangkan *banner* tawaran terjemahan bahasa otomatis dari Gmail.
+2. **Validasi & Integrasi**:
+   - TypeScript tidak menemukan *error* saat kompilasi statis (`tsc --noEmit`).
+   - *Build* Next.js menggunakan Turbopack berhasil tanpa kendala.
+   - Perubahan telah berhasil di-*commit*, di-*merge* ke *branch* `main`, dan disinkronkan ke repositori *origin* Github.
 
-commit da187b003a35f0535e5d3c8c760d6a048a14ec13
+**HASIL GIT DIFF & STATUS PUSH:**
+
+```diff
+commit 1159fee6d84a754ec83db91cbf74da80b7c06ebf
+Merge: beec6bd c85eb76
 Author: chandraanggaradiputra <anggarasixteen@gmail.com>
-Date:   Sat Sep 5 14:32:46 2026 +0700
+Date:   Sat Sep 5 15:42:46 2026 +0700
 
-    fix(mailketing): kembalikan endpoint ke v1, tambah validasi status success, dan buat route test
+    Merge branch staging-website-islam
 
-diff --git a/app/api/test-email/route.ts b/app/api/test-email/route.ts
-new file mode 100644
-index 0000000..c004f66
---- /dev/null
-+++ b/app/api/test-email/route.ts
-@@ -0,0 +1,29 @@
-+import { NextResponse } from 'next/server';
-+import { sendMailketingEmail } from '@/lib/mailketing';
-+
-+export const dynamic = 'force-dynamic';
-+
-+export async function GET() {
-+  const recipients = ['admin@maschandigital.id', 'anggarasixteen@gmail.com'];
-+  const results: Record<string, unknown>[] = [];
-+
-+  for (const recipient of recipients) {
-+    const res = await sendMailketingEmail({
-+      recipient,
-+      subject: 'Uji Coba Sistem Email Banten Mengaji via Mailketing API v1',
-+      content: `
-+        <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #e5e7eb; border-radius: 12px;">
-+          <h2 style="color: #093c96;">Tes Notifikasi Mailketing Berhasil!</h2>
-+          <p>Ini adalah email uji coba langsung dari platform <strong>Banten Mengaji</strong>.</p>
-+          <p>Waktu pengiriman: \${new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB</p>
-+        </div>
-+      `,
-+    });
-+    results.push({ recipient, success: res });
-+  }
-+
-+  return NextResponse.json({
-+    message: 'Pengujian pengiriman email selesai diproses',
-+    results,
-+  });
-+}
 diff --git a/lib/mailketing.ts b/lib/mailketing.ts
-index bc1d636..3fa1bfd 100644
+index 3fa1bfd..a1de4af 100644
 --- a/lib/mailketing.ts
 +++ b/lib/mailketing.ts
-@@ -11,7 +11,7 @@ const MAILKETING_API_TOKEN = process.env.MAILKETING_API_TOKEN || 'fd5208fcad3c4e
- const MAILKETING_FROM_EMAIL = process.env.MAILKETING_FROM_EMAIL || 'admin@maschandigital.id';
- const MAILKETING_DKM_LIST_ID = process.env.MAILKETING_DKM_LIST_ID || '92693';
- const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://banten-mengaji.vercel.app';
--const MAILKETING_SEND_URL = 'https://api.mailketing.co.id/api/v2/send';
-+const MAILKETING_SEND_URL = 'https://api.mailketing.co.id/api/v1/send';
- const MAILKETING_SUBSCRIBER_URL = 'https://api.mailketing.co.id/api/v1/addsubtolist';
+@@ -99,22 +99,46 @@ export async function addDKMSubscriberToMailketing(data: {
+ }
  
- export async function sendMailketingEmail({
-@@ -47,6 +47,11 @@ export async function sendMailketingEmail({
-     const resData = await res.json().catch(() => ({}));
-     console.log(\`[Mailketing Send to \${recipient}]:\`, resData);
- 
-+    if (resData.status !== 'success') {
-+      console.error(\`[Mailketing Failed to \${recipient}]:\`, resData.response);
-+      return false;
-+    }
-+
-     return true;
-   } catch (error) {
-     console.error('[Mailketing] Error fetch:', error);
+ export function bantenMengajiEmailShell(title: string, bodyContent: string): string {
+-  return \`
+-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden;">
+-      <div style="background: linear-gradient(135deg, #093c96 0%, #1e3a8a 100%); padding: 20px; text-align: center;">
+-        <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: bold;">Banten Mengaji</h1>
+-        <p style="color: #bfdbfe; margin: 5px 0 0 0; font-size: 14px;">Provinsi Banten</p>
+-      </div>
+-      <div style="padding: 30px; background-color: #ffffff; color: #1e293b; line-height: 1.6;">
+-        <h2 style="margin-top: 0; color: #093c96;">\${title}</h2>
+-        \${bodyContent}
+-      </div>
+-      <div style="background-color: #f1f5f9; padding: 20px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e5e7eb;">
+-        <p style="margin: 0;">Banten Mengaji — Dikembangkan oleh Mas Chan Digital</p>
+-        <p style="margin: 5px 0 0 0;">Bantuan WhatsApp: 0822-9814-8474</p>
+-      </div>
+-    </div>
+-  \`;
++  return \`<!DOCTYPE html>
++<html lang="id">
++<head>
++  <meta charset="UTF-8">
++  <meta name="viewport" content="width=device-width, initial-scale=1.0">
++  <meta http-equiv="X-UA-Compatible" content="IE=edge">
++  <title>\${title}</title>
++</head>
++<body style="margin: 0; padding: 0; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
++  <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f1f5f9; padding: 25px 0;">
++    <tr>
++      <td align="center">
++        <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
++          <!-- Header -->
++          <tr>
++            <td style="background-color: #093c96; padding: 30px 20px; text-align: center;">
++              <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: bold; letter-spacing: -0.5px;">Banten Mengaji</h1>
++              <p style="color: #bfdbfe; margin: 6px 0 0 0; font-size: 13px;">Provinsi Banten</p>
++            </td>
++          </tr>
++          <!-- Body Content -->
++          <tr>
++            <td style="padding: 30px 24px; color: #1e293b; font-size: 14px; line-height: 1.6;">
++              <h2 style="color: #0f172a; margin-top: 0; font-size: 18px; font-weight: bold; margin-bottom: 16px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px;">\${title}</h2>
++              \${bodyContent}
++            </td>
++          </tr>
++          <!-- Footer -->
++          <tr>
++            <td style="background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 20px 24px; text-align: center; font-size: 12px; color: #64748b; line-height: 1.5;">
++              <p style="margin: 0; font-weight: 600; color: #475569;">Banten Mengaji — Dikembangkan oleh Mas Chan Digital</p>
++              <p style="margin: 4px 0 0 0;">Layanan Bantuan WhatsApp: 0822-9814-8474</p>
++            </td>
++          </tr>
++        </table>
++      </td>
++    </tr>
++  </table>
++</body>
++</html>\`;
+ }
+```
 
-STATUS PUSH:
-Switched to branch 'main'
-Your branch is up to date with 'origin/main'.
-Updating 95d0801..da187b0
-Fast-forward
- app/api/test-email/route.ts | 29 +++++++++++++++++++++++++++++
- lib/mailketing.ts           |  7 ++++++-
- 2 files changed, 35 insertions(+), 1 deletion(-)
- create mode 100644 app/api/test-email/route.ts
+**STATUS PUSH:**
+```
 To https://github.com/chandraanggaradiputra/website-islam.git
-   95d0801..da187b0  main -> main
+   c85eb76..1159fee  main -> main
+```
