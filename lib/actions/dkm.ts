@@ -3,6 +3,7 @@
 import { getSession } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 import { DKMRegistrationPayload, DKMRegistrationApplication } from '@/types';
+import { sendNewDKMNotificationToAdmin, sendDKMApprovalEmail, sendDKMRejectionEmail } from '@/lib/mailketing';
 
 const WP_API_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || 'https://salaf.maschandigital.id/wp-json/wp/v2';
 
@@ -331,6 +332,13 @@ export async function submitDaftarDKM(formDataOrPayload: FormData | DKMRegistrat
 
     revalidatePath('/dashboard/admin');
 
+    // Kirim notifikasi email
+    sendNewDKMNotificationToAdmin({
+      namaMasjid: namaMasjidBaru || 'Usulan Masjid Baru/Klaim Masjid',
+      namaPengurus: namaPengurus,
+      email: email,
+    }).catch((e) => console.error('[Mailketing Error di submitDaftarDKM]', e));
+
     return {
       success: true,
       message: 'Permohonan pendaftaran DKM berhasil diajukan.',
@@ -486,6 +494,14 @@ export async function approveDKMRegistration(registrationId: string | number) {
       }
     }
 
+    if (appData.email) {
+      const namaMasjidFinal = appData.newMasjidData?.namaMasjid || appData.masjidName || masjidData.title?.rendered || 'Masjid Anda';
+      sendDKMApprovalEmail({
+        email: appData.email,
+        namaMasjid: namaMasjidFinal.replace('KLAIM: ', ''),
+      }).catch((e) => console.error('[Mailketing Error di approveDKMRegistration]', e));
+    }
+
     revalidatePath('/');
     revalidatePath('/masjid');
     revalidatePath('/dashboard/admin');
@@ -520,7 +536,36 @@ export async function rejectDKMRegistration(registrationId: string | number) {
   }
 
   try {
-    // Hapus draft masjid / klaim masjid ini
+    // 1. Ambil data masjid untuk mendapatkan email pemohon
+    const resGet = await fetch(`${WP_API_URL}/masjid/${registrationId}`, {
+      headers: { 'Authorization': authHeader },
+    });
+    
+    if (resGet.ok) {
+      const masjidData = await resGet.json();
+      let appData: any = {};
+      try {
+        if (masjidData.content?.rendered) {
+          const rawContent = masjidData.content.rendered;
+          const match = rawContent.match(/DKM_METADATA_START:(.*?):DKM_METADATA_END/);
+          if (match && match[1]) {
+            appData = JSON.parse(Buffer.from(match[1], 'base64').toString('utf-8'));
+          }
+        }
+      } catch (e) {
+        console.error('Failed parsing metadata on reject:', e);
+      }
+      
+      if (appData.email) {
+        const namaMasjidFinal = appData.newMasjidData?.namaMasjid || appData.masjidName || masjidData.title?.rendered || 'Usulan Masjid';
+        sendDKMRejectionEmail({
+          email: appData.email,
+          namaMasjid: namaMasjidFinal.replace('KLAIM: ', ''),
+        }).catch((e) => console.error('[Mailketing Error di rejectDKMRegistration]', e));
+      }
+    }
+
+    // 2. Hapus draft masjid / klaim masjid ini
     const resDel = await fetch(`${WP_API_URL}/masjid/${registrationId}?force=true`, {
       method: 'DELETE',
       headers: {
