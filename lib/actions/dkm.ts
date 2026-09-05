@@ -3,7 +3,7 @@
 import { getSession } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 import { DKMRegistrationPayload, DKMRegistrationApplication } from '@/types';
-import { sendNewDKMNotificationToAdmin, sendDKMApprovalEmail, sendDKMRejectionEmail } from '@/lib/mailketing';
+import { sendNewDKMNotificationToAdmin, sendDKMApprovalEmail, sendDKMRejectionEmail, addDKMSubscriberToMailketing } from '@/lib/mailketing';
 
 const WP_API_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || 'https://salaf.maschandigital.id/wp-json/wp/v2';
 
@@ -332,13 +332,20 @@ export async function submitDaftarDKM(formDataOrPayload: FormData | DKMRegistrat
 
     revalidatePath('/dashboard/admin');
 
-    // Kirim notifikasi email
-    sendNewDKMNotificationToAdmin({
-      namaMasjid: namaMasjidBaru || 'Usulan Masjid Baru/Klaim Masjid',
-      namaPengurus: namaPengurus,
-      email: email,
-    }).catch((e) => console.error('[Mailketing Error di submitDaftarDKM]', e));
+    // Konstruksi data pendaftaran untuk email & subscriber
+    const pendaftaranData = {
+      namaMasjid: isNewMasjid ? namaMasjidBaru : `Klaim: ${masjidOption}`,
+      namaPengurus,
+      email,
+      noWhatsapp,
+      kotaKabupaten: kotaKabupaten || 'Tidak diketahui',
+      alamatLengkap: alamatMasjid,
+      fasilitas,
+    };
 
+    // Panggil secara asinkron non-blocking
+    sendNewDKMNotificationToAdmin(pendaftaranData).catch((e) => console.error('[Mailketing Error di submitDaftarDKM - sendNewDKMNotificationToAdmin]', e));
+    addDKMSubscriberToMailketing(pendaftaranData).catch((e) => console.error('[Mailketing Error di submitDaftarDKM - addDKMSubscriberToMailketing]', e));
     return {
       success: true,
       message: 'Permohonan pendaftaran DKM berhasil diajukan.',
