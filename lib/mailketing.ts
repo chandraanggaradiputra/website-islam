@@ -11,7 +11,7 @@ const MAILKETING_API_TOKEN = process.env.MAILKETING_API_TOKEN || 'fd5208fcad3c4e
 const MAILKETING_FROM_EMAIL = process.env.MAILKETING_FROM_EMAIL || 'admin@maschandigital.id';
 const MAILKETING_DKM_LIST_ID = process.env.MAILKETING_DKM_LIST_ID || '92693';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://banten-mengaji.vercel.app';
-const MAILKETING_SEND_URL = 'https://api.mailketing.co.id/api/v2/send';
+const MAILKETING_SEND_URL = 'https://api.mailketing.co.id/api/v1/send';
 const MAILKETING_SUBSCRIBER_URL = 'https://api.mailketing.co.id/api/v1/addsubtolist';
 
 export async function sendMailketingEmail({
@@ -46,6 +46,11 @@ export async function sendMailketingEmail({
 
     const resData = await res.json().catch(() => ({}));
     console.log(`[Mailketing Send to ${recipient}]:`, resData);
+
+    if (resData.status !== 'success') {
+      console.error(`[Mailketing Failed to ${recipient}]:`, resData.response);
+      return false;
+    }
 
     return true;
   } catch (error) {
