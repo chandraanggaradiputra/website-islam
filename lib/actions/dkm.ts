@@ -513,10 +513,15 @@ export async function approveDKMRegistration(registrationId: string | number) {
 
     if (appData.email) {
       const namaMasjidFinal = appData.newMasjidData?.namaMasjid || appData.masjidName || masjidData.title?.rendered || 'Masjid Anda';
-      sendDKMApprovalEmail({
-        email: appData.email,
-        namaMasjid: namaMasjidFinal.replace('KLAIM: ', ''),
-      }).catch((e) => console.error('[Mailketing Error di approveDKMRegistration]', e));
+      
+      try {
+        await sendDKMApprovalEmail({
+          email: appData.email,
+          namaMasjid: namaMasjidFinal.replace('KLAIM: ', ''),
+        });
+      } catch (e) {
+        console.error('[Mailketing Error di approveDKMRegistration]', e);
+      }
     }
 
     revalidatePath('/');
@@ -575,10 +580,15 @@ export async function rejectDKMRegistration(registrationId: string | number) {
       
       if (appData.email) {
         const namaMasjidFinal = appData.newMasjidData?.namaMasjid || appData.masjidName || masjidData.title?.rendered || 'Usulan Masjid';
-        sendDKMRejectionEmail({
-          email: appData.email,
-          namaMasjid: namaMasjidFinal.replace('KLAIM: ', ''),
-        }).catch((e) => console.error('[Mailketing Error di rejectDKMRegistration]', e));
+        
+        try {
+          await sendDKMRejectionEmail({
+            email: appData.email,
+            namaMasjid: namaMasjidFinal.replace('KLAIM: ', ''),
+          });
+        } catch (e) {
+          console.error('[Mailketing Error di rejectDKMRegistration]', e);
+        }
       }
     }
 
