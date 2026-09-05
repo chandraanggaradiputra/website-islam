@@ -209,13 +209,14 @@ export async function sendDKMApprovalEmail(data: { email: string; namaMasjid: st
   );
 
   try {
-    await sendMailketingEmail({
+    return await sendMailketingEmail({
       recipient: data.email,
       subject: `Alhamdulillah! Akun DKM Anda Telah Disetujui - Banten Mengaji`,
       content,
     });
   } catch (error) {
     console.error('Gagal sendDKMApprovalEmail:', error);
+    return false;
   }
 }
 
@@ -235,12 +236,13 @@ export async function sendDKMRejectionEmail(data: { email: string; namaMasjid: s
   );
 
   try {
-    await sendMailketingEmail({
+    return await sendMailketingEmail({
       recipient: data.email,
       subject: `Pemberitahuan Status Pendaftaran DKM - Banten Mengaji`,
       content,
     });
   } catch (error) {
     console.error('Gagal sendDKMRejectionEmail:', error);
+    return false;
   }
 }
