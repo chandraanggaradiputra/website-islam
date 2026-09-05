@@ -8,9 +8,17 @@ import { sendNewDKMNotificationToAdmin, sendDKMApprovalEmail, sendDKMRejectionEm
 const WP_API_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || 'https://salaf.maschandigital.id/wp-json/wp/v2';
 
 function getWPAdminAuthHeader(): string | null {
-  const user = process.env.WP_ADMIN_USERNAME;
-  const pass = process.env.WP_APPLICATION_PASSWORD;
-  if (!user || !pass) return null;
+  const user = process.env.WP_ADMIN_USERNAME?.trim();
+  const pass = process.env.WP_APPLICATION_PASSWORD?.trim();
+
+  if (!user || !pass) {
+    console.warn('[DKM Auth Error] Kredensial server WordPress tidak lengkap:', {
+      hasUsername: Boolean(user),
+      hasAppPassword: Boolean(pass),
+    });
+    return null;
+  }
+
   return 'Basic ' + Buffer.from(`${user}:${pass}`).toString('base64');
 }
 
