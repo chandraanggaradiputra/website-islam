@@ -1,4 +1,4 @@
-# Temuan Audit Keamanan — Project Website Islam (Banten Mengaji)
+# Temuan Audit Keamanan — Project Banten Mengaji
 
 > **Untuk**: AI Agent (Gemini Spark / Antigravity) yang mengerjakan repo ini.
 > **Konteks**: Hasil audit keamanan atas repo `chandraanggaradiputra/website-islam`

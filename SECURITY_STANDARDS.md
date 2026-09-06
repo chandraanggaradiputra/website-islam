@@ -1,4 +1,4 @@
-# Standar Keamanan Proyek "Website Islam" (Mas Chan Digital)
+# Standar Keamanan Proyek "Banten Mengaji" (Mas Chan Digital)
 
 > Dokumen ini pelengkap `ANTIGRAVITY_RULES.md`. Kalau `ANTIGRAVITY_RULES.md` mengatur
 > *kualitas rekayasa kode*, dokumen ini mengatur *keamanan*. Berlaku untuk semua AI Agent

@@ -2,7 +2,7 @@
 
 const KNOWN_INSECURE_FALLBACKS = [
   'super-secret-key-for-development-only-12345',
-  'super-secret-key-for-website-islam-2024-change-in-prod',
+  'super-secret-key-for-banten-mengaji-2024-change-in-prod',
 ];
 
 const jwtSecret = process.env.JWT_SECRET?.trim();
