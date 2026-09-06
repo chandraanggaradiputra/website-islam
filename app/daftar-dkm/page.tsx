@@ -3,7 +3,7 @@ import { getMasjidList } from '@/lib/wordpress';
 import { DaftarDKMForm } from '@/components/dashboard/DaftarDKMForm';
 
 export const metadata: Metadata = {
-  title: 'Pendaftaran DKM - Syiar Salaf Kota Serang',
+  title: 'Pendaftaran DKM - Banten Mengaji',
   description: 'Daftarkan diri Anda untuk mengelola jadwal kajian dan profil masjid secara mandiri melalui Dashboard DKM.',
 };
 

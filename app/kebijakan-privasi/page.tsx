@@ -1,8 +1,8 @@
 import { ShieldCheck, Database, EyeOff, CheckCircle2 } from 'lucide-react';
 
 export const metadata = {
-  title: 'Kebijakan Privasi - Syiar Salaf Kota Serang',
-  description: 'Kebijakan privasi dan perlindungan data pengguna dan pengurus DKM di portal Syiar Salaf Kota Serang.',
+  title: 'Kebijakan Privasi - Banten Mengaji',
+  description: 'Kebijakan privasi dan perlindungan data pengguna dan pengurus DKM di portal Banten Mengaji.',
 };
 
 export default function KebijakanPrivasiPage() {
@@ -36,7 +36,7 @@ export default function KebijakanPrivasiPage() {
             </h2>
           </div>
           <p className="text-sm leading-relaxed pl-9">
-            Dalam rangka memberikan layanan publikasi jadwal kajian yang terverifikasi, portal <strong>Syiar Salaf Kota Serang</strong> mengumpulkan informasi tertentu:
+            Dalam rangka memberikan layanan publikasi jadwal kajian yang terverifikasi, portal <strong>Banten Mengaji</strong> mengumpulkan informasi tertentu:
           </p>
           <ul className="space-y-2.5 pl-9 text-sm">
             <li className="flex items-start gap-2.5">

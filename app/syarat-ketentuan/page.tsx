@@ -1,8 +1,8 @@
 import { Scale, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 export const metadata = {
-  title: 'Syarat & Ketentuan - Syiar Salaf Kota Serang',
-  description: 'Tata tertib dan ketentuan penggunaan portal Syiar Salaf Kota Serang bagi jamaah dan pengurus DKM.',
+  title: 'Syarat & Ketentuan - Banten Mengaji',
+  description: 'Tata tertib dan ketentuan penggunaan portal Banten Mengaji bagi jamaah dan pengurus DKM.',
 };
 
 export default function SyaratKetentuanPage() {
@@ -18,7 +18,7 @@ export default function SyaratKetentuanPage() {
           Syarat & Ketentuan Penggunaan
         </h1>
         <p className="mt-2 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-          Terakhir diperbarui: 29 Agustus 2026. Harap membaca tata tertib dan ketentuan penggunaan portal Syiar Salaf Kota Serang di bawah ini dengan seksama.
+          Terakhir diperbarui: 29 Agustus 2026. Harap membaca tata tertib dan ketentuan penggunaan portal Banten Mengaji di bawah ini dengan seksama.
         </p>
       </div>
 
@@ -36,7 +36,7 @@ export default function SyaratKetentuanPage() {
             </h2>
           </div>
           <p className="text-sm leading-relaxed pl-9">
-            Portal <strong>Syiar Salaf Kota Serang</strong> adalah media nirlaba independen yang bertujuan untuk memfasilitasi kaum muslimin dalam mendapatkan informasi jadwal kajian ilmiah Islam bermanhaj Salafus Shalih dan direktori masjid sunnah di Kota Serang, Banten, dan sekitarnya.
+            Portal <strong>Banten Mengaji</strong> adalah media nirlaba independen yang bertujuan untuk memfasilitasi kaum muslimin dalam mendapatkan informasi jadwal kajian ilmiah Islam bermanhaj Salafus Shalih dan direktori masjid sunnah di Kota Serang, Banten, dan sekitarnya.
           </p>
           <p className="text-sm leading-relaxed pl-9">
             Dengan mengakses dan menggunakan portal ini, pengunjung maupun pengurus DKM menyatakan telah membaca, memahami, dan menyetujui seluruh ketentuan yang termaktub dalam halaman ini.
@@ -115,7 +115,7 @@ export default function SyaratKetentuanPage() {
             </h2>
           </div>
           <p className="text-sm leading-relaxed pl-9">
-            Administrator portal <strong>Syiar Salaf Kota Serang</strong> memiliki kewenangan penuh untuk:
+            Administrator portal <strong>Banten Mengaji</strong> memiliki kewenangan penuh untuk:
           </p>
           <ul className="space-y-2 pl-9 text-sm list-disc list-inside">
             <li>Memeriksa, menyetujui, menunda, atau menolak permohonan publikasi jadwal kajian demi menjaga kemurnian dakwah sunnah.</li>
