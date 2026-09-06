@@ -58,7 +58,7 @@ export default function DonasiPage() {
   };
 
   const waConfirmUrl =
-    'https://wa.me/6282298148474?text=Assalamualaikum%20Akhi%20Chandra%20Anggara,%20saya%20telah%20menyalurkan%20infaq%20pengembangan%20Website%20Syiar%20Salaf%20Serang.';
+    'https://wa.me/6282298148474?text=Assalamualaikum%20Akhi%20Chandra%20Anggara,%20saya%20telah%20menyalurkan%20infaq%20pengembangan%20Website%20Banten%20Mengaji.';
 
   return (
     <div className="mx-auto max-w-4xl space-y-10 py-6">
@@ -71,7 +71,7 @@ export default function DonasiPage() {
             <span>Infaq & Dukungan Dakwah Sunnah</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
-            Infaq Pengembangan Syiar Salaf Serang
+            Infaq Pengembangan Banten Mengaji
           </h1>
           <p className="text-blue-100 text-sm sm:text-base leading-relaxed">
             Bantu operasional server, digitalisasi direktori masjid, dan penyebaran jadwal kajian ilmiah Islam bermanhaj Salafus Shalih di Kota Serang dan sekitarnya.
