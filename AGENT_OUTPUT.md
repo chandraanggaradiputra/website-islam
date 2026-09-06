@@ -1,96 +1,112 @@
-Laporan Hasil Kerja: Perbaikan Fungsi Penolakan dan Persetujuan DKM
+Laporan Hasil Kerja: Pembersihan Nama Lama "Website Islam" Menjadi "Banten Mengaji"
 
-Saya telah menyelesaikan perbaikan pada alur pengiriman email Mailketing sesuai permintaan:
+Berdasarkan instruksi yang ditugaskan, saya telah membersihkan sisa-sisa nama referensi lama ("Website Islam" dan "website-islam") di seluruh *source code* proyek dan menggantinya menjadi "Banten Mengaji" (serta format URL/variabel "banten-mengaji"). Berikut adalah perubahan yang telah dilakukan:
 
-1. **Perbaikan `lib/actions/dkm.ts` (Fungsi Approval & Rejection)**:
-   - Menambahkan keyword `await` dan memblok pengiriman email ke dalam blok `try...catch` pada fungsi `approveDKMRegistration` dan `rejectDKMRegistration`. Hal ini bertujuan agar Vercel Lambda menunggu proses *fetch* eksternal Mailketing hingga selesai tanpa diputus di tengah jalan secara prematur akibat Vercel Lambda *freeze*.
-2. **Perbaikan `lib/mailketing.ts` (`sendDKMRejectionEmail` & `sendDKMApprovalEmail`)**:
-   - Menambahkan pengembalian nilai asinkron (menggunakan `return await`) yang memastikan promise benar-benar ditunggu dan melempar *boolean* (sukses/gagal) dengan valid.
+1. **Penggantian Nama di Markdown Docs**:
+   - `ANTIGRAVITY_RULES.md`
+   - `SECURITY_STANDARDS.md`
+   - `SECURITY_AUDIT_TASKS.md`
+2. **Penggantian Nama Modul NPM/Sistem**:
+   - `package.json` (`"name": "website-islam"` menjadi `"name": "banten-mengaji"`)
+   - `package-lock.json` (*auto-regenerated* via `npm install`)
+3. **Penggantian Kunci Rahasia / Variabel Internal**:
+   - `lib/env.ts` (mengganti token fallback `super-secret-key-for-website-islam-2024-change-in-prod` menjadi `super-secret-key-for-banten-mengaji-2024-change-in-prod`)
+4. **Pembaruan Berkas E2E Test**:
+   - Mengubah nama file `e2e/website-islam.spec.ts` menjadi `e2e/banten-mengaji.spec.ts`
+   - Mengganti deskripsi *test suite* di dalamnya.
 
 **Hasil Pengujian & Sinkronisasi:**
-- `npx tsc --noEmit` & `npm run build` berhasil tanpa *error*.
-- Perubahan berhasil di-*commit*, di-*merge* dari `staging-website-islam` ke `main`, dan disinkronkan ke Github.
+- `npx tsc --noEmit` & `npm run build` berhasil secara keseluruhan (0 *error*).
+- Seluruh perubahan berhasil di-*commit* ke *branch* `staging-website-islam` dan di-*merge* ke *branch* `main`. Sinkronisasi (*push*) ke *remote* (Github) berhasil dipublikasikan.
 
-**HASIL GIT DIFF (HEAD~1 HEAD):**
+**HASIL GIT DIFF:**
 
 ```diff
-diff --git a/lib/actions/dkm.ts b/lib/actions/dkm.ts
-index 2e12f01..4617d39 100644
---- a/lib/actions/dkm.ts
-+++ b/lib/actions/dkm.ts
-@@ -513,10 +513,15 @@ export async function approveDKMRegistration(registrationId: string | number) {
+diff --git a/ANTIGRAVITY_RULES.md b/ANTIGRAVITY_RULES.md
+index 3970b05..d1cb92b 100644
+--- a/ANTIGRAVITY_RULES.md
++++ b/ANTIGRAVITY_RULES.md
+@@ -1,4 +1,4 @@
+-# Standar Rekayasa Kode Proyek "Website Islam" (Mas Chan Digital)
++# Standar Rekayasa Kode Proyek "Banten Mengaji" (Mas Chan Digital)
  
-     if (appData.email) {
-       const namaMasjidFinal = appData.newMasjidData?.namaMasjid || appData.masjidName || masjidData.title?.rendered || 'Masjid Anda';
--      sendDKMApprovalEmail({
--        email: appData.email,
--        namaMasjid: namaMasjidFinal.replace('KLAIM: ', ''),
--      }).catch((e) => console.error('[Mailketing Error di approveDKMRegistration]', e));
-+      
-+      try {
-+        await sendDKMApprovalEmail({
-+          email: appData.email,
-+          namaMasjid: namaMasjidFinal.replace('KLAIM: ', ''),
-+        });
-+      } catch (e) {
-+        console.error('[Mailketing Error di approveDKMRegistration]', e);
-+      }
-     }
+ 1. **5 Prinsip Rekayasa Baku**:
+    - **Prinsip 1 (Zero Silent Fallback)**: Dilarang keras menyuntikkan ID/nama data default palsu jika data relasi/sesi kosong. Kembalikan `null` atau `Error` eksplisit.
+diff --git a/SECURITY_AUDIT_TASKS.md b/SECURITY_AUDIT_TASKS.md
+index 0411117..42a765e 100644
+--- a/SECURITY_AUDIT_TASKS.md
++++ b/SECURITY_AUDIT_TASKS.md
+@@ -1,4 +1,4 @@
+-# Temuan Audit Keamanan — Project Website Islam (Banten Mengaji)
++# Temuan Audit Keamanan — Project Banten Mengaji
  
-     revalidatePath('/');
-@@ -575,10 +580,15 @@ export async function rejectDKMRegistration(registrationId: string | number) {
-       
-       if (appData.email) {
-         const namaMasjidFinal = appData.newMasjidData?.namaMasjid || appData.masjidName || masjidData.title?.rendered || 'Usulan Masjid';
--        sendDKMRejectionEmail({
--          email: appData.email,
--          namaMasjid: namaMasjidFinal.replace('KLAIM: ', ''),
--        }).catch((e) => console.error('[Mailketing Error di rejectDKMRegistration]', e));
-+        
-+        try {
-+          await sendDKMRejectionEmail({
-+            email: appData.email,
-+            namaMasjid: namaMasjidFinal.replace('KLAIM: ', ''),
-+          });
-+        } catch (e) {
-+          console.error('[Mailketing Error di rejectDKMRegistration]', e);
-+        }
-       }
-     }
+ > **Untuk**: AI Agent (Gemini Spark / Antigravity) yang mengerjakan repo ini.
+ > **Konteks**: Hasil audit keamanan atas repo `chandraanggaradiputra/website-islam`
+diff --git a/SECURITY_STANDARDS.md b/SECURITY_STANDARDS.md
+index 9969f72..7371d90 100644
+--- a/SECURITY_STANDARDS.md
++++ b/SECURITY_STANDARDS.md
+@@ -1,4 +1,4 @@
+-# Standar Keamanan Proyek "Website Islam" (Mas Chan Digital)
++# Standar Keamanan Proyek "Banten Mengaji" (Mas Chan Digital)
  
-diff --git a/lib/mailketing.ts b/lib/mailketing.ts
-index a1de4af..db3adce 100644
---- a/lib/mailketing.ts
-+++ b/lib/mailketing.ts
-@@ -209,13 +209,14 @@ export async function sendDKMApprovalEmail(data: { email: string; namaMasjid: st
-   );
+ > Dokumen ini pelengkap `ANTIGRAVITY_RULES.md`. Kalau `ANTIGRAVITY_RULES.md` mengatur
+ > *kualitas rekayasa kode*, dokumen ini mengatur *keamanan*. Berlaku untuk semua AI Agent
+diff --git a/e2e/website-islam.spec.ts b/e2e/banten-mengaji.spec.ts
+similarity index 98%
+rename from e2e/website-islam.spec.ts
+rename to e2e/banten-mengaji.spec.ts
+index 783e747..ff36735 100644
+--- a/e2e/website-islam.spec.ts
++++ b/e2e/banten-mengaji.spec.ts
+@@ -1,6 +1,6 @@
+ import { test, expect } from '@playwright/test';
  
-   try {
--    await sendMailketingEmail({
-+    return await sendMailketingEmail({
-       recipient: data.email,
-       subject: `Alhamdulillah! Akun DKM Anda Telah Disetujui - Banten Mengaji`,
-       content,
-     });
-   } catch (error) {
-     console.error('Gagal sendDKMApprovalEmail:', error);
-+    return false;
-   }
- }
+-test.describe('Website Islam E2E Tests', () => {
++test.describe('Banten Mengaji E2E Tests', () => {
+   const baseURL = 'http://localhost:3000';
  
-@@ -235,12 +236,13 @@ export async function sendDKMRejectionEmail(data: { email: string; namaMasjid: s
-   );
+   test('Verifikasi ThemeToggle (Dark Mode)', async ({ page }) => {
+diff --git a/lib/env.ts b/lib/env.ts
+index 373a1af..d05d146 100644
+--- a/lib/env.ts
++++ b/lib/env.ts
+@@ -2,7 +2,7 @@
  
-   try {
--    await sendMailketingEmail({
-+    return await sendMailketingEmail({
-       recipient: data.email,
-       subject: `Pemberitahuan Status Pendaftaran DKM - Banten Mengaji`,
-       content,
-     });
-   } catch (error) {
-     console.error('Gagal sendDKMRejectionEmail:', error);
-+    return false;
-   }
- }
+ const KNOWN_INSECURE_FALLBACKS = [
+   'super-secret-key-for-development-only-12345',
+-  'super-secret-key-for-website-islam-2024-change-in-prod',
++  'super-secret-key-for-banten-mengaji-2024-change-in-prod',
+ ];
+ 
+ const jwtSecret = process.env.JWT_SECRET?.trim();
+diff --git a/package-lock.json b/package-lock.json
+index 6a83021..d1de76e 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -1,11 +1,11 @@
+ {
+-  "name": "website-islam",
++  "name": "banten-mengaji",
+   "version": "0.1.0",
+   "lockfileVersion": 3,
+   "requires": true,
+   "packages": {
+     "": {
+-      "name": "website-islam",
++      "name": "banten-mengaji",
+       "version": "0.1.0",
+       "dependencies": {
+         "@hookform/resolvers": "^5.9.1",
+diff --git a/package.json b/package.json
+index 7f0f65f..790c8e5 100644
+--- a/package.json
++++ b/package.json
+@@ -1,5 +1,5 @@
+ {
+-  "name": "website-islam",
++  "name": "banten-mengaji",
+   "version": "0.1.0",
+   "private": true,
+   "scripts": {
 ```
