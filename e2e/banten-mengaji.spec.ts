@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Website Islam E2E Tests', () => {
+test.describe('Banten Mengaji E2E Tests', () => {
   const baseURL = 'http://localhost:3000';
 
   test('Verifikasi ThemeToggle (Dark Mode)', async ({ page }) => {

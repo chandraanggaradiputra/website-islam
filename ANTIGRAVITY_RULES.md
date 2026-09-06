@@ -1,4 +1,4 @@
-# Standar Rekayasa Kode Proyek "Website Islam" (Mas Chan Digital)
+# Standar Rekayasa Kode Proyek "Banten Mengaji" (Mas Chan Digital)
 
 1. **5 Prinsip Rekayasa Baku**:
    - **Prinsip 1 (Zero Silent Fallback)**: Dilarang keras menyuntikkan ID/nama data default palsu jika data relasi/sesi kosong. Kembalikan `null` atau `Error` eksplisit.
