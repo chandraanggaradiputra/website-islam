@@ -25,7 +25,7 @@ export function CalendarButton({ kajian }: { kajian: WPKajian }) {
     const end = `${dateStr}T${endTime || '235959'}`;
     
     const text = encodeURIComponent(title.rendered);
-    const details = encodeURIComponent(`Kajian bersama ${acf.nama_ustadz}\nKitab: ${acf.kitab_bahasan || '-'}\n\nVia Syiar Salaf`);
+    const details = encodeURIComponent(`Kajian bersama ${acf.nama_ustadz}\nKitab: ${acf.kitab_bahasan || '-'}\n\nVia Banten Mengaji`);
     const location = encodeURIComponent(
         typeof acf.masjid_terkait === 'object' ? acf.masjid_terkait?.title.rendered : ''
     );

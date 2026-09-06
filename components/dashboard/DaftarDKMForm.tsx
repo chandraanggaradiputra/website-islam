@@ -255,7 +255,7 @@ export function DaftarDKMForm({ masjidList = [] }: { masjidList: WPMasjid[] }) {
         <p className="mt-3 text-sm md:text-base text-slate-600 dark:text-slate-300 max-w-md mx-auto leading-relaxed">
           <em>Jazakumullahu khairan.</em> Data kepengurusan DKM{' '}
           {isNewMasjid && 'beserta usulan masjid baru '}
-          telah masuk ke antrean verifikasi Administrator Syiar Salaf Kota Serang.
+          telah masuk ke antrean verifikasi Administrator Banten Mengaji.
         </p>
         <div className="mt-6 p-4 rounded-xl bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-800/60 text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto text-left">
           <p className="font-semibold text-slate-700 dark:text-slate-200 mb-1">

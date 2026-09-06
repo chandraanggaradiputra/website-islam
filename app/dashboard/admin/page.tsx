@@ -56,7 +56,7 @@ export default async function AdminDashboard({
           Selamat Datang, {session?.name} 👋
         </h2>
         <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
-          Panel Manajemen Eksekutif & Verifikasi Portal Syiar Salaf Kota Serang.
+          Panel Manajemen Eksekutif & Verifikasi Portal Banten Mengaji.
         </p>
       </div>
 
