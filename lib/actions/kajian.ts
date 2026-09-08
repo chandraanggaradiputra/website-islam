@@ -3,6 +3,7 @@
 import { getSession } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 import { getMasjidById } from '@/lib/actions/masjid';
+import { notifySearchEngines } from '@/lib/seo';
 
 const WP_API_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || 'https://salaf.maschandigital.id/wp-json/wp/v2';
 
@@ -123,10 +124,19 @@ export async function approveKajian(id: number) {
       return { success: false, error: 'Gagal mempublikasi kajian.' };
     }
 
+    const data = await res.json();
+    const slug = data.slug;
+
+    revalidatePath('/sitemap.xml');
     revalidatePath('/');
     revalidatePath('/jadwal-kajian');
     revalidatePath('/masjid');
     revalidatePath('/dashboard/admin');
+
+    if (slug) {
+      const host = process.env.NEXT_PUBLIC_SITE_URL?.replace(/^https?:\/\//, '') || 'banten-mengaji.vercel.app';
+      notifySearchEngines([`https://${host}/jadwal-kajian/${slug}`]);
+    }
 
     return { success: true };
   } catch {
@@ -199,10 +209,19 @@ export async function updateKajianStatus(
       return { success: false, error: `Gagal memperbarui status: ${err}` };
     }
 
+    const data = await res.json();
+    const slug = data.slug;
+
+    revalidatePath('/sitemap.xml');
     revalidatePath('/');
     revalidatePath('/jadwal-kajian');
     revalidatePath('/masjid');
     revalidatePath('/dashboard/admin');
+
+    if (slug && status === 'publish') {
+      const host = process.env.NEXT_PUBLIC_SITE_URL?.replace(/^https?:\/\//, '') || 'banten-mengaji.vercel.app';
+      notifySearchEngines([`https://${host}/jadwal-kajian/${slug}`]);
+    }
 
     return { success: true, message: 'Status kajian berhasil diperbarui!' };
   } catch (err: unknown) {
@@ -316,10 +335,19 @@ export async function createKajianByAdmin(formData: FormData) {
       return { success: false, error: `Gagal membuat kajian: ${err}` };
     }
 
+    const data = await res.json();
+    const slug = data.slug;
+
+    revalidatePath('/sitemap.xml');
     revalidatePath('/');
     revalidatePath('/jadwal-kajian');
     revalidatePath('/masjid');
     revalidatePath('/dashboard/admin');
+
+    if (slug && payload.status === 'publish') {
+      const host = process.env.NEXT_PUBLIC_SITE_URL?.replace(/^https?:\/\//, '') || 'banten-mengaji.vercel.app';
+      notifySearchEngines([`https://${host}/jadwal-kajian/${slug}`]);
+    }
 
     return { success: true, message: 'Jadwal kajian baru berhasil diterbitkan!' };
   } catch (err: unknown) {
@@ -431,10 +459,19 @@ export async function updateKajianByAdmin(formData: FormData) {
       return { success: false, error: `Gagal memperbarui kajian: ${err}` };
     }
 
+    const data = await res.json();
+    const slug = data.slug;
+
+    revalidatePath('/sitemap.xml');
     revalidatePath('/');
     revalidatePath('/jadwal-kajian');
     revalidatePath('/masjid');
     revalidatePath('/dashboard/admin');
+
+    if (slug && payload.status === 'publish') {
+      const host = process.env.NEXT_PUBLIC_SITE_URL?.replace(/^https?:\/\//, '') || 'banten-mengaji.vercel.app';
+      notifySearchEngines([`https://${host}/jadwal-kajian/${slug}`]);
+    }
 
     return { success: true, message: 'Jadwal kajian berhasil diperbarui!' };
   } catch (err: unknown) {
