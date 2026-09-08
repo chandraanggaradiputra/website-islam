@@ -1,15 +1,15 @@
 import { getKajianBySlug } from '@/lib/wordpress';
 import { getMasjidById } from '@/lib/actions/masjid';
 import { Metadata } from 'next';
+import Image from 'next/image';
+import { getKajianJsonLd } from '@/lib/schema';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { CalendarButton } from '@/components/kajian/CalendarButton';
 import { ShareButton } from '@/components/ui/ShareButton';
 import { Calendar, MapPin, User, ArrowLeft, Book } from 'lucide-react';
 import htmlParser from 'html-react-parser';
-import Image from 'next/image';
 import { JsonLd } from '@/components/seo/JsonLd';
-import { generateKajianSchema } from '@/lib/schema';
 
 export const revalidate = 60;
 
@@ -86,7 +86,7 @@ export default async function SingleKajianPage({ params }: { params: Promise<{ s
     }
   }
 
-  const kajianSchema = generateKajianSchema(kajian);
+  const kajianSchema = getKajianJsonLd(kajian);
   
   const wktKeterangan = acf?.waktu_keterangan || (acf?.jam_mulai ? `${acf.jam_mulai} - ${acf.jam_selesai || 'Selesai'}` : '');
 

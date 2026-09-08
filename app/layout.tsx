@@ -6,7 +6,7 @@ import { ThemeProvider } from '@/components/ui/ThemeProvider';
 import { Header } from '@/components/layout/Header';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { JsonLd } from '@/components/seo/JsonLd';
-import { generateOrganizationSchema } from '@/lib/schema';
+import { getWebSiteJsonLd } from '@/lib/schema';
 import clsx from 'clsx';
 
 const geistSans = Geist({
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const orgSchema = generateOrganizationSchema();
+  const orgSchema = getWebSiteJsonLd();
 
   return (
     <html

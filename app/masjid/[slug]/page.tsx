@@ -8,7 +8,7 @@ import { MapPin, Navigation, ArrowLeft, Phone, Globe } from 'lucide-react';
 import htmlParser from 'html-react-parser';
 import Image from 'next/image';
 import { JsonLd } from '@/components/seo/JsonLd';
-import { generateMasjidSchema } from '@/lib/schema';
+import { getMasjidJsonLd } from '@/lib/schema';
 
 export const revalidate = 60;
 
@@ -54,7 +54,7 @@ export default async function MasjidDetailPage({ params }: { params: Promise<{ s
 
   const { acf, title, content, featured_media_url } = masjid;
   const fasilitas = acf.fasilitas || [];
-  const masjidSchema = generateMasjidSchema(masjid);
+  const masjidSchema = getMasjidJsonLd(masjid);
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
