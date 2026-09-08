@@ -49,5 +49,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: route === '' ? 1 : 0.9,
   }));
 
-  return [...staticRoutes, ...dynamicKajian, ...dynamicMasjid, ...dynamicArtikel];
+  const panduanRoute = {
+    url: `${baseUrl}/panduan-dkm`,
+    lastModified: new Date(),
+    changeFrequency: 'monthly' as const,
+    priority: 0.8,
+  };
+
+  return [...staticRoutes, panduanRoute, ...dynamicKajian, ...dynamicMasjid, ...dynamicArtikel];
 }
