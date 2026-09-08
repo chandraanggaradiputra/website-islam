@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 
 import { normalizeFasilitas } from '@/lib/utils/fasilitas';
+import { WPKecamatanTerm, resolveKecamatanTermId } from '@/lib/wordpress';
 
 const FASILITAS_CHOICES = [
   'Parkir Mobil & Motor',
@@ -32,7 +33,12 @@ const FASILITAS_CHOICES = [
   'Perpustakaan Kitab',
 ];
 
-export function DKMMasjidProfileForm({ masjid }: { masjid: WPMasjid }) {
+interface DKMMasjidProfileFormProps {
+  masjid: WPMasjid;
+  kecamatanTerms?: WPKecamatanTerm[];
+}
+
+export function DKMMasjidProfileForm({ masjid, kecamatanTerms = [] }: DKMMasjidProfileFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -58,12 +64,16 @@ export function DKMMasjidProfileForm({ masjid }: { masjid: WPMasjid }) {
     return region ? region.kecamatan : [];
   }, [kota]);
 
-  // Kita tidak perlu state "kecamatan" spesifik untuk dikendalikan penuh karena akan diambil nilainya dari formData.
-  // Tapi untuk inisialisasi default dari WP yang hanya ada alamat, kita bisa mencoba mengekstrak.
-  // Jika masjid.acf.alamat_lengkap berisi string kecamatan, kita coba cocokkan. Tapi untuk saat ini kita biarkan kosong atau minta diisi ulang.
-  // Idealnya jika ada tax kecamatan, kita ambil, tapi untuk form kita biarkan input string manual / pilihan.
-  
-  // Karena WPMasjid dari API belum memiliki ACF 'kecamatan' (hanya array ID term), kita asumsikan DKM akan memilihnya.
+  // Inisialisasi Kecamatan (Prioritas: ID term taksonomi masjid.kecamatan[0], lalu fallback pencocokan nama)
+  const initialKecamatanId = useMemo(() => {
+    if (masjid.kecamatan && masjid.kecamatan.length > 0 && masjid.kecamatan[0] > 0) {
+      return String(masjid.kecamatan[0]);
+    }
+    const resolved = resolveKecamatanTermId(masjid.acf?.alamat_lengkap, kecamatanTerms);
+    return resolved ? String(resolved) : '';
+  }, [masjid, kecamatanTerms]);
+
+  const [selectedKecamatan, setSelectedKecamatan] = useState<string>(initialKecamatanId);
   
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -219,7 +229,10 @@ export function DKMMasjidProfileForm({ masjid }: { masjid: WPMasjid }) {
               <select
                 name="kotaKabupaten"
                 value={kota}
-                onChange={(e) => setKota(e.target.value as KotaKabupatenBanten | '')}
+                onChange={(e) => {
+                  setKota(e.target.value as KotaKabupatenBanten | '');
+                  setSelectedKecamatan('');
+                }}
                 required
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3.5 text-sm text-slate-900 focus:border-[#093c96] focus:bg-white focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               >
@@ -242,14 +255,22 @@ export function DKMMasjidProfileForm({ masjid }: { masjid: WPMasjid }) {
                 name="kecamatan"
                 required
                 disabled={!kota}
+                value={selectedKecamatan}
+                onChange={(e) => setSelectedKecamatan(e.target.value)}
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3.5 text-sm text-slate-900 focus:border-[#093c96] focus:bg-white focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <option value="">{kota ? '-- Pilih Kecamatan --' : '-- Pilih Kota Dulu --'}</option>
-                {availableKecamatans.map((kecName) => (
-                  <option key={kecName} value={kecName}>
-                    Kec. {kecName}
-                  </option>
-                ))}
+                {kota === 'Kota Serang' && kecamatanTerms && kecamatanTerms.length > 0
+                  ? kecamatanTerms.map((term) => (
+                      <option key={term.id} value={term.id}>
+                        Kec. {term.name}
+                      </option>
+                    ))
+                  : availableKecamatans.map((kecName) => (
+                      <option key={kecName} value={kecName}>
+                        Kec. {kecName}
+                      </option>
+                    ))}
               </select>
             </div>
           </div>

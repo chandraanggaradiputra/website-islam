@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { WPMasjid } from '@/types';
 import { submitDaftarDKM } from '@/lib/actions/dkm';
+import { WPKecamatanTerm } from '@/lib/wordpress';
 import { BANTEN_REGIONS, KotaKabupatenBanten } from '@/lib/constants/bantenRegions';
 import {
   Building2,
@@ -103,7 +104,12 @@ const dkmSchema = z
 
 type DKMFormValues = z.infer<typeof dkmSchema>;
 
-export function DaftarDKMForm({ masjidList = [] }: { masjidList: WPMasjid[] }) {
+interface DaftarDKMFormProps {
+  masjidList?: WPMasjid[];
+  kecamatanTerms?: WPKecamatanTerm[];
+}
+
+export function DaftarDKMForm({ masjidList = [], kecamatanTerms = [] }: DaftarDKMFormProps) {
   const [isSuccess, setIsSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -203,7 +209,16 @@ export function DaftarDKMForm({ masjidList = [] }: { masjidList: WPMasjid[] }) {
       if (isNewMasjid) {
         formData.append('isNewMasjid', 'true');
         if (data.namaMasjidBaru) formData.append('namaMasjidBaru', data.namaMasjidBaru.trim());
-        if (data.kecamatan) formData.append('kecamatanNama', data.kecamatan);
+        if (data.kecamatan) {
+          const selectedKec = data.kecamatan;
+          const kecTerm = (kecamatanTerms || []).find(
+            (t) => String(t.id) === String(selectedKec) || t.name.toLowerCase() === selectedKec.toLowerCase()
+          );
+          const kecId = kecTerm ? String(kecTerm.id) : selectedKec;
+          const kecName = kecTerm ? kecTerm.name : selectedKec;
+          formData.append('kecamatan', kecId);
+          formData.append('kecamatanNama', kecName);
+        }
         if (data.alamatMasjid) formData.append('alamatMasjid', data.alamatMasjid.trim());
         
         const cleanUrl = data.googleMapsUrl?.trim();
@@ -566,11 +581,17 @@ export function DaftarDKMForm({ masjidList = [] }: { masjidList: WPMasjid[] }) {
                   className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-3.5 text-sm text-slate-900 focus:border-[#093c96] focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                 >
                   <option value="">-- Pilih Kecamatan --</option>
-                  {filteredKecamatans.map((kecName) => (
-                    <option key={kecName} value={kecName}>
-                      Kec. {kecName}
-                    </option>
-                  ))}
+                  {selectedKota === 'Kota Serang' && kecamatanTerms && kecamatanTerms.length > 0
+                    ? kecamatanTerms.map((term) => (
+                        <option key={term.id} value={term.id}>
+                          Kec. {term.name}
+                        </option>
+                      ))
+                    : filteredKecamatans.map((kecName) => (
+                        <option key={kecName} value={kecName}>
+                          Kec. {kecName}
+                        </option>
+                      ))}
                 </select>
               </div>
               {errors.kecamatan && (

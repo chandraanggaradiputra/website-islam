@@ -1,5 +1,5 @@
 import { Metadata } from 'next';
-import { getMasjidList } from '@/lib/wordpress';
+import { getMasjidList, getKecamatanTerms } from '@/lib/wordpress';
 import { DaftarDKMForm } from '@/components/dashboard/DaftarDKMForm';
 
 export const metadata: Metadata = {
@@ -8,7 +8,10 @@ export const metadata: Metadata = {
 };
 
 export default async function DaftarDKMPage() {
-  const listMasjid = await getMasjidList();
+  const [listMasjid, kecamatanTerms] = await Promise.all([
+    getMasjidList(),
+    getKecamatanTerms(),
+  ]);
 
   return (
     <div className="max-w-2xl mx-auto my-12 p-6 md:p-10 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
@@ -19,7 +22,7 @@ export default async function DaftarDKMPage() {
         </p>
       </div>
 
-      <DaftarDKMForm masjidList={listMasjid} />
+      <DaftarDKMForm masjidList={listMasjid} kecamatanTerms={kecamatanTerms} />
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { WPMasjid } from '@/types';
 import { MasjidCard } from './MasjidCard';
 import { Filter, RotateCcw } from 'lucide-react';
 import { BANTEN_REGIONS, KotaKabupatenBanten } from '@/lib/constants/bantenRegions';
+import { resolveKecamatanName } from '@/lib/wordpress';
 
 function MasjidFilterContent({
   initialMasjid = [],
@@ -77,10 +78,13 @@ function MasjidFilterContent({
           }
         }
 
+        const itemKecNames = (item.kecamatan || []).map((id) => resolveKecamatanName(id) || '').join(' ').toLowerCase();
+
         const isKecMatch =
           alamat.toLowerCase().includes(targetKec) ||
           masjidName.toLowerCase().includes(targetKec) ||
-          taxonomyKecamatan.includes(targetKec);
+          taxonomyKecamatan.includes(targetKec) ||
+          itemKecNames.includes(targetKec);
 
         if (!isKecMatch) return false;
       }

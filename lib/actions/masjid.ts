@@ -3,7 +3,7 @@
 import { getSession } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 import { WPMasjid } from '@/types';
-import { extractFeaturedImage } from '@/lib/wordpress';
+import { extractFeaturedImage, resolveKecamatanTermId } from '@/lib/wordpress';
 import { normalizeFasilitas } from '@/lib/utils/fasilitas';
 
 const WP_API_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || 'https://salaf.maschandigital.id/wp-json/wp/v2';
@@ -81,10 +81,15 @@ export async function updateMasjidProfile(formData: FormData) {
     const fasilitasRaw = formData.getAll('fasilitas');
     const fasilitasList: string[] = normalizeFasilitas(fasilitasRaw.map((f) => f.toString()).filter(Boolean));
 
+    // Parse & Selesaikan Taksonomi Kecamatan
+    const rawKecamatan = formData.get('kecamatan')?.toString();
+    const kecamatanId = resolveKecamatanTermId(rawKecamatan);
+
     // Siapkan Payload Update
     const payload: {
       content?: string;
       featured_media?: number;
+      kecamatan?: number[];
       acf: Record<string, unknown>;
     } = {
       content: formData.get('deskripsi')?.toString() || '',
@@ -102,6 +107,10 @@ export async function updateMasjidProfile(formData: FormData) {
         youtube_url: formData.get('youtubeUrl')?.toString() || '',
       },
     };
+
+    if (kecamatanId) {
+      payload.kecamatan = [kecamatanId];
+    }
 
     if (mediaId) {
       payload.featured_media = mediaId;
@@ -176,7 +185,7 @@ export async function createMasjidByAdmin(formData: FormData) {
       }
     }
 
-    const kecamatanId = Number(formData.get('kecamatan')) || undefined;
+    const kecamatanId = resolveKecamatanTermId(formData.get('kecamatan')?.toString()) || undefined;
     const fasilitasRaw = formData.getAll('fasilitas');
     const fasilitasList: string[] = normalizeFasilitas(fasilitasRaw.map((f) => f.toString()).filter(Boolean));
 
@@ -279,7 +288,7 @@ export async function updateMasjidByAdmin(formData: FormData) {
       }
     }
 
-    const kecamatanId = Number(formData.get('kecamatan')) || undefined;
+    const kecamatanId = resolveKecamatanTermId(formData.get('kecamatan')?.toString()) || undefined;
     const fasilitasRaw = formData.getAll('fasilitas');
     const fasilitasList: string[] = normalizeFasilitas(fasilitasRaw.map((f) => f.toString()).filter(Boolean));
 

@@ -224,17 +224,82 @@ export async function getArtikelBySlug(slug: string): Promise<WPArtikel | null> 
   }
 }
 
-export async function getKecamatanList(): Promise<{ id: number; name: string }[]> {
+export interface WPKecamatanTerm {
+  id: number;
+  name: string;
+  slug: string;
+}
+
+export const KOTA_SERANG_KECAMATAN_TERMS: WPKecamatanTerm[] = [
+  { id: 2, name: 'Serang', slug: 'serang' },
+  { id: 3, name: 'Cipocok Jaya', slug: 'cipocok-jaya' },
+  { id: 4, name: 'Kasemen', slug: 'kasemen' },
+  { id: 5, name: 'Taktakan', slug: 'taktakan' },
+  { id: 6, name: 'Walantaka', slug: 'walantaka' },
+  { id: 7, name: 'Curug', slug: 'curug' },
+];
+
+export async function getKecamatanTerms(): Promise<WPKecamatanTerm[]> {
   try {
-    const res = await fetch(`${WP_BASE_URL}/kecamatan?per_page=100`, {
-      next: { revalidate: 60 }
+    const wpUrl = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || 'https://salaf.maschandigital.id/wp-json/wp/v2';
+    const res = await fetch(`${wpUrl}/kecamatan?per_page=100`, {
+      next: { revalidate: 3600 },
     });
-    if (!res.ok) return [];
-    return await res.json();
-  } catch (err: unknown) {
-    if (err instanceof Error) {
-      console.error('Error fetching Kecamatan list:', err.message);
-    }
-    return [];
+    if (!res.ok) return KOTA_SERANG_KECAMATAN_TERMS;
+    const data: WPKecamatanTerm[] = await res.json();
+    return data.length > 0 ? data : KOTA_SERANG_KECAMATAN_TERMS;
+  } catch (error) {
+    console.error('[getKecamatanTerms] Gagal memuat taksonomi kecamatan:', error);
+    return KOTA_SERANG_KECAMATAN_TERMS;
   }
+}
+
+export function resolveKecamatanTermId(
+  val: string | number | null | undefined,
+  terms: WPKecamatanTerm[] = KOTA_SERANG_KECAMATAN_TERMS
+): number | null {
+  if (val === null || val === undefined || val === '') return null;
+  const num = Number(val);
+  if (!isNaN(num) && num > 0) {
+    return num;
+  }
+  if (typeof val === 'string') {
+    const clean = val.replace(/^kec(\.|\s+)/i, '').trim().toLowerCase();
+    const found = terms.find(
+      (t) =>
+        t.name.toLowerCase() === clean ||
+        t.slug.toLowerCase() === clean ||
+        t.name.toLowerCase().includes(clean) ||
+        clean.includes(t.name.toLowerCase())
+    );
+    if (found) return found.id;
+  }
+  return null;
+}
+
+export function resolveKecamatanName(
+  val: string | number | null | undefined,
+  terms: WPKecamatanTerm[] = KOTA_SERANG_KECAMATAN_TERMS
+): string | null {
+  if (val === null || val === undefined || val === '') return null;
+  const num = Number(val);
+  if (!isNaN(num) && num > 0) {
+    const found = terms.find((t) => t.id === num);
+    if (found) return found.name;
+  }
+  if (typeof val === 'string') {
+    const clean = val.replace(/^kec(\.|\s+)/i, '').trim().toLowerCase();
+    const found = terms.find(
+      (t) =>
+        t.name.toLowerCase() === clean ||
+        t.slug.toLowerCase() === clean
+    );
+    if (found) return found.name;
+    return val.trim();
+  }
+  return null;
+}
+
+export async function getKecamatanList(): Promise<{ id: number; name: string }[]> {
+  return getKecamatanTerms();
 }

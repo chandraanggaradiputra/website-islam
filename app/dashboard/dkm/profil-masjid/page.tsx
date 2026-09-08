@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import { getSession } from '@/lib/auth';
 import { getMasjidById } from '@/lib/actions/masjid';
+import { getKecamatanTerms } from '@/lib/wordpress';
 import { DKMMasjidProfileForm } from '@/components/dashboard/DKMMasjidProfileForm';
 import { Building2, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
@@ -21,7 +22,10 @@ export default async function DKMProfilMasjidPage() {
     );
   }
 
-  const masjid = session.masjidId ? await getMasjidById(session.masjidId) : null;
+  const [masjid, kecamatanTerms] = await Promise.all([
+    session.masjidId ? getMasjidById(session.masjidId) : Promise.resolve(null),
+    getKecamatanTerms(),
+  ]);
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -58,7 +62,7 @@ export default async function DKMProfilMasjidPage() {
           </div>
         </div>
       ) : (
-        <DKMMasjidProfileForm masjid={masjid} />
+        <DKMMasjidProfileForm masjid={masjid} kecamatanTerms={kecamatanTerms} />
       )}
     </div>
   );
