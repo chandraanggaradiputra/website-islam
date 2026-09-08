@@ -1,21 +1,17 @@
-Laporan Hasil Kerja: Implementasi Sitemap Dinamis & Robots.ts
+Laporan Hasil Kerja: Pembuatan Halaman Panduan DKM & Update Sitemap
 
-Sesuai dengan instruksi Anda, saya telah mengimplementasikan komponen SEO native pada *Next.js 16 App Router* (di *branch* `staging-website-islam`):
+Pada sesi ini, saya telah mengeksekusi sebagian dari instruksi yang Anda berikan (bagian A dan B) di *branch* `staging-website-islam`:
 
-1. **Membuat `app/robots.ts`**
-   - Mendeklarasikan izin `allow: '/'` untuk semua agen pencarian (web crawler).
-   - Melindungi rute aplikasi internal dengan melakukan pengecualian (`disallow`) untuk halaman `/dashboard/`, `/api/`, dan `/login`.
-   - Menggunakan `process.env.NEXT_PUBLIC_SITE_URL` sebagai *base URL* untuk menautkan referensi berkas *sitemap*.
+1. **Halaman Panduan DKM (`app/panduan-dkm/page.tsx`)**
+   - Telah dibangun antarmuka responsif dan ramah pembaca untuk panduan lengkap pendaftaran profil masjid dan pengelolaan jadwal kajian dakwah.
+   - Menggunakan *styling* dari Tailwind CSS yang mendukung *Dark Mode* (`dark:`).
+   - Menambahkan komponen visual (ikon `lucide-react`) untuk 5 langkah utama: Registrasi Masjid & DKM, Proses Verifikasi Super Admin, Notifikasi & Akses Akun, Publikasi Jadwal Kajian, dan Syiar Otomatis ke Jamaah.
+   - Menyiapkan Kartu Bantuan dengan tombol CTA yang mengarah langsung ke WhatsApp Admin (0822-9814-8474) dan tombol masuk ke dasbor.
 
-2. **Membuat `app/sitemap.ts`**
-   - Membuat konfigurasi sitemap.xml yang dimuat secara dinamis.
-   - Halaman statis: Menyertakan semua halaman publik statis seperti Beranda, Jadwal Kajian, Direktori Masjid, Artikel, Jadwal Sholat, Pendaftaran DKM, Donasi, Kebijakan Privasi, dan Syarat & Ketentuan.
-   - Halaman dinamis (*Headless WP*): Mengekstrak seluruh data `slug` dari API Jadwal Kajian, Masjid, dan Artikel melalui fungsi `getKajianList()`, `getMasjidList()`, dan `getArtikelList()`, lalu menautkannya ke URL secara terperinci.
-   - Merapikan struktur Tipe TypeScript sehingga `lastModified` dan parameter lainnya dapat mengambil waktu modifikasi secara aman dan tepat.
+2. **Integrasi Rute ke Sitemap (`app/sitemap.ts`)**
+   - Telah ditambahkan entri statis baru untuk rute `/panduan-dkm` dengan prioritas (0.8) dan frekuensi perubahan (*monthly*), sehingga langsung masuk ke dalam indeks mesin pencari dengan prioritas relevan.
 
-3. **Verifikasi & Build**
-   - `npx tsc --noEmit` lulus verifikasi (bebas *error* TS).
-   - `npm run build` sukses sepenuhnya, Next.js mendeteksi rute statis `robots.txt` dan `sitemap.xml` di dalam kompilasi Turbopack.
-   - Seluruh perubahan telah di-*commit* ke GitHub pada *branch* `staging-website-islam`.
+**Catatan Khusus (Tugas Belum Selesai):**
+Instruksi Anda yang masuk kepada saya **terpotong di pertengahan kode pada langkah B**. Bagian implementasi "Mekanisme Auto Indexing Jadwal Kajian" (fitur *on-demand revalidation* dan ping *IndexNow*) **belum tercakup** karena tidak ada detail instruksi kelanjutannya (bagian C).
 
-Server *development* (`npm run dev -- -p 3001`) juga telah berhasil dijalankan kembali dan tetap aktif. Apakah Anda ingin ini langsung digabungkan ke `main`?
+Seluruh kode saat ini lulus uji tipe kompilator (`npx tsc --noEmit` dan ESLint) serta berhasil berjalan pada `npm run build`. Perubahan sudah ada di *branch* `staging-website-islam`.
