@@ -2,6 +2,17 @@ import { WPKajian, WPMasjid, WPArtikel } from '@/types';
 
 const WP_BASE_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || 'https://salaf.maschandigital.id/wp-json/wp/v2';
 
+export function getWPAdminAuthHeader(): string | null {
+  const user = process.env.WP_ADMIN_USERNAME?.trim();
+  const pass = process.env.WP_APPLICATION_PASSWORD?.trim();
+
+  if (!user || !pass) {
+    return null;
+  }
+
+  return 'Basic ' + Buffer.from(`${user}:${pass}`).toString('base64');
+}
+
 export function extractFeaturedImage(post: unknown): string | null {
   const p = post as { 
     _embedded?: { 'wp:featuredmedia'?: Array<{ source_url?: string }> };

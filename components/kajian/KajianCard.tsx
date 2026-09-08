@@ -37,7 +37,7 @@ export function KajianCard({ kajian }: { kajian: WPKajian }) {
         </div>
       )}
       <div className="p-5 flex-grow">
-        <div className="flex gap-2 mb-3">
+        <div className="flex flex-wrap items-center gap-2 mb-3">
           <span className={`text-xs font-semibold px-2 py-1 rounded-md ${isRutin ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'}`}>
             {isRutin ? 'Kajian Rutin' : 'Kajian Tematik'}
           </span>
@@ -46,7 +46,18 @@ export function KajianCard({ kajian }: { kajian: WPKajian }) {
               {acf.kategori_jamaah === 'umum' ? 'Umum' : acf.kategori_jamaah === 'khusus_akhwat' ? 'Akhwat' : 'Ikhwan'}
             </span>
           )}
+          {acf?.status_kajian === 'libur' && (
+            <span className="text-xs font-extrabold px-2.5 py-1 rounded-md bg-red-600 text-white uppercase tracking-wider">
+              DILIBURKAN
+            </span>
+          )}
         </div>
+
+        {acf?.status_kajian === 'libur' && (
+          <div className="mb-3 px-3 py-2 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 rounded-lg text-xs text-red-700 dark:text-red-300 font-medium">
+            Kajian pekan ini diliburkan (misal karena pemateri udzur).
+          </div>
+        )}
         
         <h3 className="font-bold text-lg leading-tight mb-2 text-slate-900 dark:text-slate-100 line-clamp-2">
           {title.rendered}

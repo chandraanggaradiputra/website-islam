@@ -29,11 +29,13 @@ import {
   ImageIcon,
 } from 'lucide-react';
 
+import { normalizeFasilitas } from '@/lib/utils/fasilitas';
+
 const FASILITAS_OPTIONS = [
   'Parkir Mobil & Motor',
   'Tempat Wudhu Terpisah',
   'Ruangan Ber-AC',
-  'Area Khusus Akhwat',
+  'Area Khusus Akhawat (Hijab)',
   'Perpustakaan Kitab',
 ];
 
@@ -210,7 +212,7 @@ export function DaftarDKMForm({ masjidList = [] }: { masjidList: WPMasjid[] }) {
         }
 
         if (data.fasilitas && data.fasilitas.length > 0) {
-          data.fasilitas.forEach((f) => formData.append('fasilitas', f));
+          normalizeFasilitas(data.fasilitas).forEach((f) => formData.append('fasilitas', f));
         }
         if (data.namaBank?.trim()) formData.append('namaBank', data.namaBank.trim());
         if (data.nomorRekening?.trim()) formData.append('nomorRekening', data.nomorRekening.trim());

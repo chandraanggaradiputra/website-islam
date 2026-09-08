@@ -3,6 +3,7 @@ import { Calendar, ArrowUpRight, Clock, CheckCircle2, AlertCircle, Building2 } f
 import Link from 'next/link';
 import { WPKajian } from '@/types';
 import { getMasjidList, enrichKajianWithMasjid } from '@/lib/wordpress';
+import { DKMKajianList } from '@/components/dashboard/DKMKajianList';
 
 async function getDKMKajian(token: string, masjidId?: number) {
   try {
@@ -42,30 +43,6 @@ async function getDKMKajian(token: string, masjidId?: number) {
   } catch {
     return [];
   }
-}
-
-// Sanitasi dan decoding entitas HTML untuk pencegahan XSS (Prinsip 6 SECURITY_STANDARDS.md)
-function decodeHtmlEntities(str: string): string {
-  if (!str) return '';
-  return str
-    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(dec))
-    .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
-    .replace(/&quot;/g, '"')
-    .replace(/&apos;|&#039;/g, "'")
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&amp;/g, '&')
-    .replace(/<[^>]*>/g, ''); // strip any potential HTML tags
-}
-
-function StatusBadge({ status }: { status?: string }) {
-  if (status === 'publish') {
-    return <span className="px-3 py-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-lg text-xs font-bold flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5"/> Sedang Tayang</span>
-  }
-  if (status === 'pending') {
-    return <span className="px-3 py-1 bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 rounded-lg text-xs font-bold flex items-center gap-1.5"><Clock className="w-3.5 h-3.5"/> Menunggu Persetujuan</span>
-  }
-  return <span className="px-3 py-1 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 rounded-lg text-xs font-bold flex items-center gap-1.5"><AlertCircle className="w-3.5 h-3.5"/> Perlu Revisi / Draf</span>
 }
 
 export default async function DKMDashboard() {
@@ -124,45 +101,7 @@ export default async function DKMDashboard() {
           <h3 className="text-lg font-bold text-slate-900 dark:text-white">Daftar Kajian Masjid</h3>
         </div>
         <div className="p-0">
-          <ul className="divide-y divide-slate-100 dark:divide-slate-800">
-            {kajianList.length > 0 ? kajianList.map((kajian) => {
-              const dateObj = kajian.date ? new Date(kajian.date) : null;
-              
-              return (
-                <li key={kajian.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                  <div className="flex gap-4">
-                    <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-xl flex flex-col items-center justify-center text-center">
-                      <span className="text-xs font-medium text-slate-500 uppercase">{dateObj ? dateObj.toLocaleDateString('id-ID', { month: 'short' }) : 'N/A'}</span>
-                      <span className="text-xl font-bold text-slate-900 dark:text-white leading-none mt-1">{dateObj ? dateObj.getDate() : '-'}</span>
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-slate-900 dark:text-white text-lg line-clamp-1">
-                        {decodeHtmlEntities(kajian.title.rendered)}
-                      </h4>
-                      <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-1">
-                        <span className="w-2 h-2 rounded-full bg-blue-500"></span> {kajian.acf.nama_ustadz || 'Ustadz Tidak Diketahui'}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex flex-col sm:items-end gap-2">
-                    <StatusBadge status={kajian.status} />
-                    <div className="flex items-center gap-3">
-                      <span className="text-slate-600 dark:text-slate-400 text-sm font-medium">{kajian.acf.jam_mulai || '00:00'}</span>
-                      {kajian.status === 'publish' && (
-                        <Link href={`/jadwal-kajian/${kajian.slug}`} className="p-2 text-slate-400 hover:text-[#093c96] dark:hover:text-blue-400 transition-colors cursor-pointer">
-                          <ArrowUpRight className="w-5 h-5" />
-                        </Link>
-                      )}
-                    </div>
-                  </div>
-                </li>
-              );
-            }) : (
-              <li className="p-8 text-center text-slate-500 dark:text-slate-400">
-                Belum ada kajian yang diajukan oleh masjid ini.
-              </li>
-            )}
-          </ul>
+          <DKMKajianList initialKajian={kajianList} />
         </div>
       </div>
     </div>

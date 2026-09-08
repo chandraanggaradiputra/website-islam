@@ -4,6 +4,7 @@ import { getSession } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 import { WPMasjid } from '@/types';
 import { extractFeaturedImage } from '@/lib/wordpress';
+import { normalizeFasilitas } from '@/lib/utils/fasilitas';
 
 const WP_API_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || 'https://salaf.maschandigital.id/wp-json/wp/v2';
 
@@ -76,9 +77,9 @@ export async function updateMasjidProfile(formData: FormData) {
       }
     }
 
-    // Parse Fasilitas
+    // Parse & Normalisasi Fasilitas
     const fasilitasRaw = formData.getAll('fasilitas');
-    const fasilitasList: string[] = fasilitasRaw.map((f) => f.toString()).filter(Boolean);
+    const fasilitasList: string[] = normalizeFasilitas(fasilitasRaw.map((f) => f.toString()).filter(Boolean));
 
     // Siapkan Payload Update
     const payload: {
@@ -177,7 +178,7 @@ export async function createMasjidByAdmin(formData: FormData) {
 
     const kecamatanId = Number(formData.get('kecamatan')) || undefined;
     const fasilitasRaw = formData.getAll('fasilitas');
-    const fasilitasList: string[] = fasilitasRaw.map((f) => f.toString()).filter(Boolean);
+    const fasilitasList: string[] = normalizeFasilitas(fasilitasRaw.map((f) => f.toString()).filter(Boolean));
 
     const payload: {
       title: string;
@@ -280,7 +281,7 @@ export async function updateMasjidByAdmin(formData: FormData) {
 
     const kecamatanId = Number(formData.get('kecamatan')) || undefined;
     const fasilitasRaw = formData.getAll('fasilitas');
-    const fasilitasList: string[] = fasilitasRaw.map((f) => f.toString()).filter(Boolean);
+    const fasilitasList: string[] = normalizeFasilitas(fasilitasRaw.map((f) => f.toString()).filter(Boolean));
 
     const payload: {
       title?: string;
