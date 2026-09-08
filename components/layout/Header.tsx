@@ -201,6 +201,16 @@ export function Header() {
             >
               Infaq & Donasi
             </Link>
+            <Link
+              href="/panduan-dkm"
+              className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-all ${
+                pathname.startsWith('/panduan-dkm')
+                  ? 'bg-blue-100/50 text-[#093c96] dark:bg-blue-900/40 dark:text-blue-400'
+                  : 'text-slate-600 hover:bg-slate-200/50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'
+              }`}
+            >
+              Panduan DKM
+            </Link>
           </nav>
 
           {/* Bagian Kanan: Tagline */}
