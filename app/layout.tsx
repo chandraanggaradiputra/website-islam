@@ -31,6 +31,9 @@ export const metadata: Metadata = {
     shortcut: '/banten-mengaji.jpeg',
     apple: '/banten-mengaji.jpeg',
   },
+  verification: {
+    google: 'mdKrf2CGmVDCr4rmjjEzuIZ1Vr1RVbqgo-Js5ukYfbM',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
