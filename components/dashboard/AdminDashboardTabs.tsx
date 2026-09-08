@@ -52,11 +52,13 @@ const KECAMATAN_OPTIONS = [
   { id: 7, name: 'Curug' },
 ];
 
+import { normalizeFasilitas } from '@/lib/utils/fasilitas';
+
 const FASILITAS_OPTIONS = [
   'Parkir Mobil & Motor',
   'Tempat Wudhu Terpisah',
   'Ruangan Ber-AC',
-  'Area Khusus Akhwat',
+  'Area Khusus Akhawat (Hijab)',
   'Perpustakaan Kitab',
 ];
 
@@ -739,7 +741,7 @@ function AdminMasjidModal({
   const isEdit = Boolean(initialMasjid);
 
   const initialFasilitas = Array.isArray(initialMasjid?.acf?.fasilitas)
-    ? initialMasjid.acf.fasilitas.map((f) => f.replace(/^•\s*/, ''))
+    ? normalizeFasilitas(initialMasjid.acf.fasilitas).map((f) => f.replace(/^•\s*/, ''))
     : [];
   const [selectedFasilitas, setSelectedFasilitas] = useState<string[]>(initialFasilitas);
 
@@ -760,7 +762,7 @@ function AdminMasjidModal({
     }
 
     formData.delete('fasilitas');
-    selectedFasilitas.forEach((f) => formData.append('fasilitas', f));
+    normalizeFasilitas(selectedFasilitas).forEach((f) => formData.append('fasilitas', f));
 
     try {
       const res = isEdit

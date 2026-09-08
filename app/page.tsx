@@ -3,6 +3,7 @@ import { PrayerTimesWidget } from '@/components/prayer/PrayerTimesWidget';
 import { KajianCard } from '@/components/kajian/KajianCard';
 import { MasjidCard } from '@/components/masjid/MasjidCard';
 import { getKajianList, getMasjidList, getArtikelList } from '@/lib/wordpress';
+import { isKajianExpired } from '@/lib/kajian';
 import { ArrowRight, BookOpen } from 'lucide-react';
 import htmlParser from 'html-react-parser';
 
@@ -15,10 +16,13 @@ export default async function Home() {
     getArtikelList(),
   ]);
 
-  let activeKajian = kajianList.filter(k => k.acf.status_kajian === 'aktif').slice(0, 3);
-  if (activeKajian.length === 0) {
-    activeKajian = kajianList.slice(0, 3);
-  }
+  const validKajian = kajianList.filter((k) => {
+    if (k.acf?.status_kajian === 'selesai') return false;
+    if (isKajianExpired(k.acf?.tanggal_kajian, k.acf?.jam_selesai, k.acf?.jam_mulai)) return false;
+    return k.acf?.status_kajian === 'aktif' || k.acf?.status_kajian === 'libur' || !k.acf?.status_kajian;
+  });
+
+  const activeKajian = validKajian.slice(0, 3);
   const featuredMasjid = masjidList.slice(0, 2);
   const latestArtikel = artikelList.slice(0, 3);
 

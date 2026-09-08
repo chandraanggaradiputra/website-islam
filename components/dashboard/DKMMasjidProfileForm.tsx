@@ -22,11 +22,13 @@ import {
   Compass,
 } from 'lucide-react';
 
+import { normalizeFasilitas } from '@/lib/utils/fasilitas';
+
 const FASILITAS_CHOICES = [
   'Parkir Mobil & Motor',
   'Tempat Wudhu Terpisah',
   'Ruangan Ber-AC',
-  'Area Khusus Akhwat',
+  'Area Khusus Akhawat (Hijab)',
   'Perpustakaan Kitab',
 ];
 
@@ -43,7 +45,7 @@ export function DKMMasjidProfileForm({ masjid }: { masjid: WPMasjid }) {
 
   // Fasilitas
   const initialFasilitas = Array.isArray(masjid.acf?.fasilitas)
-    ? masjid.acf.fasilitas.map((f) => f.replace(/^•\s*/, ''))
+    ? normalizeFasilitas(masjid.acf.fasilitas).map((f) => f.replace(/^•\s*/, ''))
     : [];
   const [selectedFasilitas, setSelectedFasilitas] = useState<string[]>(initialFasilitas);
 
@@ -86,9 +88,9 @@ export function DKMMasjidProfileForm({ masjid }: { masjid: WPMasjid }) {
     const formData = new FormData(e.currentTarget);
     formData.set('masjidId', masjid.id.toString());
 
-    // Masukkan fasilitas terpilih
+    // Masukkan fasilitas terpilih yang dinormalisasi
     formData.delete('fasilitas');
-    selectedFasilitas.forEach((f) => {
+    normalizeFasilitas(selectedFasilitas).forEach((f) => {
       formData.append('fasilitas', f);
     });
 

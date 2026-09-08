@@ -7,7 +7,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { CalendarButton } from '@/components/kajian/CalendarButton';
 import { ShareButton } from '@/components/ui/ShareButton';
-import { Calendar, MapPin, User, ArrowLeft, Book } from 'lucide-react';
+import { Calendar, MapPin, User, ArrowLeft, Book, AlertCircle } from 'lucide-react';
 import htmlParser from 'html-react-parser';
 import { JsonLd } from '@/components/seo/JsonLd';
 
@@ -118,8 +118,8 @@ export default async function SingleKajianPage({ params }: { params: Promise<{ s
               {acf?.kategori_jamaah === 'umum' ? 'Umum' : acf?.kategori_jamaah === 'khusus_akhwat' ? 'Akhwat' : acf?.kategori_jamaah === 'khusus_ikhwan' ? 'Ikhwan' : (acf?.kategori_jamaah || 'Umum')}
             </span>
             {acf?.status_kajian === 'libur' && (
-              <span className="text-xs font-semibold px-2 py-1 rounded-md bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">
-                Diliburkan
+              <span className="text-xs font-extrabold px-3 py-1 rounded-md bg-red-600 text-white uppercase tracking-wider">
+                DILIBURKAN
               </span>
             )}
             {finalKotaKabupaten && (
@@ -128,6 +128,18 @@ export default async function SingleKajianPage({ params }: { params: Promise<{ s
               </span>
             )}
           </div>
+
+          {acf?.status_kajian === 'libur' && (
+            <div className="mb-6 p-4 rounded-xl bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900 text-red-800 dark:text-red-200 flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+              <div>
+                <h4 className="font-bold text-sm">Pemberitahuan: Kajian Ini Diliburkan</h4>
+                <p className="text-xs mt-0.5 text-red-700 dark:text-red-300 leading-relaxed">
+                  Jadwal kajian ini diliburkan sementara untuk sesi ini (misal karena pemateri udzur atau halangan lainnya). Silakan hubungi DKM terkait atau pantau jadwal kajian sunnah lainnya.
+                </p>
+              </div>
+            </div>
+          )}
 
           <h1 className="text-2xl md:text-3xl font-bold mb-6 text-slate-900 dark:text-white">
             {title.rendered}

@@ -4,23 +4,10 @@ import { getSession } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 import { DKMRegistrationPayload, DKMRegistrationApplication } from '@/types';
 import { sendNewDKMNotificationToAdmin, sendDKMApprovalEmail, sendDKMRejectionEmail, addDKMSubscriberToMailketing } from '@/lib/mailketing';
+import { getWPAdminAuthHeader } from '@/lib/wordpress';
+import { normalizeFasilitas } from '@/lib/utils/fasilitas';
 
 const WP_API_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || 'https://salaf.maschandigital.id/wp-json/wp/v2';
-
-function getWPAdminAuthHeader(): string | null {
-  const user = process.env.WP_ADMIN_USERNAME?.trim();
-  const pass = process.env.WP_APPLICATION_PASSWORD?.trim();
-
-  if (!user || !pass) {
-    console.warn('[DKM Auth Error] Kredensial server WordPress tidak lengkap:', {
-      hasUsername: Boolean(user),
-      hasAppPassword: Boolean(pass),
-    });
-    return null;
-  }
-
-  return 'Basic ' + Buffer.from(`${user}:${pass}`).toString('base64');
-}
 
 /**
  * Server Action: Membaca data pendaftaran DKM dari CPT Masjid (status: pending)
@@ -277,17 +264,7 @@ export async function submitDaftarDKM(formDataOrPayload: FormData | DKMRegistrat
         acfPayload.atas_nama_rekening = atasNamaRekening.trim();
       }
       if (Array.isArray(fasilitas) && fasilitas.length > 0) {
-        const WP_FASILITAS_MAP: Record<string, string> = {
-          'Parkir Mobil & Motor': '• Parkir Mobil & Motor',
-          'Tempat Wudhu Terpisah': '• Tempat Wudhu Terpisah',
-          'Ruangan Ber-AC': '• Ruangan Ber-AC',
-          'Area Khusus Akhwat': '• Area Khusus Akhawat (Hijab)',
-          'Area Khusus Akhawat (Hijab)': '• Area Khusus Akhawat (Hijab)',
-          'Perpustakaan Kitab': '• Perpustakaan Kitab',
-        };
-        acfPayload.fasilitas = fasilitas.map(
-          (f) => WP_FASILITAS_MAP[f] || (f.startsWith('• ') ? f : `• ${f}`)
-        );
+        acfPayload.fasilitas = normalizeFasilitas(fasilitas);
       }
 
       wpMasjidPayload = {
