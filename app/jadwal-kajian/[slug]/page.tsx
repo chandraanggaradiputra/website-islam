@@ -2,6 +2,7 @@ import { getKajianBySlug } from '@/lib/wordpress';
 import { getMasjidById } from '@/lib/actions/masjid';
 import { Metadata } from 'next';
 import Image from 'next/image';
+import { WPMasjid } from '@/types';
 import { getKajianJsonLd } from '@/lib/schema';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -71,6 +72,7 @@ export default async function SingleKajianPage({ params }: { params: Promise<{ s
   let finalMasjidSlug = masjid_detail?.slug || null;
   let finalMasjidAlamat = masjid_detail?.acf?.alamat_lengkap || null;
   let finalKotaKabupaten = acf?.kota_kabupaten || masjid_detail?.acf?.kota_kabupaten || null;
+  let finalMasjid: WPMasjid | null = masjid_detail || null;
 
   if (!masjid_detail && acf?.masjid_terkait && Array.isArray(acf.masjid_terkait) && acf.masjid_terkait.length > 0) {
     const rawId = acf.masjid_terkait[0];
@@ -78,6 +80,7 @@ export default async function SingleKajianPage({ params }: { params: Promise<{ s
     if (targetId) {
       const fetchedMasjid = await getMasjidById(targetId);
       if (fetchedMasjid) {
+        finalMasjid = fetchedMasjid;
         finalMasjidName = fetchedMasjid.title.rendered;
         finalMasjidSlug = fetchedMasjid.slug;
         finalMasjidAlamat = fetchedMasjid.acf?.alamat_lengkap || null;
@@ -196,7 +199,7 @@ export default async function SingleKajianPage({ params }: { params: Promise<{ s
           </div>
 
           <div className="flex flex-wrap gap-3 mb-8 pb-8 border-b border-slate-200 dark:border-slate-800">
-            <CalendarButton kajian={kajian} />
+            <CalendarButton kajian={kajian} masjid={finalMasjid} />
             <ShareButton title={title.rendered} text={`Bersama: ${acf?.nama_ustadz || 'Asatidz'}\nLokasi: ${finalMasjidName}\nWaktu: ${isRutin ? 'Setiap ' + (acf?.hari_kajian || '') : (acf?.tanggal_kajian || '')} jam ${acf?.jam_mulai || ''}`} url="" />
           </div>
 
