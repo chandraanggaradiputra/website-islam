@@ -1,94 +1,157 @@
 // lib/schema.ts
 import { WPKajian, WPMasjid, WPArtikel } from '@/types';
-import { normalizeACFDate } from './wordpress';
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://maschandigital.id';
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://banten-mengaji.vercel.app';
 
-// 1. Schema Organisasi & Website (Root)
-export function generateOrganizationSchema() {
+/**
+ * Skema Global Organisasi & Website
+ */
+export function getWebSiteJsonLd() {
   return {
     '@context': 'https://schema.org',
-    '@type': 'Organization',
+    '@type': 'WebSite',
     name: 'Banten Mengaji',
     url: BASE_URL,
-    logo: `${BASE_URL}/logo.png`,
-    description: 'Pusat informasi jadwal kajian Islam bermanhaj Salafus Shalih dan direktori masjid di seluruh Provinsi Banten.',
-    address: {
-      '@type': 'PostalAddress',
-      streetAddress: 'Banten Indah Permai Blok E1 No.12A, Kelurahan Unyur',
-      addressLocality: 'Kota Serang',
-      addressRegion: 'Banten',
-      postalCode: '42111',
-      addressCountry: 'ID',
-    },
-    contactPoint: {
-      '@type': 'ContactPoint',
-      telephone: '+6282298148474',
-      contactType: 'customer service',
-      email: 'admin@maschandigital.id',
+    description: 'Portal Informasi Direktori Masjid & Jadwal Kajian Islam Bermanhaj Salaf se-Provinsi Banten',
+    inLanguage: 'id-ID',
+    publisher: {
+      '@type': 'Organization',
+      name: 'Banten Mengaji',
+      url: BASE_URL,
+      logo: `${BASE_URL}/banten-mengaji.jpeg`,
+      areaServed: {
+        '@type': 'AdministrativeArea',
+        name: 'Provinsi Banten',
+      },
     },
   };
 }
 
-// 2. Schema Event / Kajian
-export function generateKajianSchema(kajian: WPKajian) {
-  const tanggal = normalizeACFDate(kajian.acf?.tanggal_kajian) || '2026-08-29';
-  const jamMulai = kajian.acf?.jam_mulai?.slice(0, 5) || '18:30';
-  const jamSelesai = kajian.acf?.jam_selesai?.slice(0, 5) || '20:00';
-  const masjid = kajian.masjid_name || kajian.masjid_detail?.title?.rendered || 'Kota Serang';
+/**
+ * Skema Jadwal Kajian (Event)
+ */
+export function getKajianJsonLd(kajian: WPKajian, masjid?: WPMasjid | null) {
+  const masjidName =
+    masjid?.title?.rendered ||
+    (typeof kajian.acf?.masjid_terkait === 'object' && kajian.acf.masjid_terkait !== null
+      ? (kajian.acf.masjid_terkait as any).title?.rendered
+      : 'Masjid di Banten');
+
+  const masjidAddress = masjid?.acf?.alamat_lengkap || 'Provinsi Banten, Indonesia';
+
+  // Format tanggal ISO jika tersedia
+  const startDate = kajian.acf?.tanggal_kajian
+    ? `${kajian.acf.tanggal_kajian}T${kajian.acf.jam_mulai || '18:30'}:00+07:00`
+    : undefined;
+
+  const endDate =
+    kajian.acf?.tanggal_kajian && kajian.acf?.jam_selesai
+      ? `${kajian.acf.tanggal_kajian}T${kajian.acf.jam_selesai}:00+07:00`
+      : undefined;
 
   return {
     '@context': 'https://schema.org',
-    '@type': 'EducationEvent',
-    name: kajian.title.rendered,
-    description: kajian.acf?.kitab_bahasan ? `Pembahasan kitab: ${kajian.acf.kitab_bahasan}` : kajian.title.rendered,
-    startDate: `${tanggal}T${jamMulai}:00+07:00`,
-    endDate: `${tanggal}T${jamSelesai}:00+07:00`,
-    eventStatus: 'https://schema.org/EventScheduled',
+    '@type': 'Event',
+    name: kajian.title?.rendered || 'Jadwal Kajian Islam',
+    description: `Kajian Islam ilmiah membahas ${kajian.acf?.kitab_bahasan || 'ilmu syar\'i'} bersama ${kajian.acf?.nama_ustadz || 'Asatidz'} di ${masjidName}. Terbuka untuk jamaah ${kajian.acf?.kategori_jamaah || 'Umum'}.`,
+    ...(startDate ? { startDate } : {}),
+    ...(endDate ? { endDate } : {}),
     eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
-    isAccessibleForFree: true,
-    image: kajian.featured_media_url ? [kajian.featured_media_url] : [],
+    eventStatus:
+      kajian.acf?.status_kajian === 'libur'
+        ? 'https://schema.org/EventCancelled'
+        : 'https://schema.org/EventScheduled',
     location: {
       '@type': 'Place',
-      name: masjid,
+      name: masjidName,
       address: {
         '@type': 'PostalAddress',
-        addressLocality: 'Kota Serang',
+        streetAddress: masjidAddress,
         addressRegion: 'Banten',
         addressCountry: 'ID',
       },
+      ...(masjid?.acf?.google_maps_url ? { hasMap: masjid.acf.google_maps_url } : {}),
     },
     performer: {
       '@type': 'Person',
-      name: kajian.acf?.nama_ustadz || 'Asatidz Ahlussunnah',
+      name: kajian.acf?.nama_ustadz || 'Ustadz',
     },
     organizer: {
       '@type': 'Organization',
-      name: masjid,
+      name: `DKM ${masjidName}`,
+      url: BASE_URL,
     },
+    isAccessibleForFree: true,
   };
 }
 
-// 3. Schema Masjid (PlaceOfWorship)
-export function generateMasjidSchema(masjid: WPMasjid) {
+/**
+ * Skema Direktori Masjid (PlaceOfWorship)
+ */
+export function getMasjidJsonLd(masjid: WPMasjid) {
+  const cleanDesc = masjid.content?.rendered?.replace(/<[^>]*>/g, '').trim();
+
   return {
     '@context': 'https://schema.org',
-    '@type': 'Mosque',
-    name: masjid.title.rendered,
-    description: masjid.content?.rendered?.replace(/<[^>]*>?/gm, '').slice(0, 200) || masjid.title.rendered,
-    image: masjid.featured_media_url ? [masjid.featured_media_url] : [],
+    '@type': 'PlaceOfWorship',
+    name: masjid.title?.rendered || 'Masjid',
+    description: cleanDesc || `Profil dan informasi kegiatan dakwah di ${masjid.title?.rendered}.`,
+    url: `${BASE_URL}/masjid/${masjid.slug}`,
     address: {
       '@type': 'PostalAddress',
-      streetAddress: masjid.acf?.alamat_lengkap || 'Kota Serang',
-      addressLocality: 'Kota Serang',
+      streetAddress: masjid.acf?.alamat_lengkap || 'Provinsi Banten',
       addressRegion: 'Banten',
       addressCountry: 'ID',
     },
-    telephone: masjid.acf?.no_wa_dkm || '+6282298148474',
+    ...(masjid.acf?.no_wa_dkm ? { telephone: masjid.acf.no_wa_dkm } : {}),
+    ...(masjid.acf?.google_maps_url ? { hasMap: masjid.acf.google_maps_url } : {}),
+    ...(masjid.featured_media_url ? { image: masjid.featured_media_url } : {}),
   };
 }
 
-// 4. Schema Artikel
+/**
+ * Skema Panduan DKM (HowTo)
+ */
+export function getPanduanDkmJsonLd() {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'HowTo',
+    name: 'Panduan Layanan & Dasbor DKM Masjid Banten Mengaji',
+    description: 'Tata cara pendaftaran masjid dan pengelolaan jadwal kajian Islam di portal Banten Mengaji.',
+    step: [
+      {
+        '@type': 'HowToStep',
+        name: 'Langkah 1: Registrasi Masjid & DKM',
+        text: 'Mengisi formulir pendaftaran akun pengurus dan data masjid di halaman pendaftaran.',
+        url: `${BASE_URL}/daftar-dkm`,
+      },
+      {
+        '@type': 'HowToStep',
+        name: 'Langkah 2: Verifikasi Administrator',
+        text: 'Administrator Banten Mengaji memvalidasi kelayakan profil masjid demi menjaga akurasi informasi.',
+      },
+      {
+        '@type': 'HowToStep',
+        name: 'Langkah 3: Akses Dasbor & Login',
+        text: 'Pengurus masuk menggunakan email dan password terdaftar untuk mengelola profil dan jadwal.',
+        url: `${BASE_URL}/login`,
+      },
+      {
+        '@type': 'HowToStep',
+        name: 'Langkah 4: Publikasi Jadwal Kajian',
+        text: 'Menginput jadwal kajian rutin atau tematik (jam, pemateri, kitab, dan poster).',
+        url: `${BASE_URL}/dashboard/dkm`,
+      },
+      {
+        '@type': 'HowToStep',
+        name: 'Langkah 5: Syiar Otomatis ke Jamaah',
+        text: 'Jadwal kajian otomatis terbit di beranda, direktori kajian, serta terindeks oleh mesin pencari AI.',
+      },
+    ],
+  };
+}
+
+// 4. Schema Artikel (Tetap Dipertahankan)
 export function generateArtikelSchema(artikel: WPArtikel) {
   return {
     '@context': 'https://schema.org',

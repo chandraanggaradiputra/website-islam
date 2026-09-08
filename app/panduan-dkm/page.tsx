@@ -1,6 +1,8 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { UserPlus, ShieldCheck, MailCheck, Mic, Globe, MessageCircle } from 'lucide-react';
+import { JsonLd } from '@/components/seo/JsonLd';
+import { getPanduanDkmJsonLd } from '@/lib/schema';
 
 export const metadata: Metadata = {
   title: 'Panduan Layanan DKM Masjid | Banten Mengaji',
@@ -8,8 +10,11 @@ export const metadata: Metadata = {
 };
 
 export default function PanduanDKMPage() {
+  const panduanSchema = getPanduanDkmJsonLd();
+
   return (
     <div className="bg-slate-50 dark:bg-slate-950 min-h-screen py-12 px-4 sm:px-6 lg:px-8">
+      <JsonLd data={panduanSchema} />
       <div className="max-w-4xl mx-auto space-y-12">
         {/* Header Section */}
         <div className="text-center space-y-4">
