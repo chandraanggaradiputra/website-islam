@@ -1,12 +1,20 @@
-Laporan Hasil Kerja: Integrasi Google Site Verification Tag
+Laporan Hasil Kerja: Implementasi Skema JSON-LD Schema.org
 
-Pada pengerjaan kali ini, saya telah menyematkan tag kepemilikan kode identitas verifikasi Google Search Console. 
+Pada sesi ini, saya telah mengimplementasikan data terstruktur (Structured Data) JSON-LD untuk keperluan optimasi Generative Engine Optimization (GEO) dan AI Search Citation (seperti Google AI Overviews, ChatGPT Search, dsb.).
 
 Rincian pembaruan:
-- **Lokasi Berkas**: `app/layout.tsx`
-- **Konfigurasi Modifikasi**: Properti opsional `verification: { google: "..." }` di dalam antarmuka `Metadata` native Next.js 16 berhasil ditambahkan menggunakan kunci `mdKrf2CGmVDCr4rmjjEzuIZ1Vr1RVbqgo-Js5ukYfbM`.
-- **Hasil Render Kode Sumber**: Kompilasi HTML `layout` kini otomatis menghasilkan `<meta name="google-site-verification" content="mdKrf2CGmVDCr4rmjjEzuIZ1Vr1RVbqgo-Js5ukYfbM" />` di dalam elemen `<head>`.
+1. **Helper Schema (`lib/schema.ts`)**: 
+   - Diperbarui secara menyeluruh menggunakan struktur tipe data yang telah dibersihkan.
+   - Fungsi baru: `getWebSiteJsonLd()`, `getKajianJsonLd()`, `getMasjidJsonLd()`, dan `getPanduanDkmJsonLd()`.
+2. **Global Portal (`app/layout.tsx`)**:
+   - Diperbarui untuk menggunakan fungsi skema `WebSite` & `Organization` (`getWebSiteJsonLd`).
+3. **Detail Jadwal Kajian (`app/jadwal-kajian/[slug]/page.tsx`)**:
+   - Skema kini di-*render* secara presisi sebagai tipe `Event`, lengkap dengan tautan `location` dan `organizer` (`getKajianJsonLd`).
+4. **Detail Profil Masjid (`app/masjid/[slug]/page.tsx`)**:
+   - Skema diperbarui menjadi entitas `PlaceOfWorship` (`getMasjidJsonLd`).
+5. **Halaman Panduan DKM (`app/panduan-dkm/page.tsx`)**:
+   - Skema tipe `HowTo` telah ditambahkan untuk merinci proses pendaftaran masjid dan manajemen jadwal kajian ke dalam langkah-langkah yang dimengerti oleh mesin AI (`getPanduanDkmJsonLd`).
 
-Berdasarkan *pipeline* proyek, kode yang diperbarui telah lulus verifikasi TypeCheck & *Production Build* di `staging-website-islam` dan sekarang telah *di-merge* dengan sukses ke *branch* `main`.
+Semua kode berhasil dikompilasi (bebas galat *TypeScript*), dan telah didorong (*push*) langsung ke dalam *branch* `main`.
 
-Aplikasi siap untuk dikirimkan dan dievaluasi (verifikasi) oleh crawler Google Webmaster Tools!
+Aplikasi Banten Mengaji kini secara teknis telah siap dirayapi dan disitasi secara cerdas oleh model bahasa mesin pencari!
