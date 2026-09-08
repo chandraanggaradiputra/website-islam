@@ -4,7 +4,7 @@ import { getSession } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 import { DKMRegistrationPayload, DKMRegistrationApplication } from '@/types';
 import { sendNewDKMNotificationToAdmin, sendDKMApprovalEmail, sendDKMRejectionEmail, addDKMSubscriberToMailketing } from '@/lib/mailketing';
-import { getWPAdminAuthHeader } from '@/lib/wordpress';
+import { getWPAdminAuthHeader, resolveKecamatanTermId, resolveKecamatanName } from '@/lib/wordpress';
 import { normalizeFasilitas } from '@/lib/utils/fasilitas';
 
 const WP_API_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || 'https://salaf.maschandigital.id/wp-json/wp/v2';
@@ -205,6 +205,10 @@ export async function submitDaftarDKM(formDataOrPayload: FormData | DKMRegistrat
       }
     }
     
+    // Selesaikan taksonomi kecamatan secara defensif (angka ID atau nama kecamatan)
+    const resolvedKecId = resolveKecamatanTermId(kecamatan || kecamatanNama);
+    const resolvedKecName = resolveKecamatanName(kecamatan || kecamatanNama) || kecamatanNama;
+
     // Siapkan data JSON tambahan untuk disimpan di konten post (dienkripsi Base64)
     const appData = {
       namaPengurus,
@@ -217,7 +221,8 @@ export async function submitDaftarDKM(formDataOrPayload: FormData | DKMRegistrat
       newMasjidData: isNewMasjid ? {
         namaMasjid: namaMasjidBaru || '',
         kotaKabupaten,
-        kecamatanName: kecamatanNama,
+        kecamatanId: resolvedKecId || undefined,
+        kecamatanName: resolvedKecName || '',
         alamatLengkap: alamatMasjid || '',
         googleMapsUrl,
         fasilitas,
@@ -278,10 +283,9 @@ export async function submitDaftarDKM(formDataOrPayload: FormData | DKMRegistrat
         wpMasjidPayload.featured_media = mediaId;
       }
 
-      // Hindari error taksonomi kecamatan: HANYA sertakan properti kecamatan jika ID benar-benar angka valid (> 0)
-      const rawKecId = Number(kecamatan);
-      if (!isNaN(rawKecId) && rawKecId > 0) {
-        wpMasjidPayload.kecamatan = [rawKecId];
+      // Taksonomi kecamatan di root payload
+      if (resolvedKecId) {
+        wpMasjidPayload.kecamatan = [resolvedKecId];
       }
     } else {
       // Klaim masjid yang sudah ada
@@ -445,6 +449,10 @@ export async function approveDKMRegistration(registrationId: string | number) {
       };
       if (userId) {
         updatePayload.author = userId;
+      }
+      const kecId = appData?.newMasjidData?.kecamatanId || resolveKecamatanTermId(appData?.newMasjidData?.kecamatanName);
+      if (kecId) {
+        updatePayload.kecamatan = [kecId];
       }
 
       const resPub = await fetch(`${WP_API_URL}/masjid/${registrationId}`, {
