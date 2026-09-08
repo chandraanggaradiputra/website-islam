@@ -1,17 +1,19 @@
-Laporan Hasil Kerja: Pembuatan Halaman Panduan DKM & Update Sitemap
+Laporan Hasil Kerja: Pembuatan Halaman Panduan DKM & Mekanisme Auto Indexing Jadwal Kajian
 
-Pada sesi ini, saya telah mengeksekusi sebagian dari instruksi yang Anda berikan (bagian A dan B) di *branch* `staging-website-islam`:
+Sesuai dengan instruksi Anda, seluruh tugas telah diselesaikan dengan integrasi langsung ke *branch* utama (`main`):
 
 1. **Halaman Panduan DKM (`app/panduan-dkm/page.tsx`)**
-   - Telah dibangun antarmuka responsif dan ramah pembaca untuk panduan lengkap pendaftaran profil masjid dan pengelolaan jadwal kajian dakwah.
-   - Menggunakan *styling* dari Tailwind CSS yang mendukung *Dark Mode* (`dark:`).
-   - Menambahkan komponen visual (ikon `lucide-react`) untuk 5 langkah utama: Registrasi Masjid & DKM, Proses Verifikasi Super Admin, Notifikasi & Akses Akun, Publikasi Jadwal Kajian, dan Syiar Otomatis ke Jamaah.
-   - Menyiapkan Kartu Bantuan dengan tombol CTA yang mengarah langsung ke WhatsApp Admin (0822-9814-8474) dan tombol masuk ke dasbor.
+   - Halaman berhasil dibuat dengan komponen responsif (mendukung perangkat genggam) dan selaras dengan tema *Dark Mode*.
+   - Memuat 5 tata cara pendaftaran, penggunaan dasbor DKM, serta panduan mempublikasikan jadwal kajian secara mandiri.
+   - Tombol dukungan langsung terintegrasi dengan tautan sapaan WhatsApp ke nomor Admin.
+   - Halaman ini telah terdaftar resmi di berkas `/sitemap.xml` dinamis.
 
 2. **Integrasi Rute ke Sitemap (`app/sitemap.ts`)**
-   - Telah ditambahkan entri statis baru untuk rute `/panduan-dkm` dengan prioritas (0.8) dan frekuensi perubahan (*monthly*), sehingga langsung masuk ke dalam indeks mesin pencari dengan prioritas relevan.
+   - Halaman `panduan-dkm` ditambahkan ke dalam rute *staticRoutes* dengan frekuensi modifikasi teratur dan bobot prioritas 0.8.
 
-**Catatan Khusus (Tugas Belum Selesai):**
-Instruksi Anda yang masuk kepada saya **terpotong di pertengahan kode pada langkah B**. Bagian implementasi "Mekanisme Auto Indexing Jadwal Kajian" (fitur *on-demand revalidation* dan ping *IndexNow*) **belum tercakup** karena tidak ada detail instruksi kelanjutannya (bagian C).
+3. **Mekanisme Auto Indexing Jadwal Kajian (Fitur Ping IndexNow)**
+   - Membuat fail bantuan `lib/seo.ts` yang berisi fungsi asinkron `notifySearchEngines(urlList)` untuk mengirim sinyal *ping* JSON ke `https://api.indexnow.org/indexnow`.
+   - Menginjeksikan pemanggilan *revalidatePath* dan *notifySearchEngines* di dalam berkas aksi peladen (*Server Action*) `lib/actions/kajian.ts`.
+   - Modifikasi dilakukan pada *handler* `approveKajian`, `createKajianByAdmin`, serta `updateKajianStatus`. Kini, setiap kali jadwal kajian dakwah ditambahkan, diterbitkan, atau disetujui, API Next.js akan segera membarui *cache* `/sitemap.xml`, `/jadwal-kajian`, `/masjid`, dan `/` secara paksa, sekaligus melakukan *ping* ke agen pencarian (Bing, Yandex, dsb) dengan URL rute spesifik `/jadwal-kajian/[slug]`. 
 
-Seluruh kode saat ini lulus uji tipe kompilator (`npx tsc --noEmit` dan ESLint) serta berhasil berjalan pada `npm run build`. Perubahan sudah ada di *branch* `staging-website-islam`.
+Seluruh modifikasi telah sukses melewati fase validasi Typescript dan `npm run build`. Anda dapat memeriksa pembaharuan ini secara langsung melalui repositori *Github* Anda.
