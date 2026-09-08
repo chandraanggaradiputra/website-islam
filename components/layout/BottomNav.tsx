@@ -417,6 +417,27 @@ export function BottomNav() {
                   </div>
                   <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200 transition-colors" />
                 </Link>
+
+                <Link
+                  href="/panduan-dkm"
+                  onClick={() => setIsDrawerOpen(false)}
+                  className="flex items-center justify-between p-3 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-50 text-sky-600 dark:bg-sky-950/60 dark:text-sky-400 group-hover:scale-105 transition-transform">
+                      <BookOpen className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors">
+                        Panduan DKM
+                      </p>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                        Cara mendaftarkan masjid & jadwal
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200 transition-colors" />
+                </Link>
               </div>
             </div>
 
