@@ -1,78 +1,77 @@
-# Walkthrough: Implementasi Alur Klaim Masjid Terdaftar (Opsi B) pada Pendaftaran & Persetujuan DKM
+# Laporan Implementasi: Refaktor Layout Dasbor Desktop (Flowbite Sidebar) & Harmonisasi Palet Warna #093c96
 
-## Ringkasan Eksekusi
-Seluruh tahapan implementasi **Alur Klaim Masjid Terdaftar (Opsi B)** telah berhasil dikerjakan pada branch `staging-website-islam`, diverifikasi bebas galat menggunakan `npx tsc --noEmit` dan `npm run build` (Turbopack), digabungkan (merge) ke branch `main`, dan telah dipush ke GitHub remote (`origin staging-website-islam` dan `origin main`).
-
----
-
-## 1. Rincian Pekerjaan yang Diselesaikan
-
-### A. Skenario Pengajuan Klaim Masjid Terdaftar (`lib/actions/dkm.ts`)
-- **Fungsi `submitDaftarDKM`**:
-  - Ketika calon pengurus DKM memilih masjid yang sudah terdaftar di sistem (`isNewMasjid === false`):
-    - Mengambil ID masjid yang dipilih (`claimedMasjidId = Number(masjidOption)`).
-    - Memvalidasi kepemilikan tunggal via `getMasjidById(claimedMasjidId)`: jika masjid sudah memiliki author DKM (`existingMasjid.author > 1`), proses dibatalkan dengan pesan yang ramah dan edukatif.
-    - Membuat entri postingan antrean baru di CPT `masjid` dengan status `'pending'` bertitel `[Klaim] ${existingMasjidTitle}`.
-    - Menyematkan metadata pendaftar terenkripsi Base64 di konten postingan yang memuat:
-      * `namaPengurus` / `namaLengkap`
-      * `email`
-      * `noWhatsapp` / `wa`
-      * `password` (untuk diaktifkan saat disetujui)
-      * `catatan`
-      * `isNewMasjid: false`
-      * `claimedMasjidId` & `masjidId`
-      * `namaMasjid` & `masjidName`
-    - **Proteksi Masjid Asli**: Postingan masjid fisik asli **tetap berstatus `publish`** sehingga masjid tidak hilang dari pencarian publik selama proses verifikasi berlangsung.
-    - Mengirimkan email notifikasi kepada Administrator bahwa terdapat permohonan klaim kepengurusan masjid masuk.
+Branch Target: `staging-website-islam`  
+Status: **Selesai & Terverifikasi** (Telah di-push ke remote `origin/staging-website-islam`)
 
 ---
 
-### B. Penyempurnaan Alur Persetujuan & Penolakan Admin (`lib/actions/dkm.ts`)
-- **Fungsi `approveDKMRegistration(registrationId)`**:
-  - Mengekstrak dan mendekode metadata Base64 dari postingan pending.
-  - Mendeteksi status permohonan secara komprehensif (`isClaim = appData.isNewMasjid === false || Boolean(appData.claimedMasjidId) || masjidTitle.startsWith('[Klaim]') || masjidTitle.startsWith('KLAIM:')`).
-  - Membuat akun pengguna WordPress baru di `wp_users` (`roles: ['author']`) dengan kredensial email dan password pendaftar.
-  - **Percabangan Logika Berdasarkan Status Permohonan**:
-    * **Jika Klaim Masjid Terdaftar (`isClaim === true`)**:
-      1. Menautkan author akun DKM ke postingan masjid fisik asli:
-         `POST /wp-json/wp/v2/masjid/${claimedMasjidId}` dengan payload `{ "author": userId }`.
-      2. Menghapus entri postingan antrean klaim sementara (`registrationId`) secara permanen:
-         `DELETE /wp-json/wp/v2/masjid/${registrationId}?force=true`.
-    * **Jika Usulan Masjid Baru (`isClaim === false`)**:
-      - Mem-publish postingan usulan (`registrationId`) dengan `{ status: 'publish', author: userId, kecamatan: [...] }`.
-  - Mengirim email persetujuan resmi melalui Mailketing berisi kredensial login (Email dan Password pendaftaran) ke pengurus DKM.
+## 1. Ringkasan Eksekutif
 
-- **Fungsi `rejectDKMRegistration(registrationId)`**:
-  - Mengekstrak metadata pendaftar dan mengirim email penolakan dengan santun.
-  - Menghapus entri postingan antrean sementara (`registrationId`) dengan `force=true`.
-  - Postingan masjid fisik asli pada Opsi B tetap utuh dan aman di direktori publik.
+Telah berhasil diselesaikan refaktor komprehensif pada antarmuka navigasi dasbor desktop (*Desktop Dashboard Layout*) dengan mengadopsi standar komponen **Flowbite Default Sidebar**, serta harmonisasi palet warna resmi **Royal Navy Mas Chan Digital** (`#093c96`) dan aksen **Warm Islamic Gold** (`#C5A059`).
+
+Seluruh pekerjaan mematuhi aturan ketat proyek:
+- ✅ **Fase Perencanaan**: Berkas `implementation-plan.md` dibuat dan disetujui sebelum modifikasi kode.
+- ✅ **Komentar Kode Proporsional**: Seluruh fungsi, antarmuka props, state, dan blok UI utama dilengkapi dokumentasi terstruktur untuk kemudahan pemahaman Product Owner.
+- ✅ **Fase Verifikasi**: `npx tsc --noEmit` nol error dan `npm run build` Turbopack lulus 100%.
+- ✅ **Kepatuhan Git Khusus Frontend**: Perubahan di-commit dan di-push **HANYA** ke remote branch `staging-website-islam` (**TIDAK** di-merge ke `main`).
 
 ---
 
-### C. Pembaruan Kartu Antrean di Dasbor Admin (`components/dashboard/AdminDashboardTabs.tsx`)
-- Pada Tab 1 ("Antrean DKM & Usulan Masjid"):
-  - **Klaim Masjid Terdaftar (`app.isNewMasjid === false`)**:
-    - Menampilkan badge biru: `🏛️ Klaim Masjid Terdaftar` (`bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300`).
-    - Menampilkan teks informasi terkait:
-      `Masjid Terkait: [Nama Masjid Asli] (ID: #[claimedMasjidId])`.
-  - **Usulan Masjid Baru (`app.isNewMasjid === true`)**:
-    - Menampilkan badge hijau: `✨ Usulan Masjid Baru` (`bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300`).
+## 2. Rincian Perubahan Berkas
+
+### A. Komponen Baru: [components/dashboard/DashboardSidebar.tsx](file:///C:/website-islam/components/dashboard/DashboardSidebar.tsx)
+Komponen client modular (`'use client'`) yang menggantikan implementasi sidebar monolitik lama:
+1. **Pola Desain Flowbite Sidebar**:
+   - Dimensi standar: lebar `w-64` (16rem / 256px), tinggi `h-screen sticky top-0`, `overflow-y-auto`, dan flex layout.
+   - Latar belakang adaptif: `bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800`.
+   - Responsivitas: Tampil eksklusif pada desktop (`hidden md:flex flex-col`), menjaga integritas navigasi mobile yang ada.
+2. **Harmonisasi Palet Warna**:
+   - **Tautan Menu Aktif**: `bg-[#093c96] text-white shadow-sm shadow-[#093c96]/25 font-semibold rounded-xl`.
+   - **Tautan Menu Tidak Aktif**: `text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white rounded-xl transition-all`.
+   - **Aksen Emas Islami (#C5A059)**: Diterapkan pada kartu identitas masjid binaan DKM, badge peran pengurus, dan ikon dekoratif.
+3. **Struktur Konten Modular**:
+   - **Header Brand**: Logo Banten Mengaji dengan efek hover halus dan badge status portal beraksen `#093c96`.
+   - **Kartu Profil Pengguna**: Avatar inisial dengan latar belakang `#093c96`, nama pengguna, email, dan badge peran akun (`Administrator` / `Pengurus DKM`).
+   - **Kartu Masjid Binaan (Khusus DKM)**: Menampilkan nama masjid yang dikelola, nama wilayah/kecamatan dengan ikon `MapPin`, dan badge kepengurusan resmi (`DKM Resmi Terdaftar`).
+   - **Navigasi Menu Dinamis**:
+     - *Role DKM*: Dasbor Ikhtisar (`/dashboard/dkm`), Profil Masjid (`/dashboard/dkm/profil-masjid`), Tambah Jadwal (`/dashboard/dkm/tambah-kajian`), serta badge "Segera" untuk Kegiatan & Infaq.
+     - *Role Admin*: Verifikasi DKM (`/dashboard/admin?tab=dkm`), Kelola Masjid (`/dashboard/admin?tab=masjid`), Kelola Kajian (`/dashboard/admin?tab=kajian`), Tambah Kajian (`/dashboard/admin/tambah-kajian`), serta badge "Segera" untuk Pengguna & Pengaturan.
+   - **Footer Aksi**: Tautan cepat "Lihat Situs Publik" (`/`) dan tombol "Keluar dari Dasbor" yang mengeksekusi Server Action `logout` secara aman.
+4. **Resiliensi Client Suspense**:
+   - Dibungkus dengan `<Suspense fallback={...}>` untuk menjamin keamanan pemanggilan `useSearchParams()` tanpa memicu peringatan SSR Next.js.
 
 ---
 
-### D. Penyelarasan Tipe Data (`types/index.ts`)
-- Menambahkan field opsional `claimedMasjidId?: number;` pada antarmuka `DKMRegistrationApplication`.
+### B. Refaktor Berkas: [app/dashboard/layout.tsx](file:///C:/website-islam/app/dashboard/layout.tsx)
+1. Menghapus markup `<aside>` inline lama dan menggantinya dengan `<DashboardSidebar />`.
+2. Menambahkan pengambilan data wilayah kecamatan secara aman (`getMasjidById`) jika pengguna login sebagai pengurus DKM dengan ID masjid tertaut.
+3. Meneruskan props sesi secara lengkap (`userRole`, `userName`, `userEmail`, `masjidName`, `masjidId`, `kecamatanName`).
+4. Menjaga harmonisasi area konten utama (`flex-1 flex flex-col min-w-0 min-h-screen overflow-hidden`) serta header mobile (< md) dan desktop top header (md+).
 
 ---
 
-## 2. Hasil Verifikasi & Pengujian
-1. **Type Checking**:
-   - Perintah: `npx tsc --noEmit`
-   - Hasil: **Lolos 100% tanpa error (Exit code 0)**.
-2. **Production Build**:
-   - Perintah: `npm run build` (Next.js Turbopack)
-   - Hasil: **Sukses terkompilasi 20 rute statis & dinamis (Exit code 0)**.
-3. **Status Git**:
-   - Commit ID: `e24c695`
-   - Merge ke `main`: Fast-forward
-   - Remote sync: Branch `staging-website-islam` dan `main` sinkron dengan remote GitHub (`origin`).
+## 3. Hasil Verifikasi & Kompilasi
+
+### A. Pemeriksaan Tipe Data (TypeScript)
+```bash
+npx tsc --noEmit
+# Exit Code: 0 (Bebas dari kesalahan tipe data)
+```
+
+### B. Kompilasi Produksi (Turbopack)
+```bash
+npm run build
+# Exit Code: 0
+# ✓ Compiled successfully in 17.8s
+# ✓ Generating static pages using 3 workers (20/20) in 3.5s
+# Seluruh rute /dashboard/* berhasil terkompilasi
+```
+
+---
+
+## 4. Status Repositori Git
+
+- **Branch**: `staging-website-islam`
+- **Commit**: `47981a0` (`feat(dashboard): refaktor layout dasbor desktop dengan flowbite sidebar & harmonisasi warna #093c96`)
+- **Remote Push**: `origin/staging-website-islam`
+- **Aturan Merge**: **Sesuai instruksi khusus untuk pekerjaan frontend visual, branch ini TIDAK di-merge ke `main`** agar siap direview secara bertahap oleh Mas Chan di lingkungan staging.
