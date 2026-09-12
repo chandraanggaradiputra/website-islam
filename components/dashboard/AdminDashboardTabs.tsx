@@ -4,7 +4,7 @@ import { useState, useEffect, useTransition } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { WPKajian, WPMasjid, DKMRegistrationApplication } from '@/types';
+import { WPKajian, WPMasjid, DKMRegistrationApplication, DKMUserItem, SystemSettings, DEFAULT_SYSTEM_SETTINGS } from '@/types';
 import {
   approveDKMRegistration,
   rejectDKMRegistration,
@@ -22,6 +22,10 @@ import {
   updateKajianByAdmin,
   deleteKajian,
 } from '@/lib/actions/kajian';
+import {
+  resetDKMUserPassword,
+  updateSystemSettings,
+} from '@/lib/actions/admin';
 import {
   Users,
   Building2,
@@ -41,6 +45,15 @@ import {
   Loader2,
   Save,
   Check,
+  KeyRound,
+  ShieldCheck,
+  Settings,
+  Mail,
+  Globe,
+  MessageCircle,
+  Eye,
+  EyeOff,
+  Sparkles,
 } from 'lucide-react';
 
 const KECAMATAN_OPTIONS = [
@@ -67,6 +80,8 @@ interface AdminDashboardTabsProps {
   registrations: DKMRegistrationApplication[];
   allKajian: WPKajian[];
   allMasjid: WPMasjid[];
+  dkmUsers?: DKMUserItem[];
+  initialSettings?: SystemSettings;
 }
 
 export function AdminDashboardTabs({
@@ -74,17 +89,22 @@ export function AdminDashboardTabs({
   registrations,
   allKajian,
   allMasjid,
+  dkmUsers = [],
+  initialSettings,
 }: AdminDashboardTabsProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tabFromUrl = searchParams.get('tab') || initialTab;
-  const [activeTab, setActiveTab] = useState<'dkm' | 'masjid' | 'kajian'>(
-    (tabFromUrl as 'dkm' | 'masjid' | 'kajian') || 'dkm'
+  const [activeTab, setActiveTab] = useState<'dkm' | 'masjid' | 'kajian' | 'pengguna' | 'pengaturan'>(
+    (tabFromUrl as 'dkm' | 'masjid' | 'kajian' | 'pengguna' | 'pengaturan') || 'dkm'
   );
 
   useEffect(() => {
-    if (tabFromUrl && (tabFromUrl === 'dkm' || tabFromUrl === 'masjid' || tabFromUrl === 'kajian')) {
-      setActiveTab(tabFromUrl as 'dkm' | 'masjid' | 'kajian');
+    if (
+      tabFromUrl &&
+      ['dkm', 'masjid', 'kajian', 'pengguna', 'pengaturan'].includes(tabFromUrl)
+    ) {
+      setActiveTab(tabFromUrl as 'dkm' | 'masjid' | 'kajian' | 'pengguna' | 'pengaturan');
     }
   }, [tabFromUrl]);
 
@@ -94,12 +114,22 @@ export function AdminDashboardTabs({
   const [searchDKM, setSearchDKM] = useState('');
   const [searchMasjid, setSearchMasjid] = useState('');
   const [searchKajian, setSearchKajian] = useState('');
+  const [searchPengguna, setSearchPengguna] = useState('');
 
   // Modals state
   const [isAddMasjidOpen, setIsAddMasjidOpen] = useState(false);
   const [editingMasjid, setEditingMasjid] = useState<WPMasjid | null>(null);
   const [isAddKajianOpen, setIsAddKajianOpen] = useState(false);
   const [editingKajian, setEditingKajian] = useState<WPKajian | null>(null);
+  const [resetTargetUser, setResetTargetUser] = useState<DKMUserItem | null>(null);
+
+  // Settings state
+  const [settingsData, setSettingsData] = useState<SystemSettings>(
+    initialSettings || DEFAULT_SYSTEM_SETTINGS
+  );
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [settingsSuccess, setSettingsSuccess] = useState<string | null>(null);
+  const [settingsError, setSettingsError] = useState<string | null>(null);
 
   // Filtered lists
   const filteredDKM = registrations.filter((r) => {
@@ -132,9 +162,41 @@ export function AdminDashboardTabs({
     );
   });
 
-  const handleTabChange = (tab: 'dkm' | 'masjid' | 'kajian') => {
+  const filteredDKMUsers = dkmUsers.filter((u) => {
+    const q = searchPengguna.toLowerCase();
+    return (
+      u.name.toLowerCase().includes(q) ||
+      u.email.toLowerCase().includes(q) ||
+      u.username.toLowerCase().includes(q) ||
+      (u.masjidName && u.masjidName.toLowerCase().includes(q)) ||
+      (u.kecamatanName && u.kecamatanName.toLowerCase().includes(q)) ||
+      (u.phone && u.phone.includes(q))
+    );
+  });
+
+  const handleTabChange = (tab: 'dkm' | 'masjid' | 'kajian' | 'pengguna' | 'pengaturan') => {
     setActiveTab(tab);
     router.push(`/dashboard/admin?tab=${tab}`);
+  };
+
+  const handleSaveSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingSettings(true);
+    setSettingsSuccess(null);
+    setSettingsError(null);
+
+    try {
+      const res = await updateSystemSettings(settingsData);
+      if (res.success) {
+        setSettingsSuccess(res.message || 'Pengaturan sistem berhasil disimpan.');
+      } else {
+        setSettingsError(res.error || 'Gagal menyimpan pengaturan sistem.');
+      }
+    } catch {
+      setSettingsError('Terjadi kegagalan koneksi sistem saat menyimpan pengaturan.');
+    } finally {
+      setIsSavingSettings(false);
+    }
   };
 
   // Action Handlers
@@ -228,6 +290,30 @@ export function AdminDashboardTabs({
         >
           <BookOpen className="w-4 h-4" />
           <span>Kelola Jadwal Kajian ({allKajian.length})</span>
+        </button>
+
+        <button
+          onClick={() => handleTabChange('pengguna')}
+          className={`flex items-center gap-2 px-5 py-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
+            activeTab === 'pengguna'
+              ? 'border-[#093c96] text-[#093c96] dark:border-blue-400 dark:text-blue-400'
+              : 'border-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+          }`}
+        >
+          <ShieldCheck className="w-4 h-4" />
+          <span>Pengurus DKM ({dkmUsers.length})</span>
+        </button>
+
+        <button
+          onClick={() => handleTabChange('pengaturan')}
+          className={`flex items-center gap-2 px-5 py-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
+            activeTab === 'pengaturan'
+              ? 'border-[#093c96] text-[#093c96] dark:border-blue-400 dark:text-blue-400'
+              : 'border-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+          }`}
+        >
+          <Settings className="w-4 h-4" />
+          <span>Pengaturan Sistem</span>
         </button>
       </div>
 
@@ -681,6 +767,489 @@ export function AdminDashboardTabs({
       )}
 
       {/* ========================================================================= */}
+      {/* TAB 4: Pengurus DKM Terdaftar */}
+      {/* ========================================================================= */}
+      {activeTab === 'pengguna' && (
+        <div className="space-y-4">
+          {/* Bar Kontrol & Pencarian */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div className="relative flex-1">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Cari pengurus DKM (nama, email, username, masjid, wilayah)..."
+                value={searchPengguna}
+                onChange={(e) => setSearchPengguna(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-[#093c96]"
+              />
+            </div>
+            <div className="text-xs font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1.5 self-end sm:self-center">
+              <ShieldCheck className="w-4 h-4 text-[#093c96] dark:text-blue-400" />
+              <span>Total: <strong>{filteredDKMUsers.length}</strong> pengurus</span>
+            </div>
+          </div>
+
+          {/* Daftar Pengurus DKM */}
+          {filteredDKMUsers.length === 0 ? (
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-12 text-center text-slate-500 dark:text-slate-400">
+              <ShieldCheck className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-3" />
+              <p className="font-semibold text-base">Tidak ada data pengurus DKM yang sesuai.</p>
+              <p className="text-xs mt-1">Coba sesuaikan kata kunci pencarian Anda.</p>
+            </div>
+          ) : (
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    <tr>
+                      <th className="px-6 py-4">Pengurus DKM</th>
+                      <th className="px-6 py-4">Masjid Binaan</th>
+                      <th className="px-6 py-4">Kontak WhatsApp</th>
+                      <th className="px-6 py-4">Terdaftar Sejak</th>
+                      <th className="px-6 py-4 text-right">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                    {filteredDKMUsers.map((user) => {
+                      const cleanPhone = user.phone ? user.phone.replace(/[^0-9]/g, '') : '';
+                      const formattedPhone = cleanPhone.startsWith('0') ? '62' + cleanPhone.slice(1) : cleanPhone;
+                      const waLink = formattedPhone
+                        ? `https://wa.me/${formattedPhone}?text=${encodeURIComponent(
+                            `Assalamualaikum Pengurus DKM ${user.name}, ini dari Tim Admin Portal Banten Mengaji.`
+                          )}`
+                        : null;
+
+                      return (
+                        <tr key={user.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-xl bg-[#093c96] text-white flex items-center justify-center font-bold text-sm shadow-sm shadow-[#093c96]/20 shrink-0">
+                                {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="font-semibold text-slate-900 dark:text-white truncate">
+                                  {user.name}
+                                </p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                                  {user.email}
+                                </p>
+                                <span className="inline-block text-[10px] text-slate-400 dark:text-slate-500 font-mono">
+                                  @{user.username}
+                                </span>
+                              </div>
+                            </div>
+                          </td>
+
+                          <td className="px-6 py-4">
+                            {user.masjidName ? (
+                              <div className="space-y-1">
+                                <p className="font-medium text-slate-900 dark:text-white flex items-center gap-1.5">
+                                  <Building2 className="w-4 h-4 text-[#093c96] dark:text-blue-400 shrink-0" />
+                                  <span>{user.masjidName}</span>
+                                </p>
+                                {user.kecamatanName && (
+                                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold bg-amber-50 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-[#C5A059]/30 px-2 py-0.5 rounded-md">
+                                    <MapPin className="w-3 h-3 text-[#C5A059]" />
+                                    {user.kecamatanName}
+                                  </span>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-xs text-slate-400 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-md">
+                                Belum Ditautkan
+                              </span>
+                            )}
+                          </td>
+
+                          <td className="px-6 py-4">
+                            {waLink ? (
+                              <a
+                                href={waLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:text-emerald-300 dark:hover:bg-emerald-900/50 transition-colors"
+                              >
+                                <MessageCircle className="w-3.5 h-3.5" />
+                                <span>{user.phone}</span>
+                              </a>
+                            ) : (
+                              <span className="text-xs text-slate-400 italic">Tidak ada no. WA</span>
+                            )}
+                          </td>
+
+                          <td className="px-6 py-4 text-xs text-slate-500 dark:text-slate-400">
+                            {user.registeredDate
+                              ? new Date(user.registeredDate).toLocaleDateString('id-ID', {
+                                  day: 'numeric',
+                                  month: 'short',
+                                  year: 'numeric',
+                                })
+                              : '-'}
+                          </td>
+
+                          <td className="px-6 py-4 text-right">
+                            <button
+                              type="button"
+                              onClick={() => setResetTargetUser(user)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-blue-50 text-[#093c96] hover:bg-blue-100 dark:bg-blue-950/60 dark:text-blue-300 dark:hover:bg-blue-900/50 transition-colors cursor-pointer"
+                            >
+                              <KeyRound className="w-3.5 h-3.5" />
+                              <span>Reset Password</span>
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 5: Pengaturan Sistem */}
+      {/* ========================================================================= */}
+      {activeTab === 'pengaturan' && (
+        <div className="space-y-6">
+          {/* Feedback Notifikasi */}
+          {settingsSuccess && (
+            <div className="p-4 rounded-2xl bg-emerald-50 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800 text-sm flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span>{settingsSuccess}</span>
+              </div>
+              <button
+                onClick={() => setSettingsSuccess(null)}
+                className="text-emerald-600 hover:text-emerald-800 p-1 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
+          {settingsError && (
+            <div className="p-4 rounded-2xl bg-red-50 text-red-800 dark:bg-red-950/60 dark:text-red-200 border border-red-200 dark:border-red-800 text-sm flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0" />
+                <span>{settingsError}</span>
+              </div>
+              <button
+                onClick={() => setSettingsError(null)}
+                className="text-red-600 hover:text-red-800 p-1 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
+          <form onSubmit={handleSaveSettings} className="space-y-6">
+            {/* Kartu 1: Kontak Resmi & Dukungan */}
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+              <div className="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-slate-800 mb-5">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#093c96] dark:bg-blue-950/60 dark:text-blue-400 flex items-center justify-center">
+                  <Phone className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-slate-900 dark:text-white">
+                    Kontak Resmi & Layanan Dukungan
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Saluran komunikasi resmi Super Admin untuk membantu pengurus DKM dan jamaah.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                    Nomor WhatsApp Admin (Dukungan DKM) *
+                  </label>
+                  <div className="relative">
+                    <MessageCircle className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input
+                      type="text"
+                      required
+                      value={settingsData.whatsappAdmin}
+                      onChange={(e) =>
+                        setSettingsData({ ...settingsData, whatsappAdmin: e.target.value })
+                      }
+                      placeholder="Contoh: 0822-9814-8474"
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-[#093c96]"
+                    />
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Ditampilkan pada formulir pendaftaran DKM dan halaman kontak publik.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                    Email Notifikasi Utama *
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input
+                      type="email"
+                      required
+                      value={settingsData.emailAdmin}
+                      onChange={(e) =>
+                        setSettingsData({ ...settingsData, emailAdmin: e.target.value })
+                      }
+                      placeholder="admin@maschandigital.id"
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-[#093c96]"
+                    />
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Menerima tembusan email permohonan DKM baru & laporan sistem.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Kartu 2: Rekening Donasi Resmi Portal */}
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+              <div className="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-slate-800 mb-5">
+                <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400 flex items-center justify-center">
+                  <CreditCard className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-slate-900 dark:text-white">
+                    Rekening Infaq & Donasi Resmi Banten Mengaji
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Konfigurasi rekening perbankan yang menjadi rujukan donasi dakwah di halaman /donasi.
+                  </p>
+                </div>
+              </div>
+
+              {/* Rekening Utama */}
+              <div className="space-y-4">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                  Rekening Bank Utama (Prioritas 1)
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                      Nama Bank *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={settingsData.donasiBankName}
+                      onChange={(e) =>
+                        setSettingsData({ ...settingsData, donasiBankName: e.target.value })
+                      }
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-[#093c96]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                      Nomor Rekening *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={settingsData.donasiAccountNumber}
+                      onChange={(e) =>
+                        setSettingsData({ ...settingsData, donasiAccountNumber: e.target.value })
+                      }
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-[#093c96]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                      Atas Nama Rekening *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={settingsData.donasiAccountHolder}
+                      onChange={(e) =>
+                        setSettingsData({ ...settingsData, donasiAccountHolder: e.target.value })
+                      }
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-[#093c96]"
+                    />
+                  </div>
+                </div>
+
+                {/* Rekening Sekunder */}
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 pt-3">
+                  Rekening Bank Sekunder (Prioritas 2)
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                      Nama Bank Sekunder
+                    </label>
+                    <input
+                      type="text"
+                      value={settingsData.donasiBankSecondaryName || ''}
+                      onChange={(e) =>
+                        setSettingsData({ ...settingsData, donasiBankSecondaryName: e.target.value })
+                      }
+                      placeholder="Bank Aladin Syariah"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-[#093c96]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                      Nomor Rekening Sekunder
+                    </label>
+                    <input
+                      type="text"
+                      value={settingsData.donasiAccountSecondaryNumber || ''}
+                      onChange={(e) =>
+                        setSettingsData({
+                          ...settingsData,
+                          donasiAccountSecondaryNumber: e.target.value,
+                        })
+                      }
+                      placeholder="50661906210"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-[#093c96]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                      Atas Nama Rekening Sekunder
+                    </label>
+                    <input
+                      type="text"
+                      value={settingsData.donasiAccountSecondaryHolder || ''}
+                      onChange={(e) =>
+                        setSettingsData({
+                          ...settingsData,
+                          donasiAccountSecondaryHolder: e.target.value,
+                        })
+                      }
+                      placeholder="Chandra Anggara Diputra"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-[#093c96]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-5 mt-5 border-t border-slate-200 dark:border-slate-800">
+                <button
+                  type="submit"
+                  disabled={isSavingSettings}
+                  className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#093c96] hover:bg-blue-800 text-white font-semibold text-xs transition-colors shadow-sm shadow-[#093c96]/20 disabled:opacity-50 cursor-pointer"
+                >
+                  {isSavingSettings ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Menyimpan Pengaturan...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      <span>Simpan Perubahan Pengaturan</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </form>
+
+          {/* Kartu 3: Status Integrasi API */}
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+            <div className="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-slate-800 mb-5">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 flex items-center justify-center">
+                <Globe className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-base text-slate-900 dark:text-white">
+                  Status Konektivitas & Integrasi Eksternal API
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Pemantauan status integrasi layanan pihak ketiga yang menunjang operasional portal Banten Mengaji.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Service 1: WordPress REST API */}
+              <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-xs text-slate-900 dark:text-white">
+                    WordPress Engine
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Terhubung
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                  Penyimpanan data direktori masjid, jadwal kajian, dan artikel sunnah.
+                </p>
+                <p className="text-[10px] font-mono text-slate-400 truncate">
+                  salaf.maschandigital.id
+                </p>
+              </div>
+
+              {/* Service 2: Mailketing API CRM */}
+              <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-xs text-slate-900 dark:text-white">
+                    Mailketing CRM
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Aktif
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                  Pengiriman email transaksional kredensial DKM dan verifikasi akun.
+                </p>
+                <p className="text-[10px] font-mono text-slate-400 truncate">
+                  api.mailketing.co.id
+                </p>
+              </div>
+
+              {/* Service 3: EQuran.id API */}
+              <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-xs text-slate-900 dark:text-white">
+                    EQuran.id Shalat
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Sinkron
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                  Perhitungan jadwal waktu sholat harian akurat se-Provinsi Banten.
+                </p>
+                <p className="text-[10px] font-mono text-slate-400 truncate">
+                  equran.id/api/v2
+                </p>
+              </div>
+
+              {/* Service 4: IndexNow Protocol */}
+              <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-xs text-slate-900 dark:text-white">
+                    IndexNow SEO
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Otomatis
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                  Pengindeksan instan URL kajian baru ke Bing, Yandex, dan Naver.
+                </p>
+                <p className="text-[10px] font-mono text-slate-400 truncate">
+                  api.indexnow.org
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
       {/* MODAL: Tambah Masjid Baru oleh Admin */}
       {/* ========================================================================= */}
       {isAddMasjidOpen && (
@@ -721,6 +1290,21 @@ export function AdminDashboardTabs({
           onSuccess={() => {
             setIsAddKajianOpen(false);
             setEditingKajian(null);
+            router.refresh();
+          }}
+        />
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: Reset Kata Sandi Pengurus DKM oleh Admin */}
+      {/* ========================================================================= */}
+      {resetTargetUser && (
+        <AdminResetPasswordModal
+          user={resetTargetUser}
+          onClose={() => setResetTargetUser(null)}
+          onSuccess={(msg) => {
+            setResetTargetUser(null);
+            setSettingsSuccess(msg);
             router.refresh();
           }}
         />
@@ -1295,6 +1879,181 @@ function AdminKajianModal({
                 <>
                   <Save className="w-3.5 h-3.5" />
                   <span>{isEdit ? 'Simpan Perubahan' : 'Terbitkan Jadwal Kajian'}</span>
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+/* ========================================================================= */
+/* Modal Form Reset Password Akun Pengurus DKM */
+/* ========================================================================= */
+function AdminResetPasswordModal({
+  user,
+  onClose,
+  onSuccess,
+}: {
+  user: DKMUserItem;
+  onClose: () => void;
+  onSuccess: (msg: string) => void;
+}) {
+  const [newPassword, setNewPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  /**
+   * Menghasilkan kata sandi acak yang kuat (kombinasi huruf besar, kecil, angka, dan simbol)
+   */
+  const handleGeneratePassword = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$';
+    let res = '';
+    for (let i = 0; i < 10; i++) {
+      res += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setNewPassword(res);
+  };
+
+  /**
+   * Mengirim permohonan pembaruan kata sandi ke Server Action
+   */
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPassword || newPassword.trim().length < 6) {
+      setError('Kata sandi baru minimal harus 6 karakter.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      const res = await resetDKMUserPassword(user.id, newPassword.trim());
+      if (res.success) {
+        onSuccess(
+          res.message || `Kata sandi untuk ${user.name} berhasil diperbarui.`
+        );
+      } else {
+        setError(res.error || 'Gagal memperbarui kata sandi di server WordPress.');
+      }
+    } catch {
+      setError('Terjadi kesalahan koneksi sistem saat memperbarui kata sandi.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800">
+        {/* Header Modal */}
+        <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+          <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <KeyRound className="w-4 h-4 text-[#093c96] dark:text-blue-400" />
+            <span>Reset Kata Sandi DKM</span>
+          </h3>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Ringkasan Akun Target */}
+        <div className="mt-4 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60">
+          <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+            Akun Pengurus Target:
+          </p>
+          <p className="font-semibold text-sm text-slate-900 dark:text-white mt-0.5">
+            {user.name}
+          </p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            {user.email} <span className="text-slate-400">(@{user.username})</span>
+          </p>
+          {user.masjidName && (
+            <p className="text-[11px] text-[#093c96] dark:text-blue-400 font-medium mt-1">
+              Masjid: {user.masjidName}
+            </p>
+          )}
+        </div>
+
+        {/* Notifikasi Error */}
+        {error && (
+          <div className="mt-3 p-3 rounded-xl bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300 text-xs border border-red-200 dark:border-red-900 flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        {/* Formulir Kata Sandi Baru */}
+        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Kata Sandi Baru *
+              </label>
+              <button
+                type="button"
+                onClick={handleGeneratePassword}
+                className="text-[11px] font-semibold text-[#093c96] dark:text-blue-400 hover:underline inline-flex items-center gap-1 cursor-pointer"
+              >
+                <Sparkles className="w-3 h-3 text-[#C5A059]" />
+                <span>Acak Sandi Kuat</span>
+              </button>
+            </div>
+
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                required
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Minimal 6 karakter..."
+                className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-white font-mono focus:outline-none focus:border-[#093c96]"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer p-1"
+                title={showPassword ? 'Sembunyikan sandi' : 'Tampilkan sandi'}
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            <p className="text-[11px] text-slate-400 mt-1">
+              Kata sandi ini dapat langsung digunakan pengurus DKM untuk masuk ke portal.
+            </p>
+          </div>
+
+          {/* Tombol Aksi */}
+          <div className="flex justify-end gap-2.5 pt-4 border-t border-slate-200 dark:border-slate-800">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-[#093c96] hover:bg-blue-800 text-white text-xs font-semibold transition-colors disabled:opacity-50 cursor-pointer shadow-sm shadow-[#093c96]/20"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Menyimpan...</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-3.5 h-3.5" />
+                  <span>Simpan Kata Sandi</span>
                 </>
               )}
             </button>

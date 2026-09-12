@@ -358,32 +358,34 @@ function DashboardSidebarContent({
                     </Link>
                   </li>
 
-                  {/* Placeholder Admin: Kelola Pengguna */}
+                  {/* Kelola Pengguna DKM */}
                   <li>
-                    <div
-                      title="Fitur rilis mendatang"
-                      className="flex items-center gap-3 px-3.5 py-2 rounded-xl text-sm text-slate-400 dark:text-slate-500 cursor-not-allowed opacity-75"
+                    <Link
+                      href="/dashboard/admin?tab=pengguna"
+                      className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm transition-all duration-150 ${
+                        isItemActive('/dashboard/admin', 'pengguna')
+                          ? 'bg-[#093c96] text-white shadow-sm shadow-[#093c96]/25 font-semibold'
+                          : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
+                      }`}
                     >
                       <ShieldCheck className="w-4 h-4 shrink-0" />
-                      <span className="flex-1 truncate">Kelola Pengguna</span>
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
-                        Segera
-                      </span>
-                    </div>
+                      <span className="flex-1 truncate">Pengurus DKM</span>
+                    </Link>
                   </li>
 
-                  {/* Placeholder Admin: Pengaturan Sistem */}
+                  {/* Pengaturan Sistem Portal */}
                   <li>
-                    <div
-                      title="Fitur rilis mendatang"
-                      className="flex items-center gap-3 px-3.5 py-2 rounded-xl text-sm text-slate-400 dark:text-slate-500 cursor-not-allowed opacity-75"
+                    <Link
+                      href="/dashboard/admin?tab=pengaturan"
+                      className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm transition-all duration-150 ${
+                        isItemActive('/dashboard/admin', 'pengaturan')
+                          ? 'bg-[#093c96] text-white shadow-sm shadow-[#093c96]/25 font-semibold'
+                          : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
+                      }`}
                     >
                       <Settings className="w-4 h-4 shrink-0" />
                       <span className="flex-1 truncate">Pengaturan Sistem</span>
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
-                        Segera
-                      </span>
-                    </div>
+                    </Link>
                   </li>
                 </>
               )}

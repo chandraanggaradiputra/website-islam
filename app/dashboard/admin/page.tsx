@@ -3,6 +3,7 @@ import { Users, BookOpen, CheckCircle, Clock } from 'lucide-react';
 import { WPKajian, WPMasjid } from '@/types';
 import { getMasjidList, enrichKajianWithMasjid } from '@/lib/wordpress';
 import { getStoredRegistrations } from '@/lib/actions/dkm';
+import { getDKMUsersList, getSystemSettings } from '@/lib/actions/admin';
 import { AdminDashboardTabs } from '@/components/dashboard/AdminDashboardTabs';
 
 export const dynamic = 'force-dynamic';
@@ -24,7 +25,7 @@ export default async function AdminDashboard({
   const currentTab = resolvedParams.tab || 'dkm';
 
   // Fetch data in parallel
-  const [resKajian, masjids, resUsers, registrations] = await Promise.all([
+  const [resKajian, masjids, resUsers, registrations, dkmUsers, systemSettings] = await Promise.all([
     fetch(`${WP_BASE_URL}/kajian?status=any&per_page=100&_embed`, {
       headers: { Authorization: `Bearer ${session.token}` },
       next: { revalidate: 0 },
@@ -35,6 +36,8 @@ export default async function AdminDashboard({
       next: { revalidate: 0 },
     }).catch(() => null),
     getStoredRegistrations(),
+    getDKMUsersList(),
+    getSystemSettings(),
   ]);
 
   const rawKajian: WPKajian[] = resKajian.ok ? await resKajian.json() : [];
@@ -119,12 +122,14 @@ export default async function AdminDashboard({
         </div>
       </div>
 
-      {/* 3 Interactive Tabs */}
+      {/* 5 Interactive Tabs */}
       <AdminDashboardTabs
         initialTab={currentTab}
         registrations={registrations}
         allKajian={allKajian}
         allMasjid={masjidsList}
+        dkmUsers={dkmUsers}
+        initialSettings={systemSettings}
       />
     </div>
   );

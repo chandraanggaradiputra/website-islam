@@ -184,4 +184,44 @@ export interface SearchResultItem {
   category: SearchCategory;
   url: string;
   badgeText: string;
-}
+}
+
+/**
+ * Item data pengguna pengurus DKM terdaftar untuk panel admin
+ */
+export interface DKMUserItem {
+  id: number;
+  name: string;
+  email: string;
+  username: string;
+  phone?: string;
+  masjidId?: number;
+  masjidName?: string;
+  kecamatanName?: string;
+  registeredDate: string;
+}
+
+/**
+ * Konfigurasi parameter pengaturan pusat sistem portal
+ */
+export interface SystemSettings {
+  whatsappAdmin: string;
+  emailAdmin: string;
+  donasiBankName: string;
+  donasiAccountNumber: string;
+  donasiAccountHolder: string;
+  donasiBankSecondaryName?: string;
+  donasiAccountSecondaryNumber?: string;
+  donasiAccountSecondaryHolder?: string;
+}
+
+export const DEFAULT_SYSTEM_SETTINGS: SystemSettings = {
+  whatsappAdmin: '0822-9814-8474',
+  emailAdmin: 'admin@maschandigital.id',
+  donasiBankName: 'Bank Syariah Indonesia (BSI)',
+  donasiAccountNumber: '7304526968',
+  donasiAccountHolder: 'Chandra Anggara Diputra',
+  donasiBankSecondaryName: 'Bank Aladin Syariah',
+  donasiAccountSecondaryNumber: '50661906210',
+  donasiAccountSecondaryHolder: 'Chandra Anggara Diputra',
+};
