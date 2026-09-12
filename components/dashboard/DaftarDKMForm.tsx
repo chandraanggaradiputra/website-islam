@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { WPMasjid } from '@/types';
 import { submitDaftarDKM } from '@/lib/actions/dkm';
-import { WPKecamatanTerm } from '@/lib/wordpress';
+import { WPKecamatanTerm, resolveKecamatanName } from '@/lib/wordpress';
 import { BANTEN_REGIONS, KotaKabupatenBanten } from '@/lib/constants/bantenRegions';
 import {
   Building2,
@@ -160,11 +160,20 @@ export function DaftarDKMForm({ masjidList = [], kecamatanTerms = [] }: DaftarDK
   }, [selectedKota]);
 
   const filteredMasjidList = useMemo(() => {
-    // Saring hanya masjid yang belum diklaim/dikelola oleh DKM lain (author belum ada atau author <= 1 / admin)
-    const unclaimedMasjids = masjidList.filter((m) => !m.author || m.author <= 1);
-    if (!selectedKota) return unclaimedMasjids;
-    return unclaimedMasjids.filter((m) => (m.acf?.kota_kabupaten || 'Kota Serang') === selectedKota);
+    if (!selectedKota) return masjidList;
+    return masjidList.filter((m) => (m.acf?.kota_kabupaten || 'Kota Serang') === selectedKota);
   }, [selectedKota, masjidList]);
+
+  // Otomatis aktifkan pendaftaran masjid baru jika kota terpilih belum memiliki masjid sama sekali
+  useEffect(() => {
+    if (!selectedKota) return;
+    const masjidsInKota = masjidList.filter(
+      (m) => (m.acf?.kota_kabupaten || 'Kota Serang') === selectedKota
+    );
+    if (masjidsInKota.length === 0) {
+      setValue('masjidOption', 'NEW_MASJID');
+    }
+  }, [selectedKota, masjidList, setValue]);
 
   const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFotoError(null);
@@ -282,7 +291,7 @@ export function DaftarDKMForm({ masjidList = [], kecamatanTerms = [] }: DaftarDK
           </p>
           <ul className="list-disc pl-4 space-y-1">
             <li>Admin akan meninjau data masjid dan keaslian data kontak DKM.</li>
-            <li>Saat disetujui, akun pengurus WordPress Anda akan otomatis diaktifkan dengan email dan password yang Anda daftarkan.</li>
+            <li>Saat disetujui, akun pengurus DKM Anda akan otomatis diaktifkan dengan email dan password yang Anda daftarkan.</li>
           </ul>
         </div>
         <button
@@ -442,8 +451,20 @@ export function DaftarDKMForm({ masjidList = [], kecamatanTerms = [] }: DaftarDK
               {...register('kotaKabupaten')}
               onChange={(e) => {
                 register('kotaKabupaten').onChange(e);
-                setValue('masjidOption', '0'); // Reset masjid when kota changes
-                setValue('kecamatan', '');     // Reset kecamatan
+                const nextKota = e.target.value;
+                setValue('kecamatan', ''); // Reset kecamatan
+                if (!nextKota) {
+                  setValue('masjidOption', '0');
+                } else {
+                  const masjidsInKota = masjidList.filter(
+                    (m) => (m.acf?.kota_kabupaten || 'Kota Serang') === nextKota
+                  );
+                  if (masjidsInKota.length === 0) {
+                    setValue('masjidOption', 'NEW_MASJID');
+                  } else {
+                    setValue('masjidOption', '0');
+                  }
+                }
               }}
               className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3.5 text-sm text-slate-900 focus:border-[#093c96] focus:bg-white focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:border-blue-500 transition-colors"
             >
@@ -471,20 +492,49 @@ export function DaftarDKMForm({ masjidList = [], kecamatanTerms = [] }: DaftarDK
               disabled={!selectedKota}
               className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3.5 text-sm text-slate-900 focus:border-[#093c96] focus:bg-white focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:border-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <option value="0">{selectedKota ? `-- Pilih Masjid Terdaftar di ${selectedKota} --` : '-- Pilih Kota / Kabupaten Dulu --'}</option>
+              <option value="0">
+                {selectedKota
+                  ? `-- Pilih Masjid di ${selectedKota} --`
+                  : '-- Pilih Kota / Kabupaten Dulu --'}
+              </option>
               <option
                 value="NEW_MASJID"
                 className="font-bold text-[#093c96] bg-blue-50 dark:bg-blue-950/60 dark:text-blue-300"
               >
-                ➕ Masjid Saya Belum Terdaftar (Daftarkan Masjid Baru)
+                + Daftarkan Masjid Baru
               </option>
-              {filteredMasjidList.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.title?.rendered}
-                </option>
-              ))}
+              {filteredMasjidList.map((m) => {
+                const isClaimed = Boolean(m.author && m.author > 1);
+                const rawKec = m.kecamatan && m.kecamatan.length > 0 ? m.kecamatan[0] : m.acf?.kecamatan;
+                const kecName = resolveKecamatanName(rawKec, kecamatanTerms);
+                const kecLabel = kecName ? ` (Kec. ${kecName})` : '';
+                const optionLabel = isClaimed
+                  ? `${m.title?.rendered}${kecLabel} - [Sudah Dikelola oleh DKM Masjid]`
+                  : `${m.title?.rendered}${kecLabel} - Belum Ada DKM`;
+
+                return (
+                  <option
+                    key={m.id}
+                    value={m.id}
+                    disabled={isClaimed}
+                    className={
+                      isClaimed
+                        ? 'text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-900 cursor-not-allowed'
+                        : 'text-slate-900 dark:text-slate-100'
+                    }
+                  >
+                    {optionLabel}
+                  </option>
+                );
+              })}
             </select>
           </div>
+          {selectedKota && filteredMasjidList.length === 0 && (
+            <p className="mt-1.5 text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 shrink-0" />
+              <span>Belum ada data masjid di {selectedKota}. Formulir pendaftaran masjid baru otomatis diaktifkan di bawah.</span>
+            </p>
+          )}
           {errors.masjidOption && (
             <p className="mt-1 text-xs text-red-500">{errors.masjidOption.message}</p>
           )}

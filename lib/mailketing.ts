@@ -189,17 +189,50 @@ export async function sendNewDKMNotificationToAdmin(data: {
   }
 }
 
-export async function sendDKMApprovalEmail(data: { email: string; namaMasjid: string }) {
+export async function sendDKMApprovalEmail(data: { email: string; namaMasjid: string; password?: string }) {
+  const passwordBoxHtml = data.password
+    ? `
+    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px 20px; margin: 24px 0;">
+      <p style="margin: 0 0 12px 0; font-size: 13px; font-weight: bold; color: #093c96; text-transform: uppercase; letter-spacing: 0.5px;">Kredensial Akun DKM Anda</p>
+      <table role="presentation" style="width: 100%; border-collapse: collapse; font-size: 14px;">
+        <tr>
+          <td style="padding: 6px 0; width: 140px; color: #64748b;"><strong>Email / Username:</strong></td>
+          <td style="padding: 6px 0; color: #0f172a; font-weight: 600;">${data.email}</td>
+        </tr>
+        <tr>
+          <td style="padding: 6px 0; color: #64748b;"><strong>Password:</strong></td>
+          <td style="padding: 6px 0; color: #0f172a; font-family: monospace; font-size: 14px; font-weight: bold;">
+            <span style="background-color: #e2e8f0; padding: 3px 8px; border-radius: 6px;">${data.password}</span>
+          </td>
+        </tr>
+      </table>
+      <p style="margin: 12px 0 0 0; font-size: 12px; color: #64748b; line-height: 1.4;">
+        <em>* Ini adalah password yang Anda tentukan saat mengisi formulir pendaftaran DKM.</em>
+      </p>
+    </div>
+    `
+    : `
+    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px 20px; margin: 24px 0;">
+      <p style="margin: 0 0 12px 0; font-size: 13px; font-weight: bold; color: #093c96; text-transform: uppercase; letter-spacing: 0.5px;">Kredensial Akun DKM Anda</p>
+      <table role="presentation" style="width: 100%; border-collapse: collapse; font-size: 14px;">
+        <tr>
+          <td style="padding: 6px 0; width: 140px; color: #64748b;"><strong>Email Login:</strong></td>
+          <td style="padding: 6px 0; color: #0f172a; font-weight: 600;">${data.email}</td>
+        </tr>
+        <tr>
+          <td style="padding: 6px 0; color: #64748b;"><strong>Password:</strong></td>
+          <td style="padding: 6px 0; color: #475569;">Gunakan password yang Anda buat saat pendaftaran.</td>
+        </tr>
+      </table>
+    </div>
+    `;
+
   const content = bantenMengajiEmailShell(
     'Alhamdulillah! Akun DKM Disetujui',
     `
     <p>Assalamu'alaikum Warahmatullahi Wabarakatuh,</p>
     <p>Alhamdulillah, pendaftaran akun DKM untuk <strong>${data.namaMasjid}</strong> di platform Banten Mengaji telah kami <strong>SETUJUI</strong> dan profil masjid Anda kini telah terbit di sistem.</p>
-    <p>Informasi Akun Anda:</p>
-    <ul style="padding-left: 20px;">
-      <li><strong>Email Login:</strong> ${data.email}</li>
-      <li><strong>Password:</strong> Sesuai dengan password yang Anda buat saat mendaftar.</li>
-    </ul>
+    ${passwordBoxHtml}
     <p>Sekarang Anda dapat mengelola profil masjid, menjadwalkan kajian rutin, dan memperbarui informasi kajian secara mandiri melalui dasbor DKM.</p>
     <div style="text-align: center; margin: 30px 0;">
       <a href="${SITE_URL}/login" style="background-color: #093c96; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 12px; font-weight: bold; display: inline-block;">Login ke Dashboard DKM</a>

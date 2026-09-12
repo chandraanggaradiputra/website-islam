@@ -85,6 +85,7 @@ export type StatusKajian = 'aktif' | 'libur' | 'selesai';
 export interface MasjidACF {
   alamat_lengkap: string;
   kota_kabupaten?: KotaKabupatenBanten;
+  kecamatan?: string | number;
   google_maps_url: string;
   no_wa_dkm: string;
   nama_kontak_dkm?: string;

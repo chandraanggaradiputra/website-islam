@@ -85,7 +85,7 @@ export default function KebijakanPrivasiPage() {
             <li className="flex items-start gap-2.5">
               <EyeOff className="h-4 w-4 text-indigo-600 shrink-0 mt-0.5" />
               <span>
-                <strong>Enkripsi Sandi:</strong> Kata sandi akun DKM dan Admin dienkripsi secara ketat melalui sistem autentikasi WordPress REST API & JWT berstandar industri.
+                <strong>Enkripsi Sandi:</strong> Kata sandi akun DKM dan Admin dienkripsi secara ketat melalui sistem autentikasi server portal Banten Mengaji & standar keamanan industri.
               </span>
             </li>
           </ul>

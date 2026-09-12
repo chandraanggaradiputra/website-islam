@@ -115,7 +115,7 @@ export async function submitKajian(formData: FormData) {
       const errorBody = await kajianRes.text();
       console.error('WP Error Response Status:', kajianRes.status);
       console.error('WP Error Response Body:', errorBody);
-      return { success: false, error: `WordPress Error [${kajianRes.status}]: ${errorBody}` };
+      return { success: false, error: 'Gagal menerbitkan jadwal kajian ke server portal Banten Mengaji. Silakan coba beberapa saat lagi.' };
     }
 
     revalidatePath('/');

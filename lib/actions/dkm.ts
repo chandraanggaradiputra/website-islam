@@ -4,7 +4,7 @@ import { getSession } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 import { DKMRegistrationPayload, DKMRegistrationApplication } from '@/types';
 import { sendNewDKMNotificationToAdmin, sendDKMApprovalEmail, sendDKMRejectionEmail, addDKMSubscriberToMailketing } from '@/lib/mailketing';
-import { getWPAdminAuthHeader, resolveKecamatanTermId, resolveKecamatanName } from '@/lib/wordpress';
+import { getWPAdminAuthHeader, resolveKecamatanTermId, resolveKecamatanName, getMasjidList } from '@/lib/wordpress';
 import { normalizeFasilitas } from '@/lib/utils/fasilitas';
 import { getMasjidById } from '@/lib/actions/masjid';
 
@@ -196,6 +196,55 @@ export async function submitDaftarDKM(formDataOrPayload: FormData | DKMRegistrat
       }
     }
 
+    // Selesaikan taksonomi kecamatan secara defensif (angka ID atau nama kecamatan)
+    const resolvedKecId = resolveKecamatanTermId(kecamatan || kecamatanNama);
+    const resolvedKecName = resolveKecamatanName(kecamatan || kecamatanNama) || kecamatanNama;
+
+    // Validasi Duplikasi Masjid Baru pada Kota & Kecamatan yang Sama
+    if (isNewMasjid) {
+      if (!namaMasjidBaru || namaMasjidBaru.trim().length < 3) {
+        return { success: false, error: 'Nama masjid baru wajib diisi (minimal 3 karakter).' };
+      }
+
+      const cleanNewName = namaMasjidBaru.trim().toLowerCase().replace(/\s+/g, ' ');
+      const stripMasjidPrefix = (s: string) => s.replace(/^masjid\s+/i, '').trim();
+      const baseNewName = stripMasjidPrefix(cleanNewName);
+
+      try {
+        const existingMasjids = await getMasjidList();
+        const duplicate = existingMasjids.find((m) => {
+          const mKota = (m.acf?.kota_kabupaten || 'Kota Serang').trim().toLowerCase();
+          if (mKota !== kotaKabupaten.trim().toLowerCase()) return false;
+
+          const mKecName = resolveKecamatanName(m.kecamatan?.[0] || m.acf?.kecamatan);
+          const mKecId = resolveKecamatanTermId(m.kecamatan?.[0] || m.acf?.kecamatan);
+
+          const isSameKec =
+            (resolvedKecId && mKecId && resolvedKecId === mKecId) ||
+            (resolvedKecName && mKecName && resolvedKecName.trim().toLowerCase() === mKecName.trim().toLowerCase());
+
+          if (!isSameKec) return false;
+
+          const mTitle = (m.title?.rendered || '').trim().toLowerCase().replace(/\s+/g, ' ');
+          const baseMTitle = stripMasjidPrefix(mTitle);
+
+          return cleanNewName === mTitle || (baseNewName.length >= 3 && baseNewName === baseMTitle);
+        });
+
+        if (duplicate) {
+          const displayKec = resolvedKecName ? ` ${resolvedKecName}` : '';
+          const errMsg = `Masjid dengan nama '${namaMasjidBaru.trim()}' di Kecamatan${displayKec} sudah terdaftar. Silakan pilih masjid tersebut dari daftar atau hubungi admin jika ingin mengklaim kepengurusan.`;
+          return {
+            success: false,
+            error: errMsg,
+            message: errMsg,
+          };
+        }
+      } catch (dupErr) {
+        console.error('[submitDaftarDKM] Gagal memverifikasi duplikasi masjid:', dupErr);
+      }
+    }
+
     // 1. Upload Foto / Profil Masjid jika disertakan
     let mediaId: number | undefined = undefined;
     if (fotoMasjid && fotoMasjid.size > 0 && typeof fotoMasjid.arrayBuffer === 'function') {
@@ -221,10 +270,6 @@ export async function submitDaftarDKM(formDataOrPayload: FormData | DKMRegistrat
         console.error('[submitDaftarDKM] Error saat upload foto media:', uploadErr);
       }
     }
-    
-    // Selesaikan taksonomi kecamatan secara defensif (angka ID atau nama kecamatan)
-    const resolvedKecId = resolveKecamatanTermId(kecamatan || kecamatanNama);
-    const resolvedKecName = resolveKecamatanName(kecamatan || kecamatanNama) || kecamatanNama;
 
     // Siapkan data JSON tambahan untuk disimpan di konten post (dienkripsi Base64)
     const appData = {
@@ -520,6 +565,7 @@ export async function approveDKMRegistration(registrationId: string | number) {
         await sendDKMApprovalEmail({
           email: appData.email,
           namaMasjid: namaMasjidFinal.replace('KLAIM: ', ''),
+          password: appData.password || undefined,
         });
       } catch (e) {
         console.error('[Mailketing Error di approveDKMRegistration]', e);
@@ -533,7 +579,7 @@ export async function approveDKMRegistration(registrationId: string | number) {
     return {
       success: true,
       message: userId
-        ? 'Akun DKM & profil masjid berhasil disetujui! Akun pengguna WordPress telah dibuat dan siap digunakan login.'
+        ? 'Akun DKM & profil masjid berhasil disetujui! Akun pengurus DKM telah aktif dan siap digunakan untuk masuk ke sistem.'
         : 'Akun DKM berhasil diverifikasi dan data masjid telah diterbitkan.',
     };
   } catch (err: unknown) {

@@ -59,10 +59,15 @@ export async function login(formData: FormData) {
     const authData = await authRes.json();
 
     if (!authRes.ok) {
-      // Bersihkan tag HTML dari pesan error WordPress
-      const errorMsg = authData.message 
-        ? authData.message.replace(/<[^>]*>?/gm, '') 
-        : 'Username atau password salah.';
+      // Bersihkan tag HTML dan kata teknis dari pesan error autentikasi
+      let errorMsg = 'Email atau kata sandi tidak sesuai.';
+      if (authData.code === '[jwt_auth] invalid_username' || authData.message?.includes('not registered') || authData.message?.includes('Unknown email address')) {
+        errorMsg = 'Akun dengan email tersebut belum terdaftar di sistem.';
+      } else if (authData.code === '[jwt_auth] incorrect_password' || authData.message?.includes('password you entered')) {
+        errorMsg = 'Kata sandi yang Anda masukkan salah.';
+      } else if (authData.message) {
+        errorMsg = authData.message.replace(/<[^>]*>?/gm, '').replace(/WordPress/gi, 'Sistem Portal').trim();
+      }
       return { success: false, error: errorMsg };
     }
 
