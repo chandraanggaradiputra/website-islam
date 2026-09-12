@@ -68,6 +68,18 @@ export interface DKMRegistrationApplication {
 
 export type JenisKajian = 'rutin' | 'tematik';
 export type KategoriJamaah = 'umum' | 'khusus_ikhwan' | 'khusus_akhwat';
+
+export function formatKategoriJamaah(kategori?: string): string {
+  if (!kategori) return 'Umum';
+  const clean = kategori.toLowerCase();
+  if (clean.includes('akhwat') || clean.includes('akhawat')) {
+    return 'Khusus Akhwat';
+  }
+  if (clean.includes('ikhwan')) {
+    return 'Khusus Ikhwan';
+  }
+  return 'Umum';
+}
 export type StatusKajian = 'aktif' | 'libur' | 'selesai';
 
 export interface MasjidACF {

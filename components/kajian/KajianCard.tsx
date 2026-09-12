@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { WPKajian } from '@/types';
+import { WPKajian, formatKategoriJamaah } from '@/types';
 import { MapPin, Clock, Calendar, User } from 'lucide-react';
 
 export function KajianCard({ kajian }: { kajian: WPKajian }) {
@@ -43,7 +43,7 @@ export function KajianCard({ kajian }: { kajian: WPKajian }) {
           </span>
           {acf?.kategori_jamaah && (
             <span className="text-xs font-semibold px-2 py-1 rounded-md bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-              {acf.kategori_jamaah === 'umum' ? 'Umum' : acf.kategori_jamaah === 'khusus_akhwat' ? 'Akhwat' : 'Ikhwan'}
+              {formatKategoriJamaah(acf.kategori_jamaah)}
             </span>
           )}
           {acf?.status_kajian === 'libur' && (

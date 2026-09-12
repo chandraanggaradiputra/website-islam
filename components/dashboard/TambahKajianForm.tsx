@@ -29,7 +29,7 @@ interface TambahKajianFormProps {
   masjidName: string;
 }
 
-export function TambahKajianForm({ masjidName }: TambahKajianFormProps) {
+export function TambahKajianForm({ masjidId, masjidName }: TambahKajianFormProps) {
   const router = useRouter();
   const [posterPreview, setPosterPreview] = useState<string | null>(null);
 
@@ -51,6 +51,7 @@ export function TambahKajianForm({ masjidName }: TambahKajianFormProps) {
     setErrorMessage(null);
     
     const formData = new FormData();
+    formData.append('masjid_terkait', String(masjidId));
     Object.entries(data).forEach(([key, value]) => {
       if (value !== undefined) {
         formData.append(key, value as string);
@@ -118,6 +119,7 @@ export function TambahKajianForm({ masjidName }: TambahKajianFormProps) {
             </span>
           </div>
         </div>
+        <input type="hidden" name="masjid_terkait" value={masjidId} />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Left Column */}

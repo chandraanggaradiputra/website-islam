@@ -29,7 +29,7 @@ const FASILITAS_CHOICES = [
   'Parkir Mobil & Motor',
   'Tempat Wudhu Terpisah',
   'Ruangan Ber-AC',
-  'Area Khusus Akhawat (Hijab)',
+  'Area Khusus Akhwat (Hijab)',
   'Perpustakaan Kitab',
 ];
 
@@ -51,7 +51,9 @@ export function DKMMasjidProfileForm({ masjid, kecamatanTerms = [] }: DKMMasjidP
 
   // Fasilitas
   const initialFasilitas = Array.isArray(masjid.acf?.fasilitas)
-    ? normalizeFasilitas(masjid.acf.fasilitas).map((f) => f.replace(/^•\s*/, ''))
+    ? normalizeFasilitas(masjid.acf.fasilitas).map((f) =>
+        f.replace(/^•\s*/, '').replace(/Akhawat/g, 'Akhwat')
+      )
     : [];
   const [selectedFasilitas, setSelectedFasilitas] = useState<string[]>(initialFasilitas);
 

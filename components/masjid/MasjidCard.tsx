@@ -2,10 +2,11 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { WPMasjid } from '@/types';
 import { MapPin, Navigation } from 'lucide-react';
+import { formatFasilitasLabel } from '@/lib/utils/fasilitas';
 
 export function MasjidCard({ masjid }: { masjid: WPMasjid }) {
   const { title, acf, slug } = masjid;
-  const fasilitas = acf.fasilitas || [];
+  const fasilitas = (acf.fasilitas || []).map(formatFasilitasLabel);
 
   const mapsUrl = acf.google_maps_url || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(masjid.title.rendered + ' Kota Serang')}`;
 

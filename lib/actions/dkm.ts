@@ -6,6 +6,7 @@ import { DKMRegistrationPayload, DKMRegistrationApplication } from '@/types';
 import { sendNewDKMNotificationToAdmin, sendDKMApprovalEmail, sendDKMRejectionEmail, addDKMSubscriberToMailketing } from '@/lib/mailketing';
 import { getWPAdminAuthHeader, resolveKecamatanTermId, resolveKecamatanName } from '@/lib/wordpress';
 import { normalizeFasilitas } from '@/lib/utils/fasilitas';
+import { getMasjidById } from '@/lib/actions/masjid';
 
 const WP_API_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || 'https://salaf.maschandigital.id/wp-json/wp/v2';
 
@@ -177,6 +178,22 @@ export async function submitDaftarDKM(formDataOrPayload: FormData | DKMRegistrat
       atasNamaRekening = p.atasNamaRekening || '';
       catatan = p.catatan || '';
       fotoMasjid = p.fotoMasjid || null;
+    }
+
+    // Validasi Kepemilikan Tunggal: 1 Masjid hanya dapat dikelola oleh 1 akun DKM resmi
+    if (!isNewMasjid) {
+      const targetMasjidId = Number(masjidOption);
+      if (!targetMasjidId || isNaN(targetMasjidId)) {
+        return { success: false, error: 'Masjid yang dipilih tidak valid.' };
+      }
+      const existingMasjid = await getMasjidById(targetMasjidId);
+      if (existingMasjid && existingMasjid.author && existingMasjid.author > 1) {
+        return {
+          success: false,
+          error: 'Masjid ini sudah memiliki pengurus DKM resmi yang terdaftar. 1 Masjid hanya dapat dikelola oleh 1 akun DKM. Silakan hubungi Admin Banten Mengaji jika memerlukan koordinasi kepengurusan.',
+          message: 'Masjid ini sudah memiliki pengurus DKM resmi yang terdaftar. 1 Masjid hanya dapat dikelola oleh 1 akun DKM. Silakan hubungi Admin Banten Mengaji jika memerlukan koordinasi kepengurusan.',
+        };
+      }
     }
 
     // 1. Upload Foto / Profil Masjid jika disertakan

@@ -90,7 +90,15 @@ function KajianFilterContent({
       
       // 3. Filter Kategori Jamaah
       if (jamaah && jamaah.trim() !== '' && jamaah !== 'semua') {
-        if (item.acf?.kategori_jamaah?.toLowerCase() !== jamaah.toLowerCase()) {
+        const itemKategori = (item.acf?.kategori_jamaah || '').toLowerCase();
+        const filterKategori = jamaah.toLowerCase();
+
+        const isAkhwatFilter = filterKategori.includes('akhwat') || filterKategori.includes('akhawat');
+        const isAkhwatItem = itemKategori.includes('akhwat') || itemKategori.includes('akhawat');
+
+        if (isAkhwatFilter) {
+          if (!isAkhwatItem) return false;
+        } else if (itemKategori !== filterKategori) {
           return false;
         }
       }

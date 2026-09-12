@@ -9,6 +9,7 @@ import htmlParser from 'html-react-parser';
 import Image from 'next/image';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { getMasjidJsonLd } from '@/lib/schema';
+import { formatFasilitasLabel } from '@/lib/utils/fasilitas';
 
 export const revalidate = 60;
 
@@ -53,7 +54,7 @@ export default async function MasjidDetailPage({ params }: { params: Promise<{ s
   const masjidKajian = allKajian.filter((k) => k.masjid_detail?.id === masjid.id);
 
   const { acf, title, content, featured_media_url } = masjid;
-  const fasilitas = acf.fasilitas || [];
+  const fasilitas = (acf.fasilitas || []).map(formatFasilitasLabel);
   const masjidSchema = getMasjidJsonLd(masjid);
 
   return (

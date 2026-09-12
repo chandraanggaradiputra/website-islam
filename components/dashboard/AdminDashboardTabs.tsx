@@ -58,7 +58,7 @@ const FASILITAS_OPTIONS = [
   'Parkir Mobil & Motor',
   'Tempat Wudhu Terpisah',
   'Ruangan Ber-AC',
-  'Area Khusus Akhawat (Hijab)',
+  'Area Khusus Akhwat (Hijab)',
   'Perpustakaan Kitab',
 ];
 
@@ -741,7 +741,9 @@ function AdminMasjidModal({
   const isEdit = Boolean(initialMasjid);
 
   const initialFasilitas = Array.isArray(initialMasjid?.acf?.fasilitas)
-    ? normalizeFasilitas(initialMasjid.acf.fasilitas).map((f) => f.replace(/^•\s*/, ''))
+    ? normalizeFasilitas(initialMasjid.acf.fasilitas).map((f) =>
+        f.replace(/^•\s*/, '').replace(/Akhawat/g, 'Akhwat')
+      )
     : [];
   const [selectedFasilitas, setSelectedFasilitas] = useState<string[]>(initialFasilitas);
 

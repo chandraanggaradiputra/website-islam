@@ -16,6 +16,23 @@ export async function submitKajian(formData: FormData) {
     return { success: false, error: 'Sesi tidak valid atau telah berakhir.' };
   }
 
+  // Verifikasi otorisasi DKM: 1 Masjid hanya dapat dikelola oleh akun DKM resmi yang terhubung
+  const userRole = (session as any).user?.role || session.role;
+  const userMasjidId = Number((session as any).user?.masjidId || session.masjidId);
+
+  if (userRole === 'dkm') {
+    const rawTarget = formData.get('masjid_terkait') || formData.get('masjidId');
+    const targetMasjidId = rawTarget ? Number(rawTarget) : userMasjidId;
+
+    if (!userMasjidId || targetMasjidId !== userMasjidId) {
+      return {
+        success: false,
+        error: 'Akses Ditolak: Anda hanya berhak mengelola jadwal kajian untuk masjid resmi yang terhubung dengan akun DKM Anda.',
+        message: 'Akses Ditolak: Anda hanya berhak mengelola jadwal kajian untuk masjid resmi yang terhubung dengan akun DKM Anda.',
+      };
+    }
+  }
+
   try {
     let mediaId = null;
 
@@ -53,6 +70,15 @@ export async function submitKajian(formData: FormData) {
       }
     }
 
+    // Normalisasi kategori jamaah syar'i (khusus_akhwat)
+    const rawKategori = formData.get('kategoriJamaah')?.toString() || 'umum';
+    const cleanKategori =
+      rawKategori.toLowerCase().includes('akhwat') || rawKategori.toLowerCase().includes('akhawat')
+        ? 'khusus_akhwat'
+        : rawKategori === 'khusus_ikhwan'
+        ? 'khusus_ikhwan'
+        : 'umum';
+
     // 2. Buat Postingan Kajian Baru
     const payload = {
       title: formData.get('judul'),
@@ -63,7 +89,7 @@ export async function submitKajian(formData: FormData) {
         kota__kabupaten: kotaKabupaten,
         nama_ustadz: formData.get('penceramah'),
         jenis_kajian: formData.get('jenisKajian'),
-        kategori_jamaah: formData.get('kategoriJamaah'),
+        kategori_jamaah: cleanKategori,
         kitab_bahasan: formData.get('kitabBahasan') || formData.get('kitab_bahasan') || '',
         hari_kajian: formData.get('hariKajian')?.toString() || '',
         tanggal_kajian: formData.get('tanggal')?.toString().split('-').join('') || '',
@@ -287,6 +313,14 @@ export async function createKajianByAdmin(formData: FormData) {
       }
     }
 
+    const rawKategori = formData.get('kategoriJamaah')?.toString() || 'umum';
+    const cleanKategori =
+      rawKategori.toLowerCase().includes('akhwat') || rawKategori.toLowerCase().includes('akhawat')
+        ? 'khusus_akhwat'
+        : rawKategori === 'khusus_ikhwan'
+        ? 'khusus_ikhwan'
+        : 'umum';
+
     const payload: {
       title: string;
       status: string;
@@ -298,7 +332,7 @@ export async function createKajianByAdmin(formData: FormData) {
       acf: {
         nama_ustadz: formData.get('namaUstadz')?.toString() || '',
         jenis_kajian: formData.get('jenisKajian')?.toString() || 'rutin',
-        kategori_jamaah: formData.get('kategoriJamaah')?.toString() || 'umum',
+        kategori_jamaah: cleanKategori,
         kitab_bahasan: formData.get('kitabBahasan')?.toString() || '',
         hari_kajian: formData.get('hariKajian')?.toString() || '',
         tanggal_kajian: formData.get('tanggalKajian')?.toString().split('-').join('') || '',
@@ -413,6 +447,14 @@ export async function updateKajianByAdmin(formData: FormData) {
       }
     }
 
+    const rawKategori = formData.get('kategoriJamaah')?.toString() || 'umum';
+    const cleanKategori =
+      rawKategori.toLowerCase().includes('akhwat') || rawKategori.toLowerCase().includes('akhawat')
+        ? 'khusus_akhwat'
+        : rawKategori === 'khusus_ikhwan'
+        ? 'khusus_ikhwan'
+        : 'umum';
+
     const payload: {
       title?: string;
       status?: string;
@@ -424,7 +466,7 @@ export async function updateKajianByAdmin(formData: FormData) {
       acf: {
         nama_ustadz: formData.get('namaUstadz')?.toString() || '',
         jenis_kajian: formData.get('jenisKajian')?.toString() || 'rutin',
-        kategori_jamaah: formData.get('kategoriJamaah')?.toString() || 'umum',
+        kategori_jamaah: cleanKategori,
         kitab_bahasan: formData.get('kitabBahasan')?.toString() || '',
         hari_kajian: formData.get('hariKajian')?.toString() || '',
         tanggal_kajian: formData.get('tanggalKajian')?.toString().split('-').join('') || '',
@@ -557,7 +599,10 @@ export async function updateKajianByDkm(formData: FormData) {
     const currentKajian: WPKajian = await resCurrent.json();
 
     // Verifikasi otorisasi DKM (hanya boleh mengedit kajian masjid miliknya, kecuali admin)
-    if (session.role === 'dkm' && session.masjidId) {
+    const userRole = (session as any).user?.role || session.role;
+    const userMasjidId = Number((session as any).user?.masjidId || session.masjidId);
+
+    if (userRole === 'dkm') {
       const rawMasjid = currentKajian.acf?.masjid_terkait as unknown;
       let targetMasjidId: number | null = null;
       if (Array.isArray(rawMasjid) && rawMasjid.length > 0) {
@@ -571,8 +616,14 @@ export async function updateKajianByDkm(formData: FormData) {
         targetMasjidId = Number(rawMasjid);
       }
 
-      if (targetMasjidId && targetMasjidId !== session.masjidId) {
-        return { success: false, error: 'Anda tidak memiliki hak akses untuk mengedit kajian masjid lain.' };
+      const formMasjidTerkait = formData.get('masjid_terkait') ? Number(formData.get('masjid_terkait')) : null;
+
+      if (!userMasjidId || (targetMasjidId && targetMasjidId !== userMasjidId) || (formMasjidTerkait && formMasjidTerkait !== userMasjidId)) {
+        return {
+          success: false,
+          error: 'Akses Ditolak: Anda hanya berhak mengelola jadwal kajian untuk masjid resmi yang terhubung dengan akun DKM Anda.',
+          message: 'Akses Ditolak: Anda hanya berhak mengelola jadwal kajian untuk masjid resmi yang terhubung dengan akun DKM Anda.',
+        };
       }
     }
 
@@ -622,6 +673,14 @@ export async function updateKajianByDkm(formData: FormData) {
     const statusKajian = formData.get('statusKajian')?.toString() || 'aktif';
     const tanggalKajian = formData.get('tanggalKajian')?.toString().split('-').join('') || '';
 
+    const rawKategori = formData.get('kategoriJamaah')?.toString() || currentKajian.acf?.kategori_jamaah || 'umum';
+    const cleanKategori =
+      rawKategori.toLowerCase().includes('akhwat') || rawKategori.toLowerCase().includes('akhawat')
+        ? 'khusus_akhwat'
+        : rawKategori === 'khusus_ikhwan'
+        ? 'khusus_ikhwan'
+        : 'umum';
+
     const payload: {
       title?: string;
       featured_media?: number;
@@ -630,7 +689,7 @@ export async function updateKajianByDkm(formData: FormData) {
       acf: {
         nama_ustadz: formData.get('namaUstadz')?.toString() || currentKajian.acf?.nama_ustadz || '',
         jenis_kajian: formData.get('jenisKajian')?.toString() || currentKajian.acf?.jenis_kajian || 'rutin',
-        kategori_jamaah: formData.get('kategoriJamaah')?.toString() || currentKajian.acf?.kategori_jamaah || 'umum',
+        kategori_jamaah: cleanKategori,
         kitab_bahasan: formData.get('kitabBahasan')?.toString() || '',
         hari_kajian: formData.get('hariKajian')?.toString() || '',
         tanggal_kajian: tanggalKajian || currentKajian.acf?.tanggal_kajian || '',
@@ -742,3 +801,6 @@ export async function archiveExpiredKajian(kajianList: WPKajian[]): Promise<void
     console.error('[archiveExpiredKajian] Error:', err);
   }
 }
+
+// Alias resmi untuk kompatibilitas pemanggilan createKajian
+export const createKajian = submitKajian;

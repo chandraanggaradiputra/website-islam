@@ -3,7 +3,7 @@
 import { getSession } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 import { WPMasjid } from '@/types';
-import { extractFeaturedImage, resolveKecamatanTermId } from '@/lib/wordpress';
+import { extractFeaturedImage, resolveKecamatanTermId, getWPAdminAuthHeader } from '@/lib/wordpress';
 import { normalizeFasilitas } from '@/lib/utils/fasilitas';
 
 const WP_API_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || 'https://salaf.maschandigital.id/wp-json/wp/v2';
@@ -17,6 +17,11 @@ export async function getMasjidById(id: number): Promise<WPMasjid | null> {
     const headers: Record<string, string> = {};
     if (session?.token) {
       headers['Authorization'] = `Bearer ${session.token}`;
+    } else {
+      const adminAuth = getWPAdminAuthHeader();
+      if (adminAuth) {
+        headers['Authorization'] = adminAuth;
+      }
     }
 
     const res = await fetch(`${WP_API_URL}/masjid/${id}?_embed`, {

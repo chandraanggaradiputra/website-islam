@@ -36,7 +36,7 @@ const FASILITAS_OPTIONS = [
   'Parkir Mobil & Motor',
   'Tempat Wudhu Terpisah',
   'Ruangan Ber-AC',
-  'Area Khusus Akhawat (Hijab)',
+  'Area Khusus Akhwat (Hijab)',
   'Perpustakaan Kitab',
 ];
 
@@ -160,8 +160,10 @@ export function DaftarDKMForm({ masjidList = [], kecamatanTerms = [] }: DaftarDK
   }, [selectedKota]);
 
   const filteredMasjidList = useMemo(() => {
-    if (!selectedKota) return masjidList;
-    return masjidList.filter(m => (m.acf?.kota_kabupaten || 'Kota Serang') === selectedKota);
+    // Saring hanya masjid yang belum diklaim/dikelola oleh DKM lain (author belum ada atau author <= 1 / admin)
+    const unclaimedMasjids = masjidList.filter((m) => !m.author || m.author <= 1);
+    if (!selectedKota) return unclaimedMasjids;
+    return unclaimedMasjids.filter((m) => (m.acf?.kota_kabupaten || 'Kota Serang') === selectedKota);
   }, [selectedKota, masjidList]);
 
   const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {

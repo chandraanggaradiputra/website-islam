@@ -2,7 +2,7 @@ import { getKajianBySlug } from '@/lib/wordpress';
 import { getMasjidById } from '@/lib/actions/masjid';
 import { Metadata } from 'next';
 import Image from 'next/image';
-import { WPMasjid } from '@/types';
+import { WPMasjid, formatKategoriJamaah } from '@/types';
 import { getKajianJsonLd } from '@/lib/schema';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -118,7 +118,7 @@ export default async function SingleKajianPage({ params }: { params: Promise<{ s
               {isRutin ? 'Kajian Rutin' : 'Kajian Tematik'}
             </span>
             <span className="text-xs font-semibold px-2 py-1 rounded-md bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-              {acf?.kategori_jamaah === 'umum' ? 'Umum' : acf?.kategori_jamaah === 'khusus_akhwat' ? 'Akhwat' : acf?.kategori_jamaah === 'khusus_ikhwan' ? 'Ikhwan' : (acf?.kategori_jamaah || 'Umum')}
+              {formatKategoriJamaah(acf?.kategori_jamaah)}
             </span>
             {acf?.status_kajian === 'libur' && (
               <span className="text-xs font-extrabold px-3 py-1 rounded-md bg-red-600 text-white uppercase tracking-wider">

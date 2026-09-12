@@ -87,3 +87,11 @@ export function normalizeFasilitas(rawFasilitas: unknown): string[] {
 
   return Array.from(normalizedSet);
 }
+
+/**
+ * Format label fasilitas untuk tampilan UI agar rapi dan bebas dari typo 'Akhawat'
+ */
+export function formatFasilitasLabel(f?: string): string {
+  if (!f) return '';
+  return f.replace(/Akhawat/g, 'Akhwat');
+}

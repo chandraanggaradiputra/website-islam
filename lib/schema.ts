@@ -1,5 +1,5 @@
 // lib/schema.ts
-import { WPKajian, WPMasjid, WPArtikel } from '@/types';
+import { WPKajian, WPMasjid, WPArtikel, formatKategoriJamaah } from '@/types';
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://banten-mengaji.vercel.app';
 
@@ -53,7 +53,7 @@ export function getKajianJsonLd(kajian: WPKajian, masjid?: WPMasjid | null) {
     '@context': 'https://schema.org',
     '@type': 'Event',
     name: kajian.title?.rendered || 'Jadwal Kajian Islam',
-    description: `Kajian Islam ilmiah membahas ${kajian.acf?.kitab_bahasan || 'ilmu syar\'i'} bersama ${kajian.acf?.nama_ustadz || 'Asatidz'} di ${masjidName}. Terbuka untuk jamaah ${kajian.acf?.kategori_jamaah || 'Umum'}.`,
+    description: `Kajian Islam ilmiah membahas ${kajian.acf?.kitab_bahasan || 'ilmu syar\'i'} bersama ${kajian.acf?.nama_ustadz || 'Asatidz'} di ${masjidName}. Terbuka untuk jamaah ${formatKategoriJamaah(kajian.acf?.kategori_jamaah)}.`,
     ...(startDate ? { startDate } : {}),
     ...(endDate ? { endDate } : {}),
     eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
