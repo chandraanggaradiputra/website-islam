@@ -1,12 +1,32 @@
+/**
+ * ============================================================================
+ * Layout Utama: Dasbor Administrator & DKM
+ * ============================================================================
+ * Berkas ini mengatur tata letak global untuk seluruh halaman di dalam rute
+ * /dashboard/*, mengintegrasikan sidebar desktop bergaya Flowbite (DashboardSidebar),
+ * bilah navigasi atas (Top Header), serta header adaptif untuk perangkat mobile.
+ *
+ * Pola Arsitektur:
+ * - Server Component Next.js untuk pengecekan sesi autentikasi yang aman
+ * - Pengambilan data wilayah masjid secara asinkron untuk memperkaya sidebar DKM
+ * - Responsivitas tampilan (Desktop: Sidebar w-64 tetap; Mobile: Header ringkas)
+ * ============================================================================
+ */
+
 import { ReactNode } from 'react';
 import Image from 'next/image';
 import { getSession, logout } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { LayoutDashboard, CalendarPlus, LogOut, Users, BookOpen, Building2 } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { DashboardSidebar } from '@/components/dashboard/DashboardSidebar';
+import { getMasjidById } from '@/lib/actions/masjid';
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
+  // --------------------------------------------------------------------------
+  // 1. Verifikasi Sesi Pengguna
+  // --------------------------------------------------------------------------
   const session = await getSession();
   
   if (!session) {
@@ -15,88 +35,41 @@ export default async function DashboardLayout({ children }: { children: ReactNod
 
   const isAdmin = session.role === 'admin';
 
+  // --------------------------------------------------------------------------
+  // 2. Pengambilan Data Masjid Pelengkap (Khusus DKM)
+  // --------------------------------------------------------------------------
+  let kecamatanName: string | undefined = undefined;
+  if (!isAdmin && session.masjidId) {
+    try {
+      const masjidData = await getMasjidById(session.masjidId);
+      if (masjidData?.acf?.kota_kabupaten) {
+        kecamatanName = masjidData.acf.kota_kabupaten;
+      }
+    } catch {
+      // Fallback diam jika pengambilan data wilayah mengalami kendala
+      kecamatanName = undefined;
+    }
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col md:flex-row">
-      {/* Sidebar (Desktop Only) */}
-      <aside className="hidden md:flex flex-col md:w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex-shrink-0">
-        <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5 font-bold text-xl text-[#093c96] dark:text-blue-400 group">
-            <Image
-              src="/banten-mengaji.jpeg"
-              alt="Logo Banten Mengaji"
-              width={32}
-              height={32}
-              className="rounded-lg object-cover shadow-sm border border-slate-200/60 dark:border-slate-800 group-hover:scale-105 transition-transform shrink-0"
-              priority
-            />
-            <span>{isAdmin ? 'Admin Panel' : 'DKM Panel'}</span>
-          </Link>
-        </div>
-        
-        <div className="p-4 flex-grow">
-          <div className="mb-6 px-2">
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Menu Utama</p>
-            <nav className="space-y-1">
-              <Link 
-                href={isAdmin ? "/dashboard/admin" : "/dashboard/dkm"}
-                className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-              >
-                <LayoutDashboard className="w-5 h-5" /> Dasbor
-              </Link>
-              {!isAdmin && (
-                <>
-                  <Link 
-                    href="/dashboard/dkm/profil-masjid"
-                    className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                  >
-                    <Building2 className="w-5 h-5" /> Profil Masjid Saya
-                  </Link>
-                  <Link 
-                    href="/dashboard/dkm/tambah-kajian"
-                    className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                  >
-                    <CalendarPlus className="w-5 h-5" /> Tambah Kajian
-                  </Link>
-                </>
-              )}
-              {isAdmin && (
-                <>
-                  <Link 
-                    href="/dashboard/admin?tab=dkm"
-                    className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                  >
-                    <Users className="w-5 h-5" /> Verifikasi DKM
-                  </Link>
-                  <Link 
-                    href="/dashboard/admin?tab=masjid"
-                    className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                  >
-                    <Building2 className="w-5 h-5" /> Kelola Masjid
-                  </Link>
-                  <Link 
-                    href="/dashboard/admin?tab=kajian"
-                    className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                  >
-                    <BookOpen className="w-5 h-5" /> Kelola Kajian
-                  </Link>
-                </>
-              )}
-            </nav>
-          </div>
-        </div>
+      {/* -------------------------------------------------------------------- */}
+      {/* Sidebar Navigasi Desktop (Flowbite Style Modular)                    */}
+      {/* -------------------------------------------------------------------- */}
+      <DashboardSidebar
+        userRole={session.role}
+        userName={session.name}
+        userEmail={session.email}
+        masjidName={session.masjidName}
+        masjidId={session.masjidId}
+        kecamatanName={kecamatanName}
+      />
 
-        <div className="p-4 border-t border-slate-200 dark:border-slate-800">
-          <form action={logout}>
-            <button type="submit" className="flex items-center gap-3 px-3 py-2 w-full rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-left font-medium cursor-pointer">
-              <LogOut className="w-5 h-5" /> Logout
-            </button>
-          </form>
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
-        {/* Mobile Header (< md) */}
+      {/* -------------------------------------------------------------------- */}
+      {/* Area Konten Utama Dasbor                                             */}
+      {/* -------------------------------------------------------------------- */}
+      <div className="flex-1 flex flex-col min-w-0 min-h-screen overflow-hidden">
+        {/* Header Khusus Mobile (< md) */}
         <header className="h-14 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 shrink-0 md:hidden">
           <Link href="/" className="flex items-center gap-2 font-bold text-base text-[#093c96] dark:text-blue-400">
             <Image
@@ -124,28 +97,28 @@ export default async function DashboardLayout({ children }: { children: ReactNod
           </div>
         </header>
 
-        {/* Desktop Top Header (md+) */}
+        {/* Header Atas Desktop (md+) */}
         <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-6 shrink-0 hidden md:flex">
           <div className="flex items-center gap-4">
             <h1 className="font-semibold text-lg text-slate-900 dark:text-white">
-              {isAdmin ? 'Super Admin Dashboard' : session.masjidName}
+              {isAdmin ? 'Super Admin Dashboard' : (session.masjidName || 'Dasbor Pengurus DKM')}
             </h1>
           </div>
           <div className="flex items-center gap-4">
             <ThemeToggle />
             <div className="flex items-center gap-3 pl-4 border-l border-slate-200 dark:border-slate-800">
-              <div className="w-8 h-8 rounded-full bg-[#093c96] text-white flex items-center justify-center font-bold text-sm">
-                {session.name.charAt(0)}
+              <div className="w-8 h-8 rounded-full bg-[#093c96] text-white flex items-center justify-center font-bold text-sm shadow-sm">
+                {session.name.charAt(0).toUpperCase()}
               </div>
               <div className="text-sm">
                 <p className="font-medium text-slate-900 dark:text-white leading-none">{session.name}</p>
-                <p className="text-slate-500 text-xs mt-1">{session.role.toUpperCase()}</p>
+                <p className="text-slate-500 text-xs mt-1 uppercase font-semibold tracking-wider">{session.role}</p>
               </div>
             </div>
           </div>
         </header>
         
-        {/* Page Content */}
+        {/* Konten Halaman (Scrollable) */}
         <main className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8">
           {children}
         </main>
