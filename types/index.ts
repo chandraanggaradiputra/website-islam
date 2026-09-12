@@ -46,6 +46,7 @@ export interface DKMRegistrationApplication {
   noWhatsapp: string;
   masjidId?: number;
   masjidName?: string;
+  claimedMasjidId?: number;
   isNewMasjid: boolean;
   newMasjidData?: {
     namaMasjid: string;

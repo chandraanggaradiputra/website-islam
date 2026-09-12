@@ -272,10 +272,11 @@ export function AdminDashboardTabs({
                     filteredDKM.map((app) => {
                       const isPendingItem = app.status === 'pending';
                       const isNewMasjid = app.isNewMasjid;
-                      const existingMasjid = !isNewMasjid ? allMasjid.find(m => m.id === app.masjidId) : null;
+                      const targetMasjidId = app.claimedMasjidId || app.masjidId;
+                      const existingMasjid = !isNewMasjid ? allMasjid.find(m => m.id === targetMasjidId) : null;
                       const masjidTitle = isNewMasjid
                         ? app.newMasjidData?.namaMasjid || 'Usulan Masjid Baru'
-                        : app.masjidName || `Masjid ID #${app.masjidId}`;
+                        : app.masjidName || existingMasjid?.title?.rendered || `Masjid ID #${targetMasjidId}`;
                       
                       const masjidKota = isNewMasjid 
                         ? app.newMasjidData?.kotaKabupaten 
@@ -312,13 +313,18 @@ export function AdminDashboardTabs({
                                   {masjidTitle}
                                 </p>
                                 {isNewMasjid ? (
-                                  <span className="inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
+                                  <span className="inline-block mt-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                                     ✨ Usulan Masjid Baru
                                   </span>
                                 ) : (
-                                  <span className="text-xs text-slate-400">
-                                    Masjid Terdaftar
-                                  </span>
+                                  <div className="mt-1 space-y-0.5">
+                                    <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                                      🏛️ Klaim Masjid Terdaftar
+                                    </span>
+                                    <p className="text-xs text-slate-600 dark:text-slate-400">
+                                      Masjid Terkait: <span className="font-semibold text-slate-800 dark:text-slate-200">{app.masjidName || existingMasjid?.title?.rendered || masjidTitle}</span> (ID: #{targetMasjidId})
+                                    </p>
+                                  </div>
                                 )}
                                 {masjidKota && (
                                   <p className="mt-1 text-xs font-semibold text-[#093c96] dark:text-blue-400">

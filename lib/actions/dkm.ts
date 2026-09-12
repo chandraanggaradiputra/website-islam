@@ -42,9 +42,6 @@ export async function getStoredRegistrations(): Promise<DKMRegistrationApplicati
 
     const pendingMasjids = await res.json();
     const applications: DKMRegistrationApplication[] = pendingMasjids.map((masjid: any) => {
-      // Deteksi jika ini adalah klaim masjid (judul dimulai dengan KLAIM:)
-      const isClaim = typeof masjid.title?.rendered === 'string' && masjid.title.rendered.startsWith('KLAIM:');
-      
       let appData: any = {};
       try {
         if (masjid.content?.rendered) {
@@ -62,17 +59,24 @@ export async function getStoredRegistrations(): Promise<DKMRegistrationApplicati
         ? masjid.title.rendered
         : (typeof masjid.title === 'string' ? masjid.title : '');
 
-      const namaMasjidFinal = appData.newMasjidData?.namaMasjid || appData.masjidName || masjidTitle || 'Usulan Masjid Baru';
+      // Deteksi jika ini adalah klaim masjid (judul dimulai dengan [Klaim] atau KLAIM: atau metadata isNewMasjid === false)
+      const isClaim = appData.isNewMasjid === false || Boolean(appData.claimedMasjidId) || masjidTitle.startsWith('[Klaim]') || masjidTitle.startsWith('KLAIM:');
+      const claimedId = appData.claimedMasjidId || appData.masjidId;
+      const cleanTitle = masjidTitle.replace(/^(\[Klaim\]|KLAIM:)\s*/i, '').replace(/\s*-\s*.*$/, '');
+      const namaMasjidFinal = isClaim
+        ? (appData.namaMasjid || appData.masjidName || cleanTitle || 'Masjid Terdaftar')
+        : (appData.newMasjidData?.namaMasjid || appData.masjidName || masjidTitle || 'Usulan Masjid Baru');
 
       return {
         id: masjid.id,
         date: masjid.date,
-        namaPengurus: appData.namaPengurus || masjid.acf?.nama_kontak_dkm || '-',
+        namaPengurus: appData.namaPengurus || appData.namaLengkap || masjid.acf?.nama_kontak_dkm || '-',
         email: appData.email || '-',
         password: appData.password,
-        noWhatsapp: appData.noWhatsapp || masjid.acf?.no_wa_dkm || '-',
-        masjidId: isClaim ? appData.masjidId : undefined,
-        masjidName: isClaim ? (appData.masjidName || masjidTitle) : namaMasjidFinal,
+        noWhatsapp: appData.noWhatsapp || appData.wa || masjid.acf?.no_wa_dkm || '-',
+        masjidId: isClaim ? claimedId : undefined,
+        masjidName: namaMasjidFinal,
+        claimedMasjidId: isClaim ? claimedId : undefined,
         isNewMasjid: !isClaim,
         newMasjidData: !isClaim ? {
           namaMasjid: namaMasjidFinal,
@@ -181,6 +185,8 @@ export async function submitDaftarDKM(formDataOrPayload: FormData | DKMRegistrat
     }
 
     // Validasi Kepemilikan Tunggal: 1 Masjid hanya dapat dikelola oleh 1 akun DKM resmi
+    let existingMasjidDetail: any = null;
+    let existingMasjidTitle = '';
     if (!isNewMasjid) {
       const targetMasjidId = Number(masjidOption);
       if (!targetMasjidId || isNaN(targetMasjidId)) {
@@ -194,6 +200,8 @@ export async function submitDaftarDKM(formDataOrPayload: FormData | DKMRegistrat
           message: 'Masjid ini sudah memiliki pengurus DKM resmi yang terdaftar. 1 Masjid hanya dapat dikelola oleh 1 akun DKM. Silakan hubungi Admin Banten Mengaji jika memerlukan koordinasi kepengurusan.',
         };
       }
+      existingMasjidDetail = existingMasjid;
+      existingMasjidTitle = existingMasjid?.title?.rendered || (typeof existingMasjid?.title === 'string' ? existingMasjid.title : `Masjid #${targetMasjidId}`);
     }
 
     // Selesaikan taksonomi kecamatan secara defensif (angka ID atau nama kecamatan)
@@ -271,15 +279,23 @@ export async function submitDaftarDKM(formDataOrPayload: FormData | DKMRegistrat
       }
     }
 
+    const claimedMasjidId = !isNewMasjid ? Number(masjidOption) : undefined;
+    const finalMasjidName = !isNewMasjid ? existingMasjidTitle : (namaMasjidBaru || 'Usulan Masjid Baru');
+
     // Siapkan data JSON tambahan untuk disimpan di konten post (dienkripsi Base64)
     const appData = {
       namaPengurus,
+      namaLengkap: namaPengurus,
       email,
       password, // Password tersimpan untuk diaktifkan saat admin menekan "Setujui Akun DKM"
       noWhatsapp,
-      masjidId: !isNewMasjid ? Number(masjidOption) : undefined,
-      masjidName: !isNewMasjid ? (namaMasjidBaru || `Masjid #${masjidOption}`) : namaMasjidBaru,
+      wa: noWhatsapp,
+      catatan,
       isNewMasjid,
+      claimedMasjidId,
+      masjidId: claimedMasjidId,
+      namaMasjid: finalMasjidName,
+      masjidName: finalMasjidName,
       newMasjidData: isNewMasjid ? {
         namaMasjid: namaMasjidBaru || '',
         kotaKabupaten,
@@ -293,7 +309,6 @@ export async function submitDaftarDKM(formDataOrPayload: FormData | DKMRegistrat
         atasNamaRekening,
         featuredMediaId: mediaId,
       } : undefined,
-      catatan,
     };
 
     const base64Content = Buffer.from(JSON.stringify(appData)).toString('base64');
@@ -350,15 +365,15 @@ export async function submitDaftarDKM(formDataOrPayload: FormData | DKMRegistrat
         wpMasjidPayload.kecamatan = [resolvedKecId];
       }
     } else {
-      // Klaim masjid yang sudah ada
+      // Klaim masjid yang sudah ada (Opsi B: buat entri antrean klaim terpisah)
       const acfPayload: Record<string, unknown> = {
-        kota_kabupaten: kotaKabupaten || 'Kota Serang',
+        kota_kabupaten: kotaKabupaten || existingMasjidDetail?.acf?.kota_kabupaten || 'Kota Serang',
         no_wa_dkm: noWhatsapp || '',
         nama_kontak_dkm: namaPengurus || '',
       };
 
       wpMasjidPayload = {
-        title: `KLAIM: ${namaMasjidBaru || 'Masjid #' + masjidOption} - ${namaPengurus}`,
+        title: `[Klaim] ${existingMasjidTitle}`,
         status: 'pending',
         content: contentPayload,
         acf: acfPayload,
@@ -385,13 +400,13 @@ export async function submitDaftarDKM(formDataOrPayload: FormData | DKMRegistrat
 
     // Konstruksi data pendaftaran untuk email & subscriber
     const pendaftaranData = {
-      namaMasjid: isNewMasjid ? namaMasjidBaru : `Klaim: ${masjidOption}`,
+      namaMasjid: isNewMasjid ? (namaMasjidBaru || 'Usulan Masjid Baru') : `[Klaim] ${existingMasjidTitle}`,
       namaPengurus,
       email,
       noWhatsapp,
-      kotaKabupaten: kotaKabupaten || 'Tidak diketahui',
-      alamatLengkap: alamatMasjid,
-      fasilitas,
+      kotaKabupaten: kotaKabupaten || existingMasjidDetail?.acf?.kota_kabupaten || 'Tidak diketahui',
+      alamatLengkap: isNewMasjid ? alamatMasjid : (existingMasjidDetail?.acf?.alamat_lengkap || ''),
+      fasilitas: isNewMasjid ? fasilitas : (existingMasjidDetail?.acf?.fasilitas || []),
     };
 
     // Kirim notifikasi email ke admin & daftarkan ke list Mailketing secara aman di serverless
@@ -439,7 +454,9 @@ export async function approveDKMRegistration(registrationId: string | number) {
       return { success: false, error: 'Data permohonan tidak ditemukan di server.' };
     }
     const masjidData = await resGet.json();
-    const isClaim = typeof masjidData.title?.rendered === 'string' && masjidData.title.rendered.startsWith('KLAIM:');
+    const masjidTitle = typeof masjidData.title?.rendered === 'string'
+      ? masjidData.title.rendered
+      : (typeof masjidData.title === 'string' ? masjidData.title : '');
 
     // Ekstrak metadata pendaftar (nama, email, password)
     let appData: any = {};
@@ -455,13 +472,15 @@ export async function approveDKMRegistration(registrationId: string | number) {
       console.error('Failed parsing metadata on approve:', e);
     }
 
+    const isClaim = appData.isNewMasjid === false || Boolean(appData.claimedMasjidId) || masjidTitle.startsWith('[Klaim]') || masjidTitle.startsWith('KLAIM:');
+
     // 1. Buat atau dapatkan akun pengguna WordPress di wp_users
     let userId: number | undefined = undefined;
     if (appData.email) {
       try {
         const userPayload = {
           username: appData.email,
-          name: appData.namaPengurus || appData.email,
+          name: appData.namaPengurus || appData.namaLengkap || appData.email,
           email: appData.email,
           password: appData.password || undefined,
           roles: ['author'],
@@ -532,10 +551,11 @@ export async function approveDKMRegistration(registrationId: string | number) {
         throw new Error('Gagal mem-publish masjid usulan.');
       }
     } else {
-      // Jika ini klaim: Tautkan author akun DKM ke masjid asli yang diklaim
-      if (appData.masjidId && userId) {
+      // Jika ini klaim: Tautkan author akun DKM ke masjid fisik asli yang diklaim (Opsi B)
+      const targetClaimedMasjidId = appData.claimedMasjidId || appData.masjidId;
+      if (targetClaimedMasjidId && userId) {
         try {
-          await fetch(`${WP_API_URL}/masjid/${appData.masjidId}`, {
+          const updateAuthorRes = await fetch(`${WP_API_URL}/masjid/${targetClaimedMasjidId}`, {
             method: 'POST',
             headers: {
               'Authorization': authHeader,
@@ -543,12 +563,15 @@ export async function approveDKMRegistration(registrationId: string | number) {
             },
             body: JSON.stringify({ author: userId }),
           });
+          if (!updateAuthorRes.ok) {
+            console.error('[approveDKMRegistration] Gagal menautkan author ke masjid klaim:', await updateAuthorRes.text());
+          }
         } catch (claimAuthorErr) {
           console.error('[approveDKMRegistration] Error menautkan author ke masjid klaim:', claimAuthorErr);
         }
       }
 
-      // Hapus entri klaim draft sementara
+      // Hapus entri antrean klaim sementara secara permanen
       const resDel = await fetch(`${WP_API_URL}/masjid/${registrationId}?force=true`, {
         method: 'DELETE',
         headers: { 'Authorization': authHeader },
@@ -559,12 +582,15 @@ export async function approveDKMRegistration(registrationId: string | number) {
     }
 
     if (appData.email) {
-      const namaMasjidFinal = appData.newMasjidData?.namaMasjid || appData.masjidName || masjidData.title?.rendered || 'Masjid Anda';
+      const cleanTitle = masjidTitle.replace(/^(\[Klaim\]|KLAIM:)\s*/i, '').replace(/\s*-\s*.*$/, '');
+      const namaMasjidFinal = isClaim
+        ? (appData.namaMasjid || appData.masjidName || cleanTitle || 'Masjid Anda')
+        : (appData.newMasjidData?.namaMasjid || appData.masjidName || masjidTitle || 'Masjid Anda');
       
       try {
         await sendDKMApprovalEmail({
           email: appData.email,
-          namaMasjid: namaMasjidFinal.replace('KLAIM: ', ''),
+          namaMasjid: namaMasjidFinal,
           password: appData.password || undefined,
         });
       } catch (e) {
@@ -627,12 +653,16 @@ export async function rejectDKMRegistration(registrationId: string | number) {
       }
       
       if (appData.email) {
-        const namaMasjidFinal = appData.newMasjidData?.namaMasjid || appData.masjidName || masjidData.title?.rendered || 'Usulan Masjid';
+        const masjidTitle = typeof masjidData.title?.rendered === 'string'
+          ? masjidData.title.rendered
+          : (typeof masjidData.title === 'string' ? masjidData.title : '');
+        const cleanTitle = masjidTitle.replace(/^(\[Klaim\]|KLAIM:)\s*/i, '').replace(/\s*-\s*.*$/, '');
+        const namaMasjidFinal = appData.namaMasjid || appData.masjidName || appData.newMasjidData?.namaMasjid || cleanTitle || 'Usulan Masjid';
         
         try {
           await sendDKMRejectionEmail({
             email: appData.email,
-            namaMasjid: namaMasjidFinal.replace('KLAIM: ', ''),
+            namaMasjid: namaMasjidFinal,
           });
         } catch (e) {
           console.error('[Mailketing Error di rejectDKMRegistration]', e);
