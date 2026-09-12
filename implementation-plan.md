@@ -1,121 +1,114 @@
-# Rencana Implementasi: PWA Native, Arsip Rekaman Video Kajian, & Pembaruan Panduan DKM
+# Rencana Implementasi: Infrastruktur Web Push Notification Native & Panel Broadcast Admin
 
 Branch Target: `staging-website-islam`
 
 ## 1. Ringkasan & Ruang Lingkup Perubahan
-Tugas ini mengimplementasikan tiga rangkaian fitur utama pada portal Banten Mengaji:
+Tugas ini membangun infrastruktur Web Push Notification native pada portal **Banten Mengaji** serta menyediakan Panel Broadcast khusus bagi Super Admin untuk mengirimkan notifikasi siaran (jadwal kajian baru, pengumuman penting, dsb.) langsung ke perangkat jamaah (Android, Desktop, dan iOS PWA):
 
-1. **Implementasi PWA Resmi (Progressive Web App)**:
-   - **`app/manifest.ts`**: Manifes native Next.js Metadata Route yang mendefinisikan identitas PWA (`Banten Mengaji`), palet warna (`#093c96`), ikon, dan mode `standalone`.
-   - **`public/sw.js`**: Service worker minimalis dengan strategi caching network-first untuk aset statis dan offline handling.
-   - **`components/pwa/PwaHandler.tsx`**: Komponen client untuk mendaftarkan service worker, menangkap event `beforeinstallprompt` (Chrome/Android), menampilkan prompt instalasi elegan, dan menyediakan petunjuk instalasi untuk iPhone/iPad (iOS Safari).
-   - **`app/layout.tsx`**: Pemasangan `<PwaHandler />` dan penambahan metadata PWA (`themeColor`, `apple-touch-icon`).
-
-2. **Fitur Arsip Faedah & Rekaman Kajian Banten**:
-   - **`lib/utils/youtube.ts`**: Helper parser URL YouTube untuk mengekstrak Video ID dari berbagai variasi URL (`watch?v=`, `youtu.be/`, `live/`, `embed/`) dan menghasilkan embed URL privasi-ramah (`youtube-nocookie.com/embed/`).
-   - **`app/jadwal-kajian/page.tsx` & `components/kajian/KajianFilter.tsx`**:
-     - Membawa seluruh data kajian (`allKajian`) ke filter tanpa memotong kajian yang telah selesai.
-     - Menambahkan tab pemisah:
-       * **Tab 1: Kajian Mendatang**: Menampilkan kajian berstatus aktif/libur yang belum lewat waktu (`!isKajianExpired(...)`).
-       * **Tab 2: Arsip & Rekaman Kajian**: Menampilkan kajian yang telah selesai (`isKajianExpired(...) === true` atau `status_kajian === 'selesai'`).
-     - Pada kartu kajian arsip (`components/kajian/KajianCard.tsx`), menampilkan badge `Selesai - Rekaman Tersedia` (jika ada `link_streaming`) atau `Kajian Selesai` beserta tanggal pelaksanaan.
-   - **`app/jadwal-kajian/[slug]/page.tsx`**:
-     - Jika kajian berstatus selesai/kedaluwarsa:
-       * Menggantikan tombol Google Calendar dengan banner informasi pelaksanaan kajian.
-       * Jika memiliki `link_streaming`, menyematkan pemutar video responsif YouTube (`aspect-video rounded-2xl`).
-       * Menampilkan blok "Catatan & Ringkasan Faedah Kajian".
-     - Jika belum selesai: Menampilkan tombol kalender dan rute masjid normal.
-
-3. **Pembaruan Halaman Panduan DKM (`app/panduan-dkm/page.tsx`)**:
-   - Menambahkan 2 kartu panduan baru:
-     * **Panduan Pasang Aplikasi (PWA)**: Petunjuk praktis instalasi untuk pengguna Android (Chrome) dan iPhone (iOS Safari).
-     * **Panduan Menyematkan Rekaman Kajian (Untuk DKM)**: Panduan langkah memasukkan link rekaman/live YouTube ke dalam postingan kajian agar menjadi arsip faedah abadi.
-
-4. **Verifikasi & Alur Git**:
-   - Pengujian `npx tsc --noEmit` dan `npm run build`.
-   - Commit pada `staging-website-islam`, merge ke `main`, dan push ke GitHub `origin main`.
+1. **Dependensi & Konfigurasi Kunci VAPID**:
+   - Memasang pustaka `web-push` dan tipe datanya `@types/web-push`.
+   - Mengonfigurasi pasangan kunci VAPID (*Voluntary Application Server Identification*): Public Key (`NEXT_PUBLIC_VAPID_PUBLIC_KEY`), Private Key (`VAPID_PRIVATE_KEY`), dan Subject (`VAPID_SUBJECT`).
+2. **Ekstensi Service Worker (`public/sw.js`)**:
+   - Menambahkan event listener `push` untuk menangkap payload notifikasi berformat JSON (title, body, icon, badge, data URL).
+   - Menambahkan event listener `notificationclick` untuk menangani aksi klik notifikasi (membuka URL target atau memfokuskan tab browser yang sudah terbuka).
+3. **Backend Server Actions & Penyimpanan Langganan (`lib/actions/push.ts`)**:
+   - `savePushSubscription(subscription)`: Menyimpan endpoint langganan jamaah ke berkas persisten `data/push-subscriptions.json` (mencegah duplikasi endpoint).
+   - `removePushSubscription(endpoint)`: Menghapus endpoint jika jamaah menonaktifkan notifikasi atau jika service worker mengembalikan status 410 Gone / 404 Not Found.
+   - `getPushSubscriberStats()`: Mengambil jumlah perangkat terdaftar yang siap menerima notifikasi.
+   - `sendBroadcastNotification(payload)`: Mengirimkan pesan push notifikasi secara batch menggunakan `web-push.sendNotification()` dengan pelaporan status berhasil dan pembersihan otomatis endpoint yang sudah kadaluwarsa (expired).
+4. **Komponen Pengelola Izin Client (`components/pwa/PushNotificationManager.tsx`)**:
+   - Komponen client untuk memeriksa dukungan Push API dan status izin (`Notification.permission`).
+   - Menyediakan tombol/kartu ajakan berlangganan notifikasi dengan konversi kunci VAPID `urlBase64ToUint8Array`.
+   - Terintegrasi secara elegan di portal (misal pada banner PWA atau navigasi utama).
+5. **Panel Siaran (Broadcast Push) pada Dasbor Super Admin**:
+   - Tab baru `tab=broadcast` pada Dasbor Super Admin (`components/dashboard/AdminDashboardTabs.tsx` & `DashboardSidebar.tsx`).
+   - Menampilkan metrik: Total Jamaah Berlangganan Notifikasi.
+   - Formulir Broadcast: Judul Notifikasi, Isi Pesan, Tautan URL Tujuan (misal `/jadwal-kajian` atau tautan kajian spesifik), serta Pratinjau Tampilan Notifikasi (*Live Preview*).
+   - Tombol eksekusi broadcast dengan indikator loading dan laporan pengiriman (*misal: "Berhasil terkirim ke 45 perangkat"*).
 
 ---
 
-## 2. Rincian Perubahan Berkas
+## User Review Required
 
-### A. Komponen & Konfigurasi PWA
-#### [NEW] [app/manifest.ts](file:///C:/website-islam/app/manifest.ts)
-- Generator manifest Next.js yang mengembalikan metadata PWA: nama, tema `#093c96`, icons, `display: 'standalone'`.
+> [!IMPORTANT]
+> **Pemberitahuan Truncated Prompt**:
+> Pesan tugas Anda terpotong setelah baris perintah `npm install -D @types/web-push`. Rencana di bawah ini telah kami susun secara menyeluruh mencakup arsitektur end-to-end (VAPID, Service Worker, Server Actions, Client Subscription UI, dan Panel Broadcast Admin). Silakan tinjau dan beri konfirmasi apakah terdapat rincian atau alur khusus tambahan yang ingin Anda sertakan sebelum kami mulai mengeksekusi kode.
 
-#### [NEW] [public/sw.js](file:///C:/website-islam/public/sw.js)
-- Service Worker untuk caching aset statis dengan penanganan fetch network-first dan pembersihan cache lama saat aktivasi.
-
-#### [NEW] [components/pwa/PwaHandler.tsx](file:///C:/website-islam/components/pwa/PwaHandler.tsx)
-- Komponen client mendaftarkan `/sw.js`.
-- Mendeteksi `beforeinstallprompt` untuk Android/Chrome dan memicu banner install ramah.
-- Mendeteksi iOS Safari dan menampilkan petunjuk "Share -> Add to Home Screen".
-- Menyimpan status dismiss di `sessionStorage` agar tidak mengganggu pengguna.
-
-#### [MODIFY] [app/layout.tsx](file:///C:/website-islam/app/layout.tsx)
-- Impor dan pasang `<PwaHandler />`.
-- Tambahkan properti PWA pada metadata (`manifest`, `appleWebApp`).
+> [!NOTE]
+> **Penyimpanan Langganan Push**:
+> Langganan disimpan secara persisten di berkas `data/push-subscriptions.json`, selaras dengan arsitektur penyimpanan pengaturan sistem di `data/system-settings.json`.
 
 ---
 
-### B. Helper & Modul Arsip Rekaman Video Kajian
-#### [NEW] [lib/utils/youtube.ts](file:///C:/website-islam/lib/utils/youtube.ts)
-- `getYouTubeVideoId(url)`: regex parser untuk berbagai format URL YouTube.
-- `getYouTubeEmbedUrl(url)`: mengembalikan URL embed `https://www.youtube-nocookie.com/embed/${videoId}`.
+## Open Questions
 
-#### [MODIFY] [components/kajian/KajianCard.tsx](file:///C:/website-islam/components/kajian/KajianCard.tsx)
-- Deteksi status selesai / expired.
-- Jika selesai dan memiliki rekaman: render badge hijau `Selesai - Rekaman Tersedia` dengan ikon Video.
-- Jika selesai tanpa rekaman: render badge abu-abu `Kajian Selesai`.
-
-#### [MODIFY] [components/kajian/KajianFilter.tsx](file:///C:/website-islam/components/kajian/KajianFilter.tsx)
-- Tambahkan tab navigasi: **Kajian Mendatang** vs **Arsip & Rekaman Kajian**.
-- Kelompokkan data kajian sesuai masa berlaku (`!isKajianExpired` vs `isKajianExpired`).
-- Pertahankan filter wilayah (Kota, Kecamatan, Asatidz) pada kedua tab.
-
-#### [MODIFY] [app/jadwal-kajian/page.tsx](file:///C:/website-islam/app/jadwal-kajian/page.tsx)
-- Teruskan `allKajian` ke `<KajianFilter />` agar tab arsip memiliki akses ke seluruh kajian masa lalu.
-
-#### [MODIFY] [app/jadwal-kajian/[slug]/page.tsx](file:///C:/website-islam/app/jadwal-kajian/[slug]/page.tsx)
-- Cek status expired/selesai.
-- Jika selesai:
-  * Sembunyikan `CalendarButton`, tampilkan banner info kajian selesai.
-  * Tampilkan video player iframe YouTube jika `link_streaming` tersedia.
-  * Tampilkan judul "Catatan & Ringkasan Faedah Kajian".
+> [!QUESTION]
+> 1. Apakah Anda memiliki pasangan kunci VAPID yang sudah ada, atau kami buatkan pasangan kunci VAPID baru yang aman dan valid secara otomatis menggunakan `web-push generate-vapid-keys`?
+> 2. Di mana posisi pemicu izin notifikasi bagi jamaah yang paling Anda sukai? (Rekomendasi: Terintegrasi langsung di dalam banner PWA & tombol lonceng notifikasi di Header / pengaturan).
+> 3. Apakah menu navigasi di Sidebar Admin ingin diberi label **"Broadcast Notifikasi"** dengan rute `/dashboard/admin?tab=broadcast`?
 
 ---
 
-### C. Pembaruan Panduan DKM
-#### [MODIFY] [app/panduan-dkm/page.tsx](file:///C:/website-islam/app/panduan-dkm/page.tsx)
-- Tambahkan 2 kartu panduan komprehensif berdesain modern:
-  1. Kartu Panduan Instalasi PWA (Android & iOS Safari).
-  2. Kartu Panduan Publikasi Link Rekaman Video YouTube bagi DKM.
+## Proposed Changes
+
+### A. Dependensi & Lingkungan Server
+#### [MODIFY] [package.json](file:///C:/website-islam/package.json)
+- Menambahkan dependensi `web-push` dan devDependency `@types/web-push`.
+
+#### [MODIFY] [.env.local](file:///C:/website-islam/.env.local)
+- Menambahkan `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, dan `VAPID_SUBJECT`.
 
 ---
 
-## 3. Rencana Verifikasi & Pengujian
-1. **Type Checking**:
-   - Jalankan `npx tsc --noEmit` untuk memastikan nol error TypeScript.
-2. **Kompilasi Produksi**:
-   - Jalankan `npm run build` untuk memverifikasi Turbopack build berhasil 100%.
-3. **Pengujian PWA**:
-   - Verifikasi URL `/manifest.webmanifest` dapat diakses dan mengembalikan JSON valid.
-   - Verifikasi `/sw.js` terdaftar di browser.
-4. **Pengujian Fungsional Video & Arsip**:
-   - Uji helper `getYouTubeEmbedUrl` pada berbagai format URL YouTube.
-   - Verifikasi pergantian tab Kajian Mendatang dan Arsip & Rekaman Kajian.
-   - Verifikasi halaman single kajian saat kajian telah selesai menampilkan pemutar video.
+### B. Service Worker
+#### [MODIFY] [public/sw.js](file:///C:/website-islam/public/sw.js)
+- Menambahkan event listener `push` untuk menampilkan notifikasi visual native.
+- Menambahkan event listener `notificationclick` untuk navigasi ke URL kajian/tujuan saat notifikasi diklik.
 
 ---
 
-## 4. Alur Git & Dokumentasi
-1. Kerjakan di branch `staging-website-islam`.
-2. Commit: `git commit -m "feat: implementasi pwa native, arsip rekaman video kajian & panduan dkm"`
-3. Merge ke `main`:
-   ```bash
-   git checkout main
-   git merge staging-website-islam
-   git push origin main
-   git checkout staging-website-islam
-   ```
-4. Dokumentasikan seluruh perubahan pada `walkthrough.md`.
+### C. Backend Server Actions
+#### [NEW] [lib/actions/push.ts](file:///C:/website-islam/lib/actions/push.ts)
+- `savePushSubscription`: Menyimpan endpoint dan kunci p256dh & auth ke `data/push-subscriptions.json`.
+- `removePushSubscription`: Menghapus endpoint yang tidak lagi valid.
+- `getPushSubscriberStats`: Menghitung total subscriber aktif.
+- `sendBroadcastNotification`: Mengirimkan notifikasi massal dengan penanganan error status `410 Gone` (auto-prune).
+
+#### [NEW] [types/push.ts](file:///C:/website-islam/types/push.ts)
+- Mendefinisikan antarmuka `PushSubscriptionRecord`, `BroadcastPayload`, dan `BroadcastResult`.
+
+---
+
+### D. Client Components & PWA Integration
+#### [NEW] [components/pwa/PushNotificationManager.tsx](file:///C:/website-islam/components/pwa/PushNotificationManager.tsx)
+- Menangani registrasi push subscription ke browser via `registration.pushManager.subscribe`.
+- Menyediakan UI tombol izin notifikasi ("Aktifkan Notifikasi Kajian").
+
+#### [MODIFY] [components/pwa/PwaHandler.tsx](file:///C:/website-islam/components/pwa/PwaHandler.tsx)
+- Mengintegrasikan opsi aktivasi notifikasi kajian ke dalam alur PWA.
+
+---
+
+### E. Dasbor Admin (Panel Broadcast)
+#### [MODIFY] [components/dashboard/DashboardSidebar.tsx](file:///C:/website-islam/components/dashboard/DashboardSidebar.tsx)
+- Menambahkan menu navigasi Super Admin **Broadcast Notifikasi** menuju `/dashboard/admin?tab=broadcast` dengan ikon `Send` / `BellRing`.
+
+#### [MODIFY] [components/dashboard/AdminDashboardTabs.tsx](file:///C:/website-islam/components/dashboard/AdminDashboardTabs.tsx)
+- Menambahkan tab ke-6: `Broadcast Notifikasi`.
+- Menyediakan formulir pengiriman broadcast: Judul, Pesan, Tautan URL, Pratinjau Tampilan Notifikasi, dan statistik subscriber aktif.
+
+#### [MODIFY] [app/dashboard/admin/page.tsx](file:///C:/website-islam/app/dashboard/admin/page.tsx)
+- Memuat statistik subscriber push notifikasi saat halaman admin dirender.
+
+---
+
+## Verification Plan
+
+### Automated Tests
+- Menjalankan `npx tsc --noEmit` untuk memastikan 100% bebas error TypeScript.
+- Menjalankan `npm run build` untuk memastikan kompilasi Turbopack produksi berhasil.
+
+### Manual Verification
+- Pengujian pendaftaran izin push notifikasi di browser.
+- Pengujian pembuatan & penyimpanan subscription di `data/push-subscriptions.json`.
+- Pengujian simulasi pengiriman pesan broadcast dari Dasbor Admin ke service worker browser.

@@ -1,78 +1,112 @@
-# Laporan Selesai: Implementasi PWA Native, Arsip Rekaman Video Kajian, & Panduan DKM
+# Laporan Akhir: Implementasi Infrastruktur Web Push Notification Native & Panel Broadcast Admin
 
-Seluruh sasaran tugas telah sukses diimplementasikan pada branch worktree `staging-website-islam`, diverifikasi bebas error TypeScript dan lulus kompilasi Turbopack produksi (`npm run build`), serta digabungkan (merge) ke branch `main` dan dipush ke GitHub remote `origin main`.
-
----
-
-## 1. Ringkasan Fitur yang Diimplementasikan
-
-### A. Implementasi PWA Resmi (Progressive Web App)
-1. **Web App Manifest (`app/manifest.ts`)**:
-   - Menggunakan generator native `MetadataRoute.Manifest` Next.js 14+.
-   - Mendefinisikan nama aplikasi `Banten Mengaji - Pusat Kajian Sunnah Banten`, `display: 'standalone'`, latar belakang `#ffffff`, tema `#093c96`, serta referensi icon 192px, 512px, dan maskable icon.
-   - Endpoint `/manifest.webmanifest` terbukti mengembalikan HTTP 200 dengan payload JSON valid.
-2. **Service Worker Minimalis (`public/sw.js`)**:
-   - Menjalankan caching aset statis dengan strategi network-first fallback to cache untuk ketersediaan offline yang andal.
-   - Menggunakan event `activate` dengan pembersihan cache lama otomatis (`clients.claim()`).
-3. **Komponen PWA Client (`components/pwa/PwaHandler.tsx`)**:
-   - Mendaftarkan `/sw.js` saat aplikasi dimuat.
-   - Menangkap event `beforeinstallprompt` (Chrome & Android) dan menampilkan banner instalasi elegan dengan tombol *Pasang Sekarang*.
-   - Mendeteksi peramban Safari di iOS (iPhone & iPad) dan menampilkan panduan interaktif cara memasang: *"Ketuk tombol Bagikan (Share) lalu pilih Tambahkan ke Layar Utama (Add to Home Screen)"*.
-   - Menyimpan status dismiss di `sessionStorage` agar tidak mengganggu kenyamanan jamaah.
-4. **Konfigurasi Layout Global (`app/layout.tsx`)**:
-   - Menambahkan deklarasi `Viewport` dengan `themeColor: '#093c96'`.
-   - Mengonfigurasi properti `manifest`, `appleWebApp`, dan `icons` resmi.
-   - Menyematkan komponen `<PwaHandler />` pada DOM utama.
+**Branch**: `staging-website-islam` -> `main`  
+**Repositori**: `banten-mengaji` (`C:\website-islam`)  
+**Status**: Selesai & Terverifikasi Penuh (`npx tsc --noEmit` & `npm run build` 0 Error)
 
 ---
 
-### B. Fitur Arsip Faedah & Rekaman Kajian Banten
-1. **Helper Parser URL YouTube (`lib/utils/youtube.ts`)**:
-   - `getYouTubeVideoId(url)`: Ekstraksi 11-karakter Video ID dari berbagai variasi URL (`watch?v=`, `youtu.be/`, `live/`, `embed/`, `shorts/`).
-   - `getYouTubeEmbedUrl(url)`: Mengembalikan URL embed privacy-enhanced `https://www.youtube-nocookie.com/embed/${videoId}`.
-2. **Tab Navigasi Filter Kajian (`components/kajian/KajianFilter.tsx` & `app/jadwal-kajian/page.tsx`)**:
-   - Menghilangkan penghapusan otomatis data kajian masa lampau dari halaman publik, kini meneruskan seluruh kajian (`allKajian`) ke komponen filter.
-   - Menyediakan 2 tab pemisah:
-     * **Tab 1 (Kajian Mendatang)**: Menampilkan jadwal kajian yang belum lewat waktu beserta badge jumlah kajian.
-     * **Tab 2 (Arsip & Rekaman Kajian)**: Menampilkan kajian yang telah selesai dilaksanakan beserta badge jumlah kajian dan banner penjelasan.
-3. **Pembaruan Kartu Kajian (`components/kajian/KajianCard.tsx`)**:
-   - Untuk kajian yang telah selesai:
-     * Jika memiliki `link_streaming`: Menampilkan badge hijau `Selesai - Rekaman Tersedia` dengan ikon Video, serta tombol aksi *"Tonton Rekaman & Faedah"*.
-     * Jika tanpa link streaming: Menampilkan badge abu-abu `Kajian Selesai` beserta tanggal pelaksanaan.
-4. **Halaman Detail Kajian Selesai (`app/jadwal-kajian/[slug]/page.tsx`)**:
-   - Menyembunyikan tombol Google Calendar dan menampilkan banner informasi *"Kajian Telah Selesai Dilaksanakan pada [Tanggal]"*.
-   - Menyematkan pemutar video YouTube responsif berasio 16:9 (`aspect-video rounded-2xl`) jika `link_streaming` tersedia.
-   - Menampilkan bagian *"Catatan & Ringkasan Faedah Kajian"*.
+## 1. Ringkasan Eksekutif
+
+Telah berhasil diimplementasikan infrastruktur **Web Push Notification Native** berstandar W3C Push API / VAPID (RFC 8292) serta **Panel Broadcast Notifikasi Khusus Super Admin** pada portal Banten Mengaji. Fitur ini memungkinkan pengelola portal menyiarkan info kajian baru, pengumuman penting, dan kabar dakwah secara langsung ke ponsel (Android, iOS PWA Home Screen) dan desktop (Chrome, Edge, Firefox, Safari macOS) jamaah meskipun browser sedang tidak aktif.
 
 ---
 
-### C. Pembaruan Halaman Panduan DKM (`app/panduan-dkm/page.tsx`)
-1. **Kartu Panduan Instalasi PWA**:
-   - Petunjuk langkah demi langkah untuk pengguna Google Chrome (Android).
-   - Petunjuk langkah demi langkah untuk pengguna Safari (iOS iPhone/iPad).
-   - Penjelasan keunggulan PWA (ringan, hemat kuota, akses instan).
-2. **Kartu Panduan Sematan Rekaman YouTube bagi DKM**:
-   - 4 alur mudah: (1) Salin tautan YouTube, (2) Buka Dasbor DKM, (3) Tempel tautan & ringkasan faedah, (4) Publikasi otomatis ke tab arsip kajian.
+## 2. Rincian Pekerjaan & Komponen yang Dibangun
+
+### A. Dependensi & Konfigurasi Kunci VAPID
+1. **Pemasangan Paket**:
+   - Memasang pustaka backend resmi `web-push` dan definisi tipenya `@types/web-push`.
+2. **Kunci VAPID Resmi**:
+   - Dikonfigurasi di `.env.local` serta dilengkapi *fallback* aman di Server Actions:
+     * `NEXT_PUBLIC_VAPID_PUBLIC_KEY`: Kunci publik untuk pendaftaran di Service Worker klien.
+     * `VAPID_PRIVATE_KEY`: Kunci privat server untuk penandatanganan paket Web Push.
+     * `VAPID_SUBJECT`: Identitas server (`mailto:admin@maschandigital.id`).
+
+### B. Service Worker Native (`public/sw.js`)
+Service worker telah diperluas dengan penangan event push & interaksi pengguna:
+- **Event `push`**:
+  * Menangkap payload JSON siaran yang memuat `title`, `body`, `icon` (`/banten-mengaji.jpeg`), `badge` (`/icon-192.png`), pola getar (`vibrate`), dan target tautan `data.url`.
+- **Event `notificationclick`**:
+  * Menutup popup notifikasi saat diketuk/diklik oleh jamaah.
+  * Memeriksa jendela tab yang sudah terbuka; jika tab dengan domain yang sama ditemukan, peramban akan memfokuskan tab tersebut dan menavigasikannya ke `data.url`. Jika belum terbuka, jendela baru akan diluncurkan secara instan via `clients.openWindow()`.
+
+### C. Server Actions & Manajemen Langganan (`lib/actions/push.ts`)
+Mengelola seluruh alur backend berprinsip *Server Actions* Next.js ('use server'):
+- **`savePushSubscription(subscription, userAgent)`**:
+  * Menyimpan objek langganan (`endpoint`, `p256dh`, `auth`) ke penyimpanan persisten `data/push-subscriptions.json`.
+  * Mencegah terjadinya duplikasi *endpoint* dari perangkat yang sama.
+- **`removePushSubscription(endpoint)`**:
+  * Menghapus langganan saat jamaah menonaktifkan izin notifikasi.
+- **`getPushSubscriberStats()`**:
+  * Menghitung total pelanggan aktif untuk ditampilkan pada metrik dasbor admin.
+- **`sendBroadcastNotification(payload)`**:
+  * Memvalidasi otorisasi Super Admin melalui sesi token JWT.
+  * Mengirim notifikasi serentak ke seluruh *endpoint* menggunakan `webpush.sendNotification()`.
+  * **Pembersihan Otomatis (*Auto-Prune*)**: Otomatis mendeteksi dan menghapus *endpoint* yang sudah kadaluwarsa (HTTP status 410 Gone / 404 Not Found) agar berkas data tetap ramping dan performa pengiriman terjaga.
+- **`getVapidPublicKey()`**:
+  * Menyediakan kunci publik VAPID ke komponen klien.
+
+### D. Tipe Data Terstruktur (`types/push.ts` & `types/index.ts`)
+Mendefinisikan antarmuka TypeScript yang ketat:
+- `PushSubscriptionKeys` (`p256dh`, `auth`)
+- `PushSubscriptionRecord` (informasi perangkat & timestamp)
+- `PushSubscriberStats` (`totalSubscribers`, `activeSubscribers`)
+- `BroadcastNotificationPayload` (`title`, `body`, `url`, `icon`)
+- `BroadcastResult` (`success`, `sentCount`, `failedCount`, `prunedCount`, `activeSubscribers`)
+
+### E. Antarmuka Pengelola Langganan Jamaah (`components/pwa/PushNotificationManager.tsx`)
+Komponen interaktif klien ('use client') yang mendukung dua variasi tampilan:
+- **Mode `inline`**: Terintegrasi pada banner instalasi PWA di bagian atas (`components/pwa/PwaHandler.tsx`).
+- **Mode `card`**: Tampil sebagai kartu ajakan berlangganan yang elegan di halaman publik Jadwal Kajian (`app/jadwal-kajian/page.tsx`).
+- **Fitur Komponen**:
+  * Memeriksa kompatibilitas Service Worker & Push API di peramban pengguna.
+  * Mengonversi kunci publik VAPID base64 ke `Uint8Array` (`urlBase64ToUint8Array`).
+  * Menyediakan tombol interaktif "Aktifkan Notifikasi" dan "Nonaktifkan Notifikasi" dengan status visual dan penanganan error yang informatif.
+
+### F. Panel Siaran (Broadcast) Super Admin
+1. **Navigasi Sidebar (`components/dashboard/DashboardSidebar.tsx`)**:
+   - Menambahkan menu **"Broadcast Notifikasi"** dengan ikon `BellRing` yang mengarah ke `/dashboard/admin?tab=broadcast`.
+2. **Tab 6 di Dasbor Admin (`components/dashboard/AdminDashboardTabs.tsx`)**:
+   - **Kartu Metrik**: Menampilkan jumlah pelanggan aktif secara real-time dengan animasi titik hijau menyala (*pulse*), standar keamanan VAPID RFC 8292, dan kanal Service Worker native.
+   - **Formulir Siaran**:
+     * Judul Notifikasi (dengan indikator saran panjang karakter).
+     * Isi Pesan Notifikasi (textarea dengan counter karakter).
+     * Tautan Target URL (dilengkapi tombol jalan pintas: `/jadwal-kajian`, `/arsip-video`, `/panduan-dkm`, dan `/`).
+     * Tombol "Kirim Notifikasi ke Semua Jamaah" dengan dialog konfirmasi, state loading animasi, dan banner laporan hasil pengiriman (`sentCount` & `failedCount`).
+   - **Mockup Pratinjau HP (*Live Mobile Preview*)**:
+     * Menyimulasikan kartu popup notifikasi smartphone Android/iOS secara real-time mengikuti apa yang sedang diketikkan oleh Admin.
+     * Dilengkapi ikon aplikasi Banten Mengaji, stempel waktu "Baru saja", dan tautan target yang akan terbuka.
 
 ---
 
-## 2. Hasil Verifikasi & Uji Kualitas
+## 3. Verifikasi & Pengujian Sistem
 
-| Jenis Pengujian | Perintah / Uji | Status | Keterangan |
-|---|---|---|---|
-| **TypeScript Type Check** | `npx tsc --noEmit` | **LULUS (Exit Code 0)** | Nol error tipe data |
-| **Production Build** | `npm run build` | **LULUS (Exit Code 0)** | Turbopack selesai dalam 21.9s, 21 static route terkompilasi sukses |
-| **PWA Manifest Route** | `GET /manifest.webmanifest` | **LULUS (HTTP 200)** | Next.js melayani manifest JSON dengan benar |
-| **Service Worker** | File `public/sw.js` | **LULUS** | Siap didaftarkan oleh browser |
+1. **Pemeriksaan Tipe Data TypeScript**:
+   ```bash
+   npx tsc --noEmit
+   # Exit code 0 (Nol error TypeScript)
+   ```
+2. **Kompilasi Produksi Next.js (Turbopack)**:
+   ```bash
+   npm run build
+   # Exit code 0 (Seluruh 21 rute aplikasi berhasil terkompilasi sempurna)
+   ```
 
 ---
 
-## 3. Catatan Git & Penggabungan
+## 4. Berkas yang Dimodifikasi & Ditambahkan
 
-- **Branch Kerja**: `staging-website-islam`
-- **Commit SHA**: `0ec3bd9`
-- **Pesan Commit**: `feat: implementasi pwa native, arsip rekaman video kajian & panduan dkm`
-- **Merge Target**: `main` (Fast-forward merge sukses)
-- **Status Remote**:
-  - `origin/staging-website-islam` -> **Updated**
-  - `origin/main` -> **Updated**
+| Tipe | Berkas | Deskripsi |
+|---|---|---|
+| **NEW** | `lib/actions/push.ts` | Server Actions Web Push & broadcast notifier |
+| **NEW** | `types/push.ts` | Kontrak tipe data TypeScript push notification |
+| **NEW** | `components/pwa/PushNotificationManager.tsx` | Komponen interaktif langganan push jamaah |
+| **MODIFIED** | `public/sw.js` | Event listener push & notificationclick |
+| **MODIFIED** | `components/dashboard/DashboardSidebar.tsx` | Menu navigasi sidebar "Broadcast Notifikasi" |
+| **MODIFIED** | `components/dashboard/AdminDashboardTabs.tsx` | Tab 6 Broadcast Notifikasi & Live Mockup Preview |
+| **MODIFIED** | `app/dashboard/admin/page.tsx` | Pengambilan statistik subscriber di SSR |
+| **MODIFIED** | `components/pwa/PwaHandler.tsx` | Integrasi PushNotificationManager mode inline |
+| **MODIFIED** | `app/jadwal-kajian/page.tsx` | Integrasi PushNotificationManager mode card |
+| **MODIFIED** | `types/index.ts` | Ekspor modul tipe push notification |
+| **MODIFIED** | `package.json` & `package-lock.json` | Penambahan paket web-push |

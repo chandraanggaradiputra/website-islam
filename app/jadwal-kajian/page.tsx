@@ -1,6 +1,7 @@
 import { getKajianList } from '@/lib/wordpress';
 import { KajianFilter } from '@/components/kajian/KajianFilter';
 import { archiveExpiredKajian } from '@/lib/actions/kajian';
+import { PushNotificationManager } from '@/components/pwa/PushNotificationManager';
 
 export const revalidate = 60;
 
@@ -17,6 +18,8 @@ export default async function JadwalKajianPage() {
         <h1 className="text-3xl font-bold mb-2">Jadwal Kajian</h1>
         <p className="text-slate-600 dark:text-slate-400">Temukan jadwal kajian sunnah di Banten dan sekitarnya.</p>
       </div>
+
+      <PushNotificationManager mode="card" />
 
       <KajianFilter initialKajian={allKajian} />
     </div>

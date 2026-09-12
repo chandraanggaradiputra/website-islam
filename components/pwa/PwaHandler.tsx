@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { Download, Share2, PlusSquare, X, Smartphone } from 'lucide-react';
+import { PushNotificationManager } from './PushNotificationManager';
 
 /**
  * Komponen Penanganan PWA (Progressive Web App)
@@ -132,20 +133,23 @@ export function PwaHandler() {
 
         {/* Konten Khusus Android / Chrome */}
         {showAndroidBanner && (
-          <div className="mt-3.5 flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-            <button
-              onClick={handleDismiss}
-              className="px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
-            >
-              Nanti Saja
-            </button>
-            <button
-              onClick={handleInstallClick}
-              className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-[#093c96] hover:bg-[#072d73] text-white text-xs font-semibold shadow-sm transition-all hover:scale-[1.02]"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Pasang Sekarang</span>
-            </button>
+          <div className="mt-3.5 flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <PushNotificationManager mode="inline" />
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleDismiss}
+                className="px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
+              >
+                Nanti Saja
+              </button>
+              <button
+                onClick={handleInstallClick}
+                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-[#093c96] hover:bg-[#072d73] text-white text-xs font-semibold shadow-sm transition-all hover:scale-[1.02]"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Pasang Sekarang</span>
+              </button>
+            </div>
           </div>
         )}
 

@@ -38,6 +38,7 @@ import {
   CheckCircle2,
   Sparkles,
   ChevronRight,
+  BellRing,
 } from 'lucide-react';
 
 // ============================================================================
@@ -370,6 +371,21 @@ function DashboardSidebarContent({
                     >
                       <ShieldCheck className="w-4 h-4 shrink-0" />
                       <span className="flex-1 truncate">Pengurus DKM</span>
+                    </Link>
+                  </li>
+
+                  {/* Siaran / Broadcast Notifikasi Push Jamaah */}
+                  <li>
+                    <Link
+                      href="/dashboard/admin?tab=broadcast"
+                      className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm transition-all duration-150 ${
+                        isItemActive('/dashboard/admin', 'broadcast')
+                          ? 'bg-[#093c96] text-white shadow-sm shadow-[#093c96]/25 font-semibold'
+                          : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                    >
+                      <BellRing className="w-4 h-4 shrink-0" />
+                      <span className="flex-1 truncate">Broadcast Notifikasi</span>
                     </Link>
                   </li>
 

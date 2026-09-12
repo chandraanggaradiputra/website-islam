@@ -4,7 +4,15 @@ import { useState, useEffect, useTransition } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { WPKajian, WPMasjid, DKMRegistrationApplication, DKMUserItem, SystemSettings, DEFAULT_SYSTEM_SETTINGS } from '@/types';
+import {
+  WPKajian,
+  WPMasjid,
+  DKMRegistrationApplication,
+  DKMUserItem,
+  SystemSettings,
+  DEFAULT_SYSTEM_SETTINGS,
+  PushSubscriberStats,
+} from '@/types';
 import {
   approveDKMRegistration,
   rejectDKMRegistration,
@@ -26,6 +34,7 @@ import {
   resetDKMUserPassword,
   updateSystemSettings,
 } from '@/lib/actions/admin';
+import { sendBroadcastNotification } from '@/lib/actions/push';
 import {
   Users,
   Building2,
@@ -54,6 +63,9 @@ import {
   Eye,
   EyeOff,
   Sparkles,
+  BellRing,
+  Send,
+  Smartphone,
 } from 'lucide-react';
 
 const KECAMATAN_OPTIONS = [
@@ -82,6 +94,7 @@ interface AdminDashboardTabsProps {
   allMasjid: WPMasjid[];
   dkmUsers?: DKMUserItem[];
   initialSettings?: SystemSettings;
+  pushStats?: PushSubscriberStats;
 }
 
 export function AdminDashboardTabs({
@@ -91,20 +104,21 @@ export function AdminDashboardTabs({
   allMasjid,
   dkmUsers = [],
   initialSettings,
+  pushStats,
 }: AdminDashboardTabsProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tabFromUrl = searchParams.get('tab') || initialTab;
-  const [activeTab, setActiveTab] = useState<'dkm' | 'masjid' | 'kajian' | 'pengguna' | 'pengaturan'>(
-    (tabFromUrl as 'dkm' | 'masjid' | 'kajian' | 'pengguna' | 'pengaturan') || 'dkm'
+  const [activeTab, setActiveTab] = useState<'dkm' | 'masjid' | 'kajian' | 'pengguna' | 'pengaturan' | 'broadcast'>(
+    (tabFromUrl as 'dkm' | 'masjid' | 'kajian' | 'pengguna' | 'pengaturan' | 'broadcast') || 'dkm'
   );
 
   useEffect(() => {
     if (
       tabFromUrl &&
-      ['dkm', 'masjid', 'kajian', 'pengguna', 'pengaturan'].includes(tabFromUrl)
+      ['dkm', 'masjid', 'kajian', 'pengguna', 'pengaturan', 'broadcast'].includes(tabFromUrl)
     ) {
-      setActiveTab(tabFromUrl as 'dkm' | 'masjid' | 'kajian' | 'pengguna' | 'pengaturan');
+      setActiveTab(tabFromUrl as 'dkm' | 'masjid' | 'kajian' | 'pengguna' | 'pengaturan' | 'broadcast');
     }
   }, [tabFromUrl]);
 
@@ -130,6 +144,25 @@ export function AdminDashboardTabs({
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [settingsSuccess, setSettingsSuccess] = useState<string | null>(null);
   const [settingsError, setSettingsError] = useState<string | null>(null);
+
+  // ============================================================================
+  // State Panel Broadcast Web Push Notification
+  // ============================================================================
+  const [broadcastTitle, setBroadcastTitle] = useState('');
+  const [broadcastBody, setBroadcastBody] = useState('');
+  const [broadcastUrl, setBroadcastUrl] = useState('/jadwal-kajian');
+  const [isSendingBroadcast, setIsSendingBroadcast] = useState(false);
+  const [broadcastResult, setBroadcastResult] = useState<{
+    success: boolean;
+    message?: string;
+    error?: string;
+    sentCount?: number;
+    failedCount?: number;
+    activeSubscribers?: number;
+  } | null>(null);
+  const [currentPushStats, setCurrentPushStats] = useState<PushSubscriberStats>(
+    pushStats || { totalSubscribers: 0, activeSubscribers: 0 }
+  );
 
   // Filtered lists
   const filteredDKM = registrations.filter((r) => {
@@ -174,9 +207,61 @@ export function AdminDashboardTabs({
     );
   });
 
-  const handleTabChange = (tab: 'dkm' | 'masjid' | 'kajian' | 'pengguna' | 'pengaturan') => {
+  const handleTabChange = (tab: 'dkm' | 'masjid' | 'kajian' | 'pengguna' | 'pengaturan' | 'broadcast') => {
     setActiveTab(tab);
     router.push(`/dashboard/admin?tab=${tab}`);
+  };
+
+  /**
+   * Mengirim broadcast notifikasi web push ke seluruh subscriber aktif
+   */
+  const handleSendBroadcast = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!broadcastTitle.trim() || !broadcastBody.trim()) {
+      alert('Judul dan pesan notifikasi wajib diisi.');
+      return;
+    }
+
+    const subscriberCount = currentPushStats.activeSubscribers;
+    const confirmMsg = subscriberCount > 0
+      ? `Kirim notifikasi ini ke seluruh ${subscriberCount} perangkat jamaah terdaftar?`
+      : 'Belum ada perangkat jamaah yang aktif berlangganan notifikasi. Tetap lanjutkan pengujian pengiriman?';
+
+    if (!confirm(confirmMsg)) {
+      return;
+    }
+
+    setIsSendingBroadcast(true);
+    setBroadcastResult(null);
+
+    try {
+      const res = await sendBroadcastNotification({
+        title: broadcastTitle.trim(),
+        body: broadcastBody.trim(),
+        url: broadcastUrl.trim() || '/jadwal-kajian',
+      });
+
+      setBroadcastResult(res);
+
+      if (res.success) {
+        setBroadcastTitle('');
+        setBroadcastBody('');
+        setBroadcastUrl('/jadwal-kajian');
+        if (typeof res.activeSubscribers === 'number') {
+          setCurrentPushStats((prev: PushSubscriberStats) => ({
+            ...prev,
+            activeSubscribers: res.activeSubscribers ?? prev.activeSubscribers,
+          }));
+        }
+      }
+    } catch (err: unknown) {
+      setBroadcastResult({
+        success: false,
+        error: err instanceof Error ? err.message : 'Terjadi kegagalan koneksi sistem saat mengirim siaran notifikasi.',
+      });
+    } finally {
+      setIsSendingBroadcast(false);
+    }
   };
 
   const handleSaveSettings = async (e: React.FormEvent) => {
@@ -314,6 +399,18 @@ export function AdminDashboardTabs({
         >
           <Settings className="w-4 h-4" />
           <span>Pengaturan Sistem</span>
+        </button>
+
+        <button
+          onClick={() => handleTabChange('broadcast')}
+          className={`flex items-center gap-2 px-5 py-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
+            activeTab === 'broadcast'
+              ? 'border-[#093c96] text-[#093c96] dark:border-blue-400 dark:text-blue-400'
+              : 'border-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+          }`}
+        >
+          <BellRing className="w-4 h-4" />
+          <span>Broadcast Notifikasi ({currentPushStats.activeSubscribers})</span>
         </button>
       </div>
 
@@ -1243,6 +1340,317 @@ export function AdminDashboardTabs({
                 <p className="text-[10px] font-mono text-slate-400 truncate">
                   api.indexnow.org
                 </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 6: Siaran Notifikasi Web Push ke Seluruh Jamaah (PWA Native Push) */}
+      {/* ========================================================================= */}
+      {activeTab === 'broadcast' && (
+        <div className="space-y-6">
+          {/* Header & Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Kartu 1: Jumlah Subscriber Aktif */}
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
+              <div className="p-3.5 rounded-xl bg-blue-50 text-[#093c96] dark:bg-blue-950/60 dark:text-blue-400">
+                <BellRing className="w-6 h-6" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    Pelanggan Aktif
+                  </p>
+                  <span className="flex h-2 w-2 relative">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                </div>
+                <h3 className="text-2xl font-bold text-slate-900 dark:text-white mt-0.5">
+                  {currentPushStats.activeSubscribers}
+                  <span className="text-xs font-normal text-slate-400 ml-1.5">perangkat</span>
+                </h3>
+              </div>
+            </div>
+
+            {/* Kartu 2: Standar Pengiriman W3C Push */}
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
+              <div className="p-3.5 rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
+                <ShieldCheck className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Protokol Keamanan
+                </p>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">
+                  VAPID RFC 8292
+                </h3>
+                <p className="text-[11px] text-slate-400">Terenkripsi WebPush</p>
+              </div>
+            </div>
+
+            {/* Kartu 3: Target Interaksi Default */}
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
+              <div className="p-3.5 rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400">
+                <Smartphone className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Kanal Siaran
+                </p>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">
+                  Native Service Worker
+                </h3>
+                <p className="text-[11px] text-slate-400">Android, Windows & iOS PWA</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Form Siaran & Mockup Pratinjau Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            {/* Kolom Kiri (7 Kolom): Formulir Siaran Notifikasi */}
+            <div className="lg:col-span-7 bg-white dark:bg-slate-900 rounded-3xl p-6 md:p-8 border border-slate-200 dark:border-slate-800 shadow-sm">
+              <div className="flex items-center gap-3 pb-5 mb-6 border-b border-slate-200 dark:border-slate-800">
+                <div className="p-2.5 rounded-xl bg-[#093c96]/10 text-[#093c96] dark:bg-blue-950/60 dark:text-blue-400">
+                  <Send className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                    Formulir Broadcast Pesan
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Pesan akan dikirimkan secara serentak ke semua subscriber Banten Mengaji.
+                  </p>
+                </div>
+              </div>
+
+              {/* Status Alert (Sukses / Gagal) */}
+              {broadcastResult && (
+                <div
+                  className={`mb-6 p-4 rounded-2xl border text-xs flex items-start gap-3 ${
+                    broadcastResult.success
+                      ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300'
+                      : 'bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-800 text-red-800 dark:text-red-300'
+                  }`}
+                >
+                  {broadcastResult.success ? (
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                  ) : (
+                    <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
+                  )}
+                  <div className="space-y-1">
+                    <p className="font-semibold">
+                      {broadcastResult.message || (broadcastResult.success ? 'Siaran berhasil diproses.' : 'Gagal mengirim siaran.')}
+                    </p>
+                    {broadcastResult.error && (
+                      <p className="text-[11px] opacity-90">{broadcastResult.error}</p>
+                    )}
+                    {broadcastResult.success && typeof broadcastResult.sentCount === 'number' && (
+                      <div className="flex flex-wrap gap-2 pt-1 text-[11px]">
+                        <span className="px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 font-medium">
+                          Terkirim: {broadcastResult.sentCount}
+                        </span>
+                        {Number(broadcastResult.failedCount) > 0 && (
+                          <span className="px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200 font-medium">
+                            Dibersihkan (Expired): {broadcastResult.failedCount}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <form onSubmit={handleSendBroadcast} className="space-y-5">
+                {/* 1. Judul Notifikasi */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                      Judul Notifikasi <span className="text-red-500">*</span>
+                    </label>
+                    <span className={`text-[11px] font-mono ${broadcastTitle.length > 50 ? 'text-amber-600 dark:text-amber-400 font-semibold' : 'text-slate-400'}`}>
+                      {broadcastTitle.length}/60 disarankan
+                    </span>
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    maxLength={100}
+                    value={broadcastTitle}
+                    onChange={(e) => setBroadcastTitle(e.target.value)}
+                    placeholder="Contoh: Kajian Spesial Akhir Pekan di Serang"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-3.5 text-sm text-slate-900 focus:border-[#093c96] focus:bg-white focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:bg-slate-900 transition-colors"
+                  />
+                  <p className="mt-1 text-[11px] text-slate-400">
+                    Gunakan kalimat singkat yang memuat tema atau nama ustadz.
+                  </p>
+                </div>
+
+                {/* 2. Isi Pesan Notifikasi */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                      Isi Pesan Notifikasi <span className="text-red-500">*</span>
+                    </label>
+                    <span className={`text-[11px] font-mono ${broadcastBody.length > 140 ? 'text-amber-600 dark:text-amber-400 font-semibold' : 'text-slate-400'}`}>
+                      {broadcastBody.length}/150 disarankan
+                    </span>
+                  </div>
+                  <textarea
+                    required
+                    rows={4}
+                    maxLength={250}
+                    value={broadcastBody}
+                    onChange={(e) => setBroadcastBody(e.target.value)}
+                    placeholder="Contoh: Hadirilah kajian bersama Ustadz Abu Usamah, Lc. membahas Kitab Tauhid. Ba'da Ashar di Masjid Raudhatul Jannah, Kramatwatu. Siapkan infaq terbaik..."
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-3.5 text-sm text-slate-900 focus:border-[#093c96] focus:bg-white focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:bg-slate-900 transition-colors leading-relaxed"
+                  />
+                  <p className="mt-1 text-[11px] text-slate-400">
+                    Sertakan waktu dan nama masjid agar jamaah mudah mengingat rincian acara.
+                  </p>
+                </div>
+
+                {/* 3. URL Target (Saat Notifikasi Diklik) */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                    Tautan Target (Buka saat Notifikasi Diklik)
+                  </label>
+                  <input
+                    type="text"
+                    value={broadcastUrl}
+                    onChange={(e) => setBroadcastUrl(e.target.value)}
+                    placeholder="/jadwal-kajian atau https://..."
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-3.5 text-sm text-slate-900 focus:border-[#093c96] focus:bg-white focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:bg-slate-900 font-mono transition-colors"
+                  />
+                  {/* Preset Buttons */}
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                    <span className="text-[10px] font-semibold text-slate-400 mr-1">Rute Cepat:</span>
+                    <button
+                      type="button"
+                      onClick={() => setBroadcastUrl('/jadwal-kajian')}
+                      className="px-2 py-0.5 text-[11px] rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
+                    >
+                      /jadwal-kajian
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBroadcastUrl('/arsip-video')}
+                      className="px-2 py-0.5 text-[11px] rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
+                    >
+                      /arsip-video
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBroadcastUrl('/panduan-dkm')}
+                      className="px-2 py-0.5 text-[11px] rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
+                    >
+                      /panduan-dkm
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBroadcastUrl('/')}
+                      className="px-2 py-0.5 text-[11px] rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
+                    >
+                      Beranda (/)
+                    </button>
+                  </div>
+                </div>
+
+                {/* Tombol Eksekusi Siaran */}
+                <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                  <p className="text-[11px] text-slate-400">
+                    Target: <strong className="text-slate-700 dark:text-slate-300">{currentPushStats.activeSubscribers}</strong> penerima
+                  </p>
+                  <button
+                    type="submit"
+                    disabled={isSendingBroadcast}
+                    className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#093c96] hover:bg-blue-800 text-white text-xs font-bold transition-all disabled:opacity-50 cursor-pointer shadow-md shadow-[#093c96]/20 active:scale-[0.98]"
+                  >
+                    {isSendingBroadcast ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Mengirim Notifikasi...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4" />
+                        <span>Kirim Notifikasi ke Semua Jamaah</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* Kolom Kanan (5 Kolom): Live Preview Mockup Notifikasi HP */}
+            <div className="lg:col-span-5 space-y-4">
+              <div className="bg-slate-100 dark:bg-slate-800/60 rounded-3xl p-6 border border-slate-200 dark:border-slate-700 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Smartphone className="w-4 h-4 text-[#093c96] dark:text-blue-400" />
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+                      Live Mobile Preview
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950 text-[#093c96] dark:text-blue-300">
+                    Real-Time
+                  </span>
+                </div>
+
+                {/* Kartu Mockup Notifikasi Smartphone (Modern OS Notification Style) */}
+                <div className="p-4 rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur shadow-lg border border-slate-200 dark:border-slate-800 space-y-3 transition-all">
+                  {/* Top Bar: Icon + App Name + Timestamp */}
+                  <div className="flex items-center justify-between text-[11px]">
+                    <div className="flex items-center gap-2">
+                      <div className="relative w-5 h-5 rounded-md overflow-hidden bg-slate-100 shrink-0">
+                        <Image
+                          src="/banten-mengaji.jpeg"
+                          alt="Banten Mengaji"
+                          width={20}
+                          height={20}
+                          className="object-cover"
+                        />
+                      </div>
+                      <span className="font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300 text-[10px]">
+                        BANTEN MENGAJI
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-slate-400">Baru saja</span>
+                  </div>
+
+                  {/* Body: Title + Description */}
+                  <div className="space-y-1">
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-white leading-snug break-words">
+                      {broadcastTitle.trim() || 'Judul Notifikasi Muncul Di Sini'}
+                    </h4>
+                    <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed break-words line-clamp-3">
+                      {broadcastBody.trim() || 'Isi pesan siaran yang Anda tuliskan akan muncul di bagian ini secara real-time menyerupai tampilan notifikasi pada smartphone jamaah...'}
+                    </p>
+                  </div>
+
+                  {/* Bottom: Action Badge */}
+                  <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[10px] text-slate-400">
+                    <span className="font-mono truncate max-w-[180px] text-[#093c96] dark:text-blue-400">
+                      {broadcastUrl.trim() || '/jadwal-kajian'}
+                    </span>
+                    <span className="text-slate-500">Ketuk untuk membuka</span>
+                  </div>
+                </div>
+
+                {/* Petunjuk Teknis untuk Admin */}
+                <div className="p-3.5 rounded-xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/50 space-y-1.5 text-[11px] text-slate-600 dark:text-slate-400">
+                  <div className="flex items-center gap-1.5 font-bold text-[#093c96] dark:text-blue-400">
+                    <Sparkles className="w-3.5 h-3.5 text-[#C5A059]" />
+                    <span>Panduan Siaran Efektif</span>
+                  </div>
+                  <ul className="list-disc list-inside space-y-1 text-[10.5px] leading-relaxed">
+                    <li>Notifikasi tampil pada Notification Shade Android, Windows, macOS, & iOS PWA.</li>
+                    <li>Sertakan info waktu (misal: Ba&apos;da Maghrib) dan nama masjid dengan jelas.</li>
+                    <li>Endpoint yang sudah tidak aktif (HTTP 410/404) akan dibersihkan secara otomatis.</li>
+                  </ul>
+                </div>
               </div>
             </div>
           </div>

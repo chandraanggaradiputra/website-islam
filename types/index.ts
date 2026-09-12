@@ -1,6 +1,7 @@
 // types/index.ts
 
 export * from './prayer';
+export * from './push';
 import { KotaKabupatenBanten } from '@/lib/constants/bantenRegions';
 
 export type UserRole = 'admin' | 'dkm';
@@ -225,4 +226,7 @@ export const DEFAULT_SYSTEM_SETTINGS: SystemSettings = {
   donasiBankSecondaryName: 'Bank Aladin Syariah',
   donasiAccountSecondaryNumber: '50661906210',
   donasiAccountSecondaryHolder: 'Chandra Anggara Diputra',
-};
+};
+
+// Re-export tipe push notification
+export * from './push';
