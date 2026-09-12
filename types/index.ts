@@ -135,6 +135,7 @@ export interface KajianACF {
   jam_selesai?: string; // HH:mm
   status_kajian: StatusKajian;
   link_streaming?: string;
+  catatan_faedah?: string;
 }
 
 export interface WPKajian {

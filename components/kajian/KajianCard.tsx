@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { WPKajian, formatKategoriJamaah } from '@/types';
-import { MapPin, Clock, Calendar, User } from 'lucide-react';
+import { MapPin, Clock, Calendar, User, Video } from 'lucide-react';
+import { isKajianExpired } from '@/lib/kajian';
 
 export function KajianCard({ kajian }: { kajian: WPKajian }) {
   const { title, acf, slug, masjid_detail, masjid_name } = kajian;
@@ -10,6 +11,10 @@ export function KajianCard({ kajian }: { kajian: WPKajian }) {
 
   const isRutin = acf?.jenis_kajian === 'rutin';
   
+  // Deteksi status selesai / lampau untuk penandaan kartu arsip
+  const isSelesai = acf?.status_kajian === 'selesai' || isKajianExpired(acf?.tanggal_kajian, acf?.jam_selesai, acf?.jam_mulai);
+  const hasRecording = Boolean(acf?.link_streaming && acf.link_streaming.trim() !== '');
+
   // Format tanggal jika ada tanpa menyebabkan hydration mismatch (hindari toLocaleDateString bawaan)
   let tanggalDisplay = '';
   if (acf?.tanggal_kajian) {
@@ -38,22 +43,39 @@ export function KajianCard({ kajian }: { kajian: WPKajian }) {
       )}
       <div className="p-5 flex-grow">
         <div className="flex flex-wrap items-center gap-2 mb-3">
-          <span className={`text-xs font-semibold px-2 py-1 rounded-md ${isRutin ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'}`}>
-            {isRutin ? 'Kajian Rutin' : 'Kajian Tematik'}
-          </span>
+          {/* Badge Status Kajian Mendatang vs Arsip Selesai */}
+          {isSelesai ? (
+            hasRecording ? (
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-md bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                <Video className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>Selesai - Rekaman Tersedia</span>
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-md bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                <span>Kajian Selesai</span>
+                {tanggalDisplay && <span className="opacity-75">({tanggalDisplay})</span>}
+              </span>
+            )
+          ) : (
+            <span className={`text-xs font-semibold px-2 py-1 rounded-md ${isRutin ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'}`}>
+              {isRutin ? 'Kajian Rutin' : 'Kajian Tematik'}
+            </span>
+          )}
+
           {acf?.kategori_jamaah && (
             <span className="text-xs font-semibold px-2 py-1 rounded-md bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
               {formatKategoriJamaah(acf.kategori_jamaah)}
             </span>
           )}
-          {acf?.status_kajian === 'libur' && (
+
+          {!isSelesai && acf?.status_kajian === 'libur' && (
             <span className="text-xs font-extrabold px-2.5 py-1 rounded-md bg-red-600 text-white uppercase tracking-wider">
               DILIBURKAN
             </span>
           )}
         </div>
 
-        {acf?.status_kajian === 'libur' && (
+        {!isSelesai && acf?.status_kajian === 'libur' && (
           <div className="mb-3 px-3 py-2 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 rounded-lg text-xs text-red-700 dark:text-red-300 font-medium">
             Kajian pekan ini diliburkan (misal karena pemateri udzur).
           </div>
@@ -96,7 +118,7 @@ export function KajianCard({ kajian }: { kajian: WPKajian }) {
           href={`/jadwal-kajian/${slug}`}
           className="block w-full text-center text-sm font-semibold text-[#093c96] hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
         >
-          Lihat Detail Lengkap
+          {isSelesai && hasRecording ? 'Tonton Rekaman & Faedah' : 'Lihat Detail Lengkap'}
         </Link>
       </div>
     </div>

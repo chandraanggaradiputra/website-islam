@@ -1,6 +1,19 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
-import { UserPlus, ShieldCheck, MailCheck, Mic, Globe, MessageCircle } from 'lucide-react';
+import {
+  UserPlus,
+  ShieldCheck,
+  MailCheck,
+  Mic,
+  Globe,
+  MessageCircle,
+  Smartphone,
+  Video,
+  Share2,
+  CheckCircle2,
+  Sparkles,
+  PlayCircle
+} from 'lucide-react';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { getPanduanDkmJsonLd } from '@/lib/schema';
 
@@ -103,6 +116,132 @@ export default function PanduanDKMPage() {
               </div>
             </div>
 
+          </div>
+        </div>
+
+        {/* Modul Panduan Tambahan: PWA & Arsip Video */}
+        <div className="space-y-8">
+          {/* Kartu 1: Panduan Instalasi PWA (Android & iOS) */}
+          <div className="bg-white dark:bg-surface-darkCard shadow-sm rounded-2xl p-6 sm:p-10 border border-slate-200/60 dark:border-slate-800">
+            <div className="flex items-start gap-4 mb-6">
+              <div className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/40 text-[#093c96] dark:text-blue-400 flex items-center justify-center shrink-0">
+                <Smartphone className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-[#093c96]/10 text-[#093c96] dark:bg-blue-900/40 dark:text-blue-300">
+                  Fitur Aplikasi
+                </span>
+                <h2 className="text-2xl font-bold font-slab text-slate-900 dark:text-white mt-1">
+                  Panduan Pasang Aplikasi (PWA Banten Mengaji)
+                </h2>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
+                  Akses informasi kajian dan jadwal sholat tanpa repot membuka browser setiap kali. Aplikasi PWA ini sangat ringan, responsif, dan hemat kuota.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6 mt-6 pt-6 border-t border-slate-100 dark:border-slate-800">
+              {/* Petunjuk Android (Chrome) */}
+              <div className="p-5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800 space-y-3">
+                <div className="flex items-center gap-2 font-bold text-slate-900 dark:text-white">
+                  <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 flex items-center justify-center text-xs">
+                    1
+                  </span>
+                  <h3>Pengguna Android (Google Chrome)</h3>
+                </div>
+                <ol className="space-y-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400 pl-4 list-decimal leading-relaxed">
+                  <li>Buka website <span className="font-semibold text-slate-800 dark:text-slate-200">bantenmengaji.id</span> di Google Chrome.</li>
+                  <li>Tunggu banner instalasi muncul di bilah bawah layar, lalu ketuk tombol <span className="font-semibold text-[#093c96] dark:text-blue-400">"Pasang Sekarang"</span>.</li>
+                  <li>Atau ketuk menu titik tiga (<span className="font-semibold">⋮</span>) di kanan atas, lalu pilih <span className="font-semibold text-slate-800 dark:text-slate-200">"Tambahkan ke Layar Utama"</span> / <span className="font-semibold text-slate-800 dark:text-slate-200">"Instal Aplikasi"</span>.</li>
+                  <li>Ikon aplikasi Banten Mengaji siap digunakan langsung dari layar utama handphone Anda.</li>
+                </ol>
+              </div>
+
+              {/* Petunjuk iOS (Safari) */}
+              <div className="p-5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800 space-y-3">
+                <div className="flex items-center gap-2 font-bold text-slate-900 dark:text-white">
+                  <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300 flex items-center justify-center text-xs">
+                    2
+                  </span>
+                  <h3>Pengguna iPhone & iPad (Safari)</h3>
+                </div>
+                <ol className="space-y-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400 pl-4 list-decimal leading-relaxed">
+                  <li>Buka website <span className="font-semibold text-slate-800 dark:text-slate-200">bantenmengaji.id</span> menggunakan peramban resmi <span className="font-semibold">Safari</span>.</li>
+                  <li>Ketuk tombol <span className="font-semibold text-slate-800 dark:text-slate-200">Bagikan (Share)</span> (ikon kotak berpanah ke atas <Share2 className="w-3.5 h-3.5 inline text-blue-600" />) di bilah bawah.</li>
+                  <li>Gulir menu ke bawah lalu pilih opsi <span className="font-semibold text-[#093c96] dark:text-blue-400">"Tambahkan ke Layar Utama" (Add to Home Screen)</span>.</li>
+                  <li>Ketuk tombol <span className="font-semibold text-slate-800 dark:text-slate-200">"Tambah"</span> di pojok kanan atas untuk menyelesaikan pemasangan.</li>
+                </ol>
+              </div>
+            </div>
+
+            <div className="mt-6 p-4 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 text-xs text-amber-900 dark:text-amber-200 flex items-center gap-3">
+              <Sparkles className="w-5 h-5 text-[#C5A059] shrink-0" />
+              <span>
+                <strong>Keunggulan PWA:</strong> Tidak membebani memori smartphone, tidak perlu update manual lewat toko aplikasi, dan memuat jadwal kajian secara instan.
+              </span>
+            </div>
+          </div>
+
+          {/* Kartu 2: Panduan Menyematkan Rekaman Kajian (Untuk Pengurus DKM) */}
+          <div className="bg-white dark:bg-surface-darkCard shadow-sm rounded-2xl p-6 sm:p-10 border border-slate-200/60 dark:border-slate-800">
+            <div className="flex items-start gap-4 mb-6">
+              <div className="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-900/40 text-[#8f702f] dark:text-[#E8C27A] flex items-center justify-center shrink-0">
+                <Video className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-[#C5A059]/15 text-[#8f702f] dark:text-[#E8C27A] border border-[#C5A059]/30">
+                  Untuk Pengurus DKM
+                </span>
+                <h2 className="text-2xl font-bold font-slab text-slate-900 dark:text-white mt-1">
+                  Panduan Menyematkan Rekaman Kajian (YouTube)
+                </h2>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
+                  Jadikan kajian di masjid Anda sebagai arsip ilmu yang terus mengalirkan pahala jariyah dengan menyematkan video rekaman YouTube.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6 pt-6 border-t border-slate-100 dark:border-slate-800">
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800 space-y-2">
+                <div className="w-8 h-8 rounded-lg bg-[#093c96] text-white flex items-center justify-center font-bold text-sm">
+                  1
+                </div>
+                <h3 className="font-bold text-sm text-slate-900 dark:text-white">Salin Link Video</h3>
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                  Salin tautan rekaman atau siaran langsung dari channel YouTube masjid Anda (bisa link biasa, live, atau shorts).
+                </p>
+              </div>
+
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800 space-y-2">
+                <div className="w-8 h-8 rounded-lg bg-[#093c96] text-white flex items-center justify-center font-bold text-sm">
+                  2
+                </div>
+                <h3 className="font-bold text-sm text-slate-900 dark:text-white">Buka Dasbor DKM</h3>
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                  Masuk ke <Link href="/dashboard/dkm" className="text-[#093c96] dark:text-blue-400 font-semibold hover:underline">/dashboard/dkm</Link>, lalu pilih jadwal kajian yang telah selesai dilaksanakan dan klik tombol Edit.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800 space-y-2">
+                <div className="w-8 h-8 rounded-lg bg-[#093c96] text-white flex items-center justify-center font-bold text-sm">
+                  3
+                </div>
+                <h3 className="font-bold text-sm text-slate-900 dark:text-white">Tempel Link & Faedah</h3>
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                  Tempel URL YouTube pada kolom <em>Link Streaming / Rekaman</em>, dan ketik poin-poin mutiara faedah pada kolom Catatan.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800 space-y-2">
+                <div className="w-8 h-8 rounded-lg bg-[#093c96] text-white flex items-center justify-center font-bold text-sm">
+                  4
+                </div>
+                <h3 className="font-bold text-sm text-slate-900 dark:text-white">Otomatis Terarsip</h3>
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                  Simpan perubahan. Jadwal otomatis berpindah ke tab <strong>Arsip & Rekaman</strong> dengan badge hijau serta pemutar video aktif.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
 

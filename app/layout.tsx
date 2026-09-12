@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Footer } from "@/components/layout/Footer";
@@ -7,6 +7,7 @@ import { Header } from '@/components/layout/Header';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { getWebSiteJsonLd } from '@/lib/schema';
+import { PwaHandler } from '@/components/pwa/PwaHandler';
 import clsx from 'clsx';
 
 const geistSans = Geist({
@@ -19,6 +20,10 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+export const viewport: Viewport = {
+  themeColor: '#093c96',
+};
+
 export const metadata: Metadata = {
   title: {
     default: "Banten Mengaji | Direktori Masjid & Jadwal Kajian Sunnah Banten",
@@ -26,10 +31,16 @@ export const metadata: Metadata = {
   },
   description: "Pusat informasi jadwal kajian Islam ilmiah bermanhaj Salafus Shalih dan direktori masjid di seluruh Provinsi Banten.",
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://maschandigital.id'),
+  manifest: '/manifest.webmanifest',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Banten Mengaji',
+  },
   icons: {
-    icon: '/banten-mengaji.jpeg',
-    shortcut: '/banten-mengaji.jpeg',
-    apple: '/banten-mengaji.jpeg',
+    icon: '/icon-192.png',
+    shortcut: '/icon-192.png',
+    apple: '/icon-192.png',
   },
   verification: {
     google: 'mdKrf2CGmVDCr4rmjjEzuIZ1Vr1RVbqgo-Js5ukYfbM',
@@ -54,6 +65,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </main>
           <BottomNav />
           <Footer />
+          <PwaHandler />
         </ThemeProvider>
       </body>
     </html>

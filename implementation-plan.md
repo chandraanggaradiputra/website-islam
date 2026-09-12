@@ -1,138 +1,121 @@
-# Rencana Implementasi: Modul Kelola DKM Masjid & Pengaturan Sistem di Dashboard Admin
+# Rencana Implementasi: PWA Native, Arsip Rekaman Video Kajian, & Pembaruan Panduan DKM
 
 Branch Target: `staging-website-islam`
 
 ## 1. Ringkasan & Ruang Lingkup Perubahan
-Tugas ini mengimplementasikan dua modul baru pada Dasbor Super Admin untuk menggantikan placeholder ber-badge "Segera", sehingga Super Admin memiliki kendali penuh atas manajemen pengurus DKM dan konfigurasi pusat sistem:
+Tugas ini mengimplementasikan tiga rangkaian fitur utama pada portal Banten Mengaji:
 
-1. **Modul Kelola DKM Masjid (Tab ke-4: `?tab=pengguna`)**:
-   - Mengambil daftar seluruh pengurus DKM terdaftar (role `author` di WordPress REST API).
-   - Menghubungkan setiap akun DKM dengan masjid binaan yang dikelolanya (`masjid.author === user.id`).
-   - Menyediakan aksi cepat:
-     - **Hubungi WhatsApp**: Tautan langsung ke WhatsApp pengurus DKM dengan pesan salam otomatis.
-     - **Reset Password**: Modal interaktif untuk mereset kata sandi akun DKM langsung ke REST API WordPress tanpa perlu membuka WP-Admin.
-2. **Modul Pengaturan Sistem (Tab ke-5: `?tab=pengaturan`)**:
-   - Antarmuka komprehensif untuk mengelola parameter pusat:
-     - **Kontak Dukungan DKM**: Nomor WhatsApp Admin (`0822-9814-8474`) dan Email Notifikasi (`admin@maschandigital.id`).
-     - **Rekening Infaq & Donasi Portal**: Informasi perbankan resmi (BSI & Aladin Syariah) sebagai rujukan operasional dakwah.
-     - **Status Integrasi API**: Pemantauan visual status 4 integrasi pihak ketiga (WordPress REST API, Mailketing API, EQuran.id, IndexNow Protocol).
-3. **Pembaruan Navigasi Sidebar Desktop (`DashboardSidebar.tsx`)**:
-   - Menghilangkan badge "Segera" pada menu `Kelola Pengguna` (diarahkan ke `/dashboard/admin?tab=pengguna`).
-   - Menghilangkan badge "Segera" pada menu `Pengaturan Sistem` (diarahkan ke `/dashboard/admin?tab=pengaturan`).
-4. **Server Actions Baru (`lib/actions/admin.ts`)**:
-   - `getDKMUsersList()`: Mengambil dan memperkaya data pengguna DKM dengan masjid binaan dan kontak WhatsApp.
-   - `resetDKMUserPassword(userId, newPassword)`: Memperbarui kata sandi akun WordPress DKM secara aman.
-   - `getSystemSettings()` & `updateSystemSettings(settings)`: Membaca dan menyimpan konfigurasi pengaturan pusat ke berkas persisten JSON.
-5. **Verifikasi & Alur Git**:
+1. **Implementasi PWA Resmi (Progressive Web App)**:
+   - **`app/manifest.ts`**: Manifes native Next.js Metadata Route yang mendefinisikan identitas PWA (`Banten Mengaji`), palet warna (`#093c96`), ikon, dan mode `standalone`.
+   - **`public/sw.js`**: Service worker minimalis dengan strategi caching network-first untuk aset statis dan offline handling.
+   - **`components/pwa/PwaHandler.tsx`**: Komponen client untuk mendaftarkan service worker, menangkap event `beforeinstallprompt` (Chrome/Android), menampilkan prompt instalasi elegan, dan menyediakan petunjuk instalasi untuk iPhone/iPad (iOS Safari).
+   - **`app/layout.tsx`**: Pemasangan `<PwaHandler />` dan penambahan metadata PWA (`themeColor`, `apple-touch-icon`).
+
+2. **Fitur Arsip Faedah & Rekaman Kajian Banten**:
+   - **`lib/utils/youtube.ts`**: Helper parser URL YouTube untuk mengekstrak Video ID dari berbagai variasi URL (`watch?v=`, `youtu.be/`, `live/`, `embed/`) dan menghasilkan embed URL privasi-ramah (`youtube-nocookie.com/embed/`).
+   - **`app/jadwal-kajian/page.tsx` & `components/kajian/KajianFilter.tsx`**:
+     - Membawa seluruh data kajian (`allKajian`) ke filter tanpa memotong kajian yang telah selesai.
+     - Menambahkan tab pemisah:
+       * **Tab 1: Kajian Mendatang**: Menampilkan kajian berstatus aktif/libur yang belum lewat waktu (`!isKajianExpired(...)`).
+       * **Tab 2: Arsip & Rekaman Kajian**: Menampilkan kajian yang telah selesai (`isKajianExpired(...) === true` atau `status_kajian === 'selesai'`).
+     - Pada kartu kajian arsip (`components/kajian/KajianCard.tsx`), menampilkan badge `Selesai - Rekaman Tersedia` (jika ada `link_streaming`) atau `Kajian Selesai` beserta tanggal pelaksanaan.
+   - **`app/jadwal-kajian/[slug]/page.tsx`**:
+     - Jika kajian berstatus selesai/kedaluwarsa:
+       * Menggantikan tombol Google Calendar dengan banner informasi pelaksanaan kajian.
+       * Jika memiliki `link_streaming`, menyematkan pemutar video responsif YouTube (`aspect-video rounded-2xl`).
+       * Menampilkan blok "Catatan & Ringkasan Faedah Kajian".
+     - Jika belum selesai: Menampilkan tombol kalender dan rute masjid normal.
+
+3. **Pembaruan Halaman Panduan DKM (`app/panduan-dkm/page.tsx`)**:
+   - Menambahkan 2 kartu panduan baru:
+     * **Panduan Pasang Aplikasi (PWA)**: Petunjuk praktis instalasi untuk pengguna Android (Chrome) dan iPhone (iOS Safari).
+     * **Panduan Menyematkan Rekaman Kajian (Untuk DKM)**: Panduan langkah memasukkan link rekaman/live YouTube ke dalam postingan kajian agar menjadi arsip faedah abadi.
+
+4. **Verifikasi & Alur Git**:
    - Pengujian `npx tsc --noEmit` dan `npm run build`.
-   - Commit dan merge `staging-website-islam` ke `main`, lalu push ke remote GitHub `origin`.
+   - Commit pada `staging-website-islam`, merge ke `main`, dan push ke GitHub `origin main`.
 
 ---
 
 ## 2. Rincian Perubahan Berkas
 
-### A. Tipe Data Baru
-#### [MODIFY] [types/index.ts](file:///C:/website-islam/types/index.ts)
-- Tambahkan antarmuka:
-  ```typescript
-  export interface DKMUserItem {
-    id: number;
-    name: string;
-    email: string;
-    username: string;
-    phone?: string;
-    masjidId?: number;
-    masjidName?: string;
-    kecamatanName?: string;
-    registeredDate: string;
-  }
+### A. Komponen & Konfigurasi PWA
+#### [NEW] [app/manifest.ts](file:///C:/website-islam/app/manifest.ts)
+- Generator manifest Next.js yang mengembalikan metadata PWA: nama, tema `#093c96`, icons, `display: 'standalone'`.
 
-  export interface SystemSettings {
-    whatsappAdmin: string;
-    emailAdmin: string;
-    donasiBankName: string;
-    donasiAccountNumber: string;
-    donasiAccountHolder: string;
-    donasiBankSecondaryName?: string;
-    donasiAccountSecondaryNumber?: string;
-    donasiAccountSecondaryHolder?: string;
-  }
-  ```
+#### [NEW] [public/sw.js](file:///C:/website-islam/public/sw.js)
+- Service Worker untuk caching aset statis dengan penanganan fetch network-first dan pembersihan cache lama saat aktivasi.
+
+#### [NEW] [components/pwa/PwaHandler.tsx](file:///C:/website-islam/components/pwa/PwaHandler.tsx)
+- Komponen client mendaftarkan `/sw.js`.
+- Mendeteksi `beforeinstallprompt` untuk Android/Chrome dan memicu banner install ramah.
+- Mendeteksi iOS Safari dan menampilkan petunjuk "Share -> Add to Home Screen".
+- Menyimpan status dismiss di `sessionStorage` agar tidak mengganggu pengguna.
+
+#### [MODIFY] [app/layout.tsx](file:///C:/website-islam/app/layout.tsx)
+- Impor dan pasang `<PwaHandler />`.
+- Tambahkan properti PWA pada metadata (`manifest`, `appleWebApp`).
 
 ---
 
-### B. Server Actions Administrasi Baru
-#### [NEW] [lib/actions/admin.ts](file:///C:/website-islam/lib/actions/admin.ts)
-- **`getDKMUsersList()`**:
-  - Validasi sesi Super Admin.
-  - Memanggil `GET /wp-json/wp/v2/users?per_page=100&context=edit` dengan `Authorization: getWPAdminAuthHeader()`.
-  - Filter pengguna ber-role `author`.
-  - Menggabungkan data dengan `getMasjidList()` (mencocokkan `m.author === u.id`) dan nomor kontak WhatsApp dari metadata registrasi/masjid.
-- **`resetDKMUserPassword(userId: number, newPassword: string)`**:
-  - Validasi sesi Super Admin dan panjang minimal password (>= 6 karakter).
-  - Memanggil `POST /wp-json/wp/v2/users/${userId}` dengan payload `{ password: newPassword }`.
-  - Revalidasi path `/dashboard/admin`.
-- **`getSystemSettings()`**:
-  - Membaca konfigurasi dari `data/system-settings.json` dengan fallback ke `DEFAULT_SYSTEM_SETTINGS`.
-- **`updateSystemSettings(settings: SystemSettings)`**:
-  - Menyimpan payload ke `data/system-settings.json`.
-  - Revalidasi path `/dashboard/admin` dan `/donasi`.
+### B. Helper & Modul Arsip Rekaman Video Kajian
+#### [NEW] [lib/utils/youtube.ts](file:///C:/website-islam/lib/utils/youtube.ts)
+- `getYouTubeVideoId(url)`: regex parser untuk berbagai format URL YouTube.
+- `getYouTubeEmbedUrl(url)`: mengembalikan URL embed `https://www.youtube-nocookie.com/embed/${videoId}`.
+
+#### [MODIFY] [components/kajian/KajianCard.tsx](file:///C:/website-islam/components/kajian/KajianCard.tsx)
+- Deteksi status selesai / expired.
+- Jika selesai dan memiliki rekaman: render badge hijau `Selesai - Rekaman Tersedia` dengan ikon Video.
+- Jika selesai tanpa rekaman: render badge abu-abu `Kajian Selesai`.
+
+#### [MODIFY] [components/kajian/KajianFilter.tsx](file:///C:/website-islam/components/kajian/KajianFilter.tsx)
+- Tambahkan tab navigasi: **Kajian Mendatang** vs **Arsip & Rekaman Kajian**.
+- Kelompokkan data kajian sesuai masa berlaku (`!isKajianExpired` vs `isKajianExpired`).
+- Pertahankan filter wilayah (Kota, Kecamatan, Asatidz) pada kedua tab.
+
+#### [MODIFY] [app/jadwal-kajian/page.tsx](file:///C:/website-islam/app/jadwal-kajian/page.tsx)
+- Teruskan `allKajian` ke `<KajianFilter />` agar tab arsip memiliki akses ke seluruh kajian masa lalu.
+
+#### [MODIFY] [app/jadwal-kajian/[slug]/page.tsx](file:///C:/website-islam/app/jadwal-kajian/[slug]/page.tsx)
+- Cek status expired/selesai.
+- Jika selesai:
+  * Sembunyikan `CalendarButton`, tampilkan banner info kajian selesai.
+  * Tampilkan video player iframe YouTube jika `link_streaming` tersedia.
+  * Tampilkan judul "Catatan & Ringkasan Faedah Kajian".
 
 ---
 
-### C. Pembaruan Tab Dasbor Admin
-#### [MODIFY] [components/dashboard/AdminDashboardTabs.tsx](file:///C:/website-islam/components/dashboard/AdminDashboardTabs.tsx)
-- Perluas tipe `activeTab` mencakup `'pengguna' | 'pengaturan'`.
-- Terima props baru: `dkmUsers: DKMUserItem[]` dan `initialSettings: SystemSettings`.
-- Tambahkan tombol navigasi Tab 4 ("Pengurus DKM") dan Tab 5 ("Pengaturan Sistem").
-- **Konten Tab 4 (Pengurus DKM)**:
-  - Pencarian dinamis (nama pengurus, email, username, nama masjid).
-  - Tabel dan kartu daftar DKM dengan badge masjid binaan beraksen emas `#C5A059`.
-  - Aksi "Hubungi WA" (tautan langsung ke `wa.me`) dan "Reset Password".
-  - Modal Reset Password interaktif dengan fitur generator kata sandi acak dan penanganan loading state.
-- **Konten Tab 5 (Pengaturan Sistem)**:
-  - Formulir Kartu 1: Kontak Resmi & Dukungan.
-  - Formulir Kartu 2: Rekening Donasi Resmi Portal.
-  - Kartu 3: Indikator Status Koneksi API (WordPress, Mailketing, EQuran, IndexNow).
-
----
-
-### D. Pembaruan Server Halaman Dasbor Admin
-#### [MODIFY] [app/dashboard/admin/page.tsx](file:///C:/website-islam/app/dashboard/admin/page.tsx)
-- Panggil `getDKMUsersList()` dan `getSystemSettings()` secara paralel dengan query lainnya.
-- Teruskan `dkmUsers` dan `initialSettings` ke komponen `<AdminDashboardTabs />`.
-
----
-
-### E. Pembaruan Sidebar Navigasi Desktop
-#### [MODIFY] [components/dashboard/DashboardSidebar.tsx](file:///C:/website-islam/components/dashboard/DashboardSidebar.tsx)
-- Ubah menu `Kelola Pengguna` dari placeholder menjadi tautan aktif ke `/dashboard/admin?tab=pengguna`.
-- Ubah menu `Pengaturan Sistem` dari placeholder menjadi tautan aktif ke `/dashboard/admin?tab=pengaturan`.
-- Hilangkan badge "Segera" pada kedua item tersebut.
+### C. Pembaruan Panduan DKM
+#### [MODIFY] [app/panduan-dkm/page.tsx](file:///C:/website-islam/app/panduan-dkm/page.tsx)
+- Tambahkan 2 kartu panduan komprehensif berdesain modern:
+  1. Kartu Panduan Instalasi PWA (Android & iOS Safari).
+  2. Kartu Panduan Publikasi Link Rekaman Video YouTube bagi DKM.
 
 ---
 
 ## 3. Rencana Verifikasi & Pengujian
 1. **Type Checking**:
-   - Jalankan `npx tsc --noEmit` untuk memastikan tidak ada kesalahan tipe data TypeScript.
+   - Jalankan `npx tsc --noEmit` untuk memastikan nol error TypeScript.
 2. **Kompilasi Produksi**:
    - Jalankan `npm run build` untuk memverifikasi Turbopack build berhasil 100%.
-3. **Pengujian Fungsional**:
-   - Verifikasi pengambilan daftar DKM dan pencocokan masjid binaan.
-   - Verifikasi alur Reset Password via modal ke REST API WordPress.
-   - Verifikasi pembaruan dan penyimpanan pengaturan sistem ke file JSON.
-   - Verifikasi tautan navigasi sidebar membuka tab yang tepat.
+3. **Pengujian PWA**:
+   - Verifikasi URL `/manifest.webmanifest` dapat diakses dan mengembalikan JSON valid.
+   - Verifikasi `/sw.js` terdaftar di browser.
+4. **Pengujian Fungsional Video & Arsip**:
+   - Uji helper `getYouTubeEmbedUrl` pada berbagai format URL YouTube.
+   - Verifikasi pergantian tab Kajian Mendatang dan Arsip & Rekaman Kajian.
+   - Verifikasi halaman single kajian saat kajian telah selesai menampilkan pemutar video.
 
 ---
 
-## 4. Alur Git & Dokumentasi (Melibatkan Backend)
-1. Commit seluruh perubahan di branch `staging-website-islam`:
-   `git commit -m "feat(admin): modul kelola dkm masjid dan pengaturan sistem di dasbor admin"`
-2. Merge `staging-website-islam` ke `main`:
+## 4. Alur Git & Dokumentasi
+1. Kerjakan di branch `staging-website-islam`.
+2. Commit: `git commit -m "feat: implementasi pwa native, arsip rekaman video kajian & panduan dkm"`
+3. Merge ke `main`:
    ```bash
    git checkout main
    git merge staging-website-islam
    git push origin main
    git checkout staging-website-islam
    ```
-3. Susun laporan akhir pada berkas `walkthrough.md`.
+4. Dokumentasikan seluruh perubahan pada `walkthrough.md`.

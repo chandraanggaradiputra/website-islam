@@ -8,9 +8,11 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { CalendarButton } from '@/components/kajian/CalendarButton';
 import { ShareButton } from '@/components/ui/ShareButton';
-import { Calendar, MapPin, User, ArrowLeft, Book, AlertCircle } from 'lucide-react';
+import { Calendar, MapPin, User, ArrowLeft, Book, AlertCircle, CheckCircle2, Video } from 'lucide-react';
 import htmlParser from 'html-react-parser';
 import { JsonLd } from '@/components/seo/JsonLd';
+import { isKajianExpired } from '@/lib/kajian';
+import { getYouTubeEmbedUrl } from '@/lib/utils/youtube';
 
 export const revalidate = 60;
 
@@ -93,6 +95,23 @@ export default async function SingleKajianPage({ params }: { params: Promise<{ s
   
   const wktKeterangan = acf?.waktu_keterangan || (acf?.jam_mulai ? `${acf.jam_mulai} - ${acf.jam_selesai || 'Selesai'}` : '');
 
+  // Deteksi status kajian selesai / kedaluwarsa
+  const isSelesai = acf?.status_kajian === 'selesai' || isKajianExpired(acf?.tanggal_kajian, acf?.jam_selesai, acf?.jam_mulai);
+  const youtubeEmbedUrl = getYouTubeEmbedUrl(acf?.link_streaming);
+
+  // Format tanggal untuk banner informasi
+  let tanggalKajianDisplay = '';
+  if (acf?.tanggal_kajian) {
+    const [year, month, day] = acf.tanggal_kajian.split('-');
+    if (year && month && day) {
+      const monthNames = [
+        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+      ];
+      tanggalKajianDisplay = `${parseInt(day, 10)} ${monthNames[parseInt(month, 10) - 1]} ${year}`;
+    }
+  }
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <JsonLd data={kajianSchema} />
@@ -113,14 +132,27 @@ export default async function SingleKajianPage({ params }: { params: Promise<{ s
         )}
 
         <div className="p-6 md:p-8">
-          <div className="flex gap-2 mb-4">
-            <span className={`text-xs font-semibold px-2 py-1 rounded-md ${isRutin ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'}`}>
-              {isRutin ? 'Kajian Rutin' : 'Kajian Tematik'}
-            </span>
+          <div className="flex flex-wrap gap-2 mb-4">
+            {isSelesai ? (
+              youtubeEmbedUrl ? (
+                <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-md bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                  <Video className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <span>Selesai - Rekaman Tersedia</span>
+                </span>
+              ) : (
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                  Kajian Selesai
+                </span>
+              )
+            ) : (
+              <span className={`text-xs font-semibold px-2 py-1 rounded-md ${isRutin ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'}`}>
+                {isRutin ? 'Kajian Rutin' : 'Kajian Tematik'}
+              </span>
+            )}
             <span className="text-xs font-semibold px-2 py-1 rounded-md bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
               {formatKategoriJamaah(acf?.kategori_jamaah)}
             </span>
-            {acf?.status_kajian === 'libur' && (
+            {!isSelesai && acf?.status_kajian === 'libur' && (
               <span className="text-xs font-extrabold px-3 py-1 rounded-md bg-red-600 text-white uppercase tracking-wider">
                 DILIBURKAN
               </span>
@@ -132,7 +164,21 @@ export default async function SingleKajianPage({ params }: { params: Promise<{ s
             )}
           </div>
 
-          {acf?.status_kajian === 'libur' && (
+          {/* Banner Informasi Kajian Selesai */}
+          {isSelesai && (
+            <div className="mb-6 p-4 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 flex items-start gap-3">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+              <div>
+                <h4 className="font-bold text-sm">Kajian Telah Selesai Dilaksanakan</h4>
+                <p className="text-xs mt-0.5 text-slate-600 dark:text-slate-400 leading-relaxed">
+                  Kajian ini telah selesai dilaksanakan {isRutin && acf?.hari_kajian ? `(Rutin ${acf.hari_kajian})` : (tanggalKajianDisplay ? `pada ${tanggalKajianDisplay}` : '')}.
+                  {youtubeEmbedUrl ? ' Rekaman video dan dokumentasi kajian dapat disimak di bawah ini.' : ''}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {!isSelesai && acf?.status_kajian === 'libur' && (
             <div className="mb-6 p-4 rounded-xl bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900 text-red-800 dark:text-red-200 flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
               <div>
@@ -199,16 +245,50 @@ export default async function SingleKajianPage({ params }: { params: Promise<{ s
           </div>
 
           <div className="flex flex-wrap gap-3 mb-8 pb-8 border-b border-slate-200 dark:border-slate-800">
-            <CalendarButton kajian={kajian} masjid={finalMasjid} />
+            {!isSelesai && <CalendarButton kajian={kajian} masjid={finalMasjid} />}
             <ShareButton title={title.rendered} text={`Bersama: ${acf?.nama_ustadz || 'Asatidz'}\nLokasi: ${finalMasjidName}\nWaktu: ${isRutin ? 'Setiap ' + (acf?.hari_kajian || '') : (acf?.tanggal_kajian || '')} jam ${acf?.jam_mulai || ''}`} url="" />
           </div>
 
-          {content.rendered && (
-            <div>
-              <h3 className="font-bold text-lg mb-4">Catatan Tambahan</h3>
-              <div className="prose dark:prose-invert max-w-none prose-sm md:prose-base">
-                {htmlParser(content.rendered)}
+          {/* Pemutar Video Rekaman YouTube */}
+          {isSelesai && youtubeEmbedUrl && (
+            <div className="mb-8">
+              <div className="flex items-center gap-2 mb-2">
+                <Video className="w-5 h-5 text-[#093c96] dark:text-blue-400" />
+                <h3 className="font-bold text-lg text-slate-900 dark:text-white">
+                  Rekaman Video Kajian
+                </h3>
               </div>
+              <p className="text-xs text-slate-600 dark:text-slate-400 mb-4">
+                Mari simak kembali rekaman dokumentasi dan pembahasan faedah ilmu dari kajian ini:
+              </p>
+              <div className="relative w-full aspect-video rounded-2xl overflow-hidden shadow-md border border-slate-200 dark:border-slate-800 bg-black">
+                <iframe
+                  src={youtubeEmbedUrl}
+                  title={`Rekaman Kajian: ${title.rendered}`}
+                  className="w-full h-full border-0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Catatan & Ringkasan Faedah Kajian */}
+          {(content.rendered || acf?.catatan_faedah) && (
+            <div className={isSelesai && youtubeEmbedUrl ? 'mt-8 pt-6 border-t border-slate-200 dark:border-slate-800' : ''}>
+              <h3 className="font-bold text-lg mb-4 text-slate-900 dark:text-white">
+                {isSelesai ? 'Catatan & Ringkasan Faedah Kajian' : 'Catatan Tambahan'}
+              </h3>
+              {acf?.catatan_faedah && (
+                <div className="mb-4 p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/50 text-slate-800 dark:text-slate-200 text-sm leading-relaxed whitespace-pre-line">
+                  {acf.catatan_faedah}
+                </div>
+              )}
+              {content.rendered && (
+                <div className="prose dark:prose-invert max-w-none prose-sm md:prose-base">
+                  {htmlParser(content.rendered)}
+                </div>
+              )}
             </div>
           )}
         </div>
