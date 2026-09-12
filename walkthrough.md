@@ -1,77 +1,82 @@
-# Laporan Implementasi: Refaktor Layout Dasbor Desktop (Flowbite Sidebar) & Harmonisasi Palet Warna #093c96
+# Laporan Implementasi: Modul Kelola DKM Masjid & Pengaturan Sistem di Dasbor Admin
 
-Branch Target: `staging-website-islam`  
-Status: **Selesai & Terverifikasi** (Telah di-push ke remote `origin/staging-website-islam`)
+Branch: `staging-website-islam` -> Merged to `main`  
+Status: **Selesai & Terverifikasi** (Telah digabungkan dan di-push ke GitHub `origin`)
 
 ---
 
 ## 1. Ringkasan Eksekutif
 
-Telah berhasil diselesaikan refaktor komprehensif pada antarmuka navigasi dasbor desktop (*Desktop Dashboard Layout*) dengan mengadopsi standar komponen **Flowbite Default Sidebar**, serta harmonisasi palet warna resmi **Royal Navy Mas Chan Digital** (`#093c96`) dan aksen **Warm Islamic Gold** (`#C5A059`).
-
-Seluruh pekerjaan mematuhi aturan ketat proyek:
-- ✅ **Fase Perencanaan**: Berkas `implementation-plan.md` dibuat dan disetujui sebelum modifikasi kode.
-- ✅ **Komentar Kode Proporsional**: Seluruh fungsi, antarmuka props, state, dan blok UI utama dilengkapi dokumentasi terstruktur untuk kemudahan pemahaman Product Owner.
-- ✅ **Fase Verifikasi**: `npx tsc --noEmit` nol error dan `npm run build` Turbopack lulus 100%.
-- ✅ **Kepatuhan Git Khusus Frontend**: Perubahan di-commit dan di-push **HANYA** ke remote branch `staging-website-islam` (**TIDAK** di-merge ke `main`).
+Telah berhasil diselesaikan implementasi dua modul utama pada Dasbor Super Admin Portal Banten Mengaji untuk menggantikan status placeholder (badge "Segera") menjadi modul aktif dengan kontrol penuh:
+1. **Modul Kelola Pengurus DKM Masjid (Tab ke-4: `?tab=pengguna`)**:
+   - Menampilkan direktori seluruh pengurus DKM aktif (akun pengguna role `author` di WordPress).
+   - Menautkan akun DKM dengan masjid binaan yang dikelolanya lengkap dengan badge wilayah beraksen emas `#C5A059`.
+   - Menyediakan aksi cepat **Hubungi WA** dengan template salam otomatis serta **Reset Password** akun DKM langsung ke WordPress REST API via modal interaktif yang dilengkapi generator sandi acak kuat.
+2. **Modul Pengaturan Sistem (Tab ke-5: `?tab=pengaturan`)**:
+   - Panel konfigurasi terpusat mencakup **Kontak Resmi & Dukungan Admin**, **Nomor Rekening Donasi Resmi** (BSI & Bank Aladin Syariah) yang tersimpan persisten ke berkas JSON, serta pemantauan visual **Status Integrasi Eksternal API** (WordPress, Mailketing CRM, EQuran.id Shalat, IndexNow Protocol).
+3. **Pembaruan Navigasi Sidebar Desktop (`DashboardSidebar.tsx`)**:
+   - Menghilangkan badge "Segera" pada menu `Pengurus DKM` dan `Pengaturan Sistem`.
+   - Mengaktifkan tautan navigasi langsung ke tab masing-masing dengan indikator aktif berpalet `#093c96`.
 
 ---
 
 ## 2. Rincian Perubahan Berkas
 
-### A. Komponen Baru: [components/dashboard/DashboardSidebar.tsx](file:///C:/website-islam/components/dashboard/DashboardSidebar.tsx)
-Komponen client modular (`'use client'`) yang menggantikan implementasi sidebar monolitik lama:
-1. **Pola Desain Flowbite Sidebar**:
-   - Dimensi standar: lebar `w-64` (16rem / 256px), tinggi `h-screen sticky top-0`, `overflow-y-auto`, dan flex layout.
-   - Latar belakang adaptif: `bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800`.
-   - Responsivitas: Tampil eksklusif pada desktop (`hidden md:flex flex-col`), menjaga integritas navigasi mobile yang ada.
-2. **Harmonisasi Palet Warna**:
-   - **Tautan Menu Aktif**: `bg-[#093c96] text-white shadow-sm shadow-[#093c96]/25 font-semibold rounded-xl`.
-   - **Tautan Menu Tidak Aktif**: `text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white rounded-xl transition-all`.
-   - **Aksen Emas Islami (#C5A059)**: Diterapkan pada kartu identitas masjid binaan DKM, badge peran pengurus, dan ikon dekoratif.
-3. **Struktur Konten Modular**:
-   - **Header Brand**: Logo Banten Mengaji dengan efek hover halus dan badge status portal beraksen `#093c96`.
-   - **Kartu Profil Pengguna**: Avatar inisial dengan latar belakang `#093c96`, nama pengguna, email, dan badge peran akun (`Administrator` / `Pengurus DKM`).
-   - **Kartu Masjid Binaan (Khusus DKM)**: Menampilkan nama masjid yang dikelola, nama wilayah/kecamatan dengan ikon `MapPin`, dan badge kepengurusan resmi (`DKM Resmi Terdaftar`).
-   - **Navigasi Menu Dinamis**:
-     - *Role DKM*: Dasbor Ikhtisar (`/dashboard/dkm`), Profil Masjid (`/dashboard/dkm/profil-masjid`), Tambah Jadwal (`/dashboard/dkm/tambah-kajian`), serta badge "Segera" untuk Kegiatan & Infaq.
-     - *Role Admin*: Verifikasi DKM (`/dashboard/admin?tab=dkm`), Kelola Masjid (`/dashboard/admin?tab=masjid`), Kelola Kajian (`/dashboard/admin?tab=kajian`), Tambah Kajian (`/dashboard/admin/tambah-kajian`), serta badge "Segera" untuk Pengguna & Pengaturan.
-   - **Footer Aksi**: Tautan cepat "Lihat Situs Publik" (`/`) dan tombol "Keluar dari Dasbor" yang mengeksekusi Server Action `logout` secara aman.
-4. **Resiliensi Client Suspense**:
-   - Dibungkus dengan `<Suspense fallback={...}>` untuk menjamin keamanan pemanggilan `useSearchParams()` tanpa memicu peringatan SSR Next.js.
+### A. Tipe Data: [types/index.ts](file:///C:/website-islam/types/index.ts)
+- Menambahkan interface `DKMUserItem` untuk representasi data akun pengurus DKM.
+- Menambahkan interface `SystemSettings` dan nilai baku `DEFAULT_SYSTEM_SETTINGS` untuk konfigurasi pusat.
+
+### B. Server Actions Baru: [lib/actions/admin.ts](file:///C:/website-islam/lib/actions/admin.ts)
+- **`getDKMUsersList()`**: Mengambil pengguna role `author` dari WordPress REST API, memadukannya secara paralel dengan data direktori masjid (`getMasjidList()`) dan antrean pendaftaran DKM (`getStoredRegistrations()`) untuk memperoleh nama masjid binaan dan nomor WhatsApp.
+- **`resetDKMUserPassword(userId, newPassword)`**: Memperbarui kata sandi akun pengguna WordPress dengan verifikasi otorisasi Super Admin dan panjang minimal sandi (>= 6 karakter).
+- **`getSystemSettings()`**: Membaca konfigurasi pengaturan pusat dari `data/system-settings.json` dengan fallback ke nilai default.
+- **`updateSystemSettings(settings)`**: Menyimpan konfigurasi baru ke `data/system-settings.json` serta merevalidasi path `/dashboard/admin` dan `/donasi`.
+
+### C. Antarmuka Tab Dasbor: [components/dashboard/AdminDashboardTabs.tsx](file:///C:/website-islam/components/dashboard/AdminDashboardTabs.tsx)
+- Menambahkan Tab ke-4 (`pengguna`) dan Tab ke-5 (`pengaturan`) pada tab bar navigasi.
+- **Tab 4 (Pengurus DKM)**:
+  - Bilah pencarian multi-kriteria (nama, email, username, masjid, wilayah).
+  - Tabel modern: Avatar inisial `#093c96`, kartu profil pengurus, identitas masjid binaan dengan badge emas `#C5A059`, tautan langsung WhatsApp, tanggal bergabung, serta tombol aksi "Reset Password".
+  - Modal `AdminResetPasswordModal`: Formulir kata sandi baru dengan fitur intip sandi (eye toggle) dan generator sandi acak kuat.
+- **Tab 5 (Pengaturan Sistem)**:
+  - Kartu 1: Kontak Resmi WhatsApp Admin & Email Notifikasi Utama.
+  - Kartu 2: Rekening Bank Utama (BSI) & Bank Sekunder (Aladin Syariah) dengan tombol simpan perubahan.
+  - Kartu 3: Indikator status konektivitas 4 API eksternal (WordPress, Mailketing, EQuran, IndexNow) ber-badge hijau aktif.
+
+### D. Server Component Dasbor Admin: [app/dashboard/admin/page.tsx](file:///C:/website-islam/app/dashboard/admin/page.tsx)
+- Mengambil `dkmUsers` dan `systemSettings` secara paralel dalam `Promise.all`.
+- Meneruskannya ke `<AdminDashboardTabs />`.
+
+### E. Sidebar Desktop: [components/dashboard/DashboardSidebar.tsx](file:///C:/website-islam/components/dashboard/DashboardSidebar.tsx)
+- Mengaktifkan menu `Pengurus DKM` menuju `/dashboard/admin?tab=pengguna`.
+- Mengaktifkan menu `Pengaturan Sistem` menuju `/dashboard/admin?tab=pengaturan`.
+- Menghapus badge penanda "Segera".
 
 ---
 
-### B. Refaktor Berkas: [app/dashboard/layout.tsx](file:///C:/website-islam/app/dashboard/layout.tsx)
-1. Menghapus markup `<aside>` inline lama dan menggantinya dengan `<DashboardSidebar />`.
-2. Menambahkan pengambilan data wilayah kecamatan secara aman (`getMasjidById`) jika pengguna login sebagai pengurus DKM dengan ID masjid tertaut.
-3. Meneruskan props sesi secara lengkap (`userRole`, `userName`, `userEmail`, `masjidName`, `masjidId`, `kecamatanName`).
-4. Menjaga harmonisasi area konten utama (`flex-1 flex flex-col min-w-0 min-h-screen overflow-hidden`) serta header mobile (< md) dan desktop top header (md+).
-
----
-
-## 3. Hasil Verifikasi & Kompilasi
+## 3. Hasil Verifikasi & Pengujian
 
 ### A. Pemeriksaan Tipe Data (TypeScript)
 ```bash
 npx tsc --noEmit
-# Exit Code: 0 (Bebas dari kesalahan tipe data)
+# Exit Code: 0 (Lulus 100% tanpa error)
 ```
 
 ### B. Kompilasi Produksi (Turbopack)
 ```bash
 npm run build
 # Exit Code: 0
-# ✓ Compiled successfully in 17.8s
-# ✓ Generating static pages using 3 workers (20/20) in 3.5s
-# Seluruh rute /dashboard/* berhasil terkompilasi
+# ✓ Compiled successfully in 14.1s
+# ✓ Generating static pages using 3 workers (20/20) in 5.2s
+# Seluruh rute /dashboard/* dan rute publik berhasil terkompilasi
 ```
 
 ---
 
-## 4. Status Repositori Git
+## 4. Alur Git & Status Penggabungan
 
-- **Branch**: `staging-website-islam`
-- **Commit**: `47981a0` (`feat(dashboard): refaktor layout dasbor desktop dengan flowbite sidebar & harmonisasi warna #093c96`)
-- **Remote Push**: `origin/staging-website-islam`
-- **Aturan Merge**: **Sesuai instruksi khusus untuk pekerjaan frontend visual, branch ini TIDAK di-merge ke `main`** agar siap direview secara bertahap oleh Mas Chan di lingkungan staging.
+Sesuai aturan workflow wajib untuk pekerjaan yang menyentuh Server Actions backend:
+1. Commit fitur pada branch `staging-website-islam` (`f7f12d0`).
+2. Commit dokumentasi `walkthrough.md`.
+3. Merge `staging-website-islam` ke `main`.
+4. Push kedua branch (`staging-website-islam` dan `main`) ke remote GitHub `origin`.
