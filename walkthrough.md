@@ -1,82 +1,78 @@
-# Laporan Implementasi: Modul Kelola DKM Masjid & Pengaturan Sistem di Dasbor Admin
+# Laporan Selesai: Implementasi PWA Native, Arsip Rekaman Video Kajian, & Panduan DKM
 
-Branch: `staging-website-islam` -> Merged to `main`  
-Status: **Selesai & Terverifikasi** (Telah digabungkan dan di-push ke GitHub `origin`)
-
----
-
-## 1. Ringkasan Eksekutif
-
-Telah berhasil diselesaikan implementasi dua modul utama pada Dasbor Super Admin Portal Banten Mengaji untuk menggantikan status placeholder (badge "Segera") menjadi modul aktif dengan kontrol penuh:
-1. **Modul Kelola Pengurus DKM Masjid (Tab ke-4: `?tab=pengguna`)**:
-   - Menampilkan direktori seluruh pengurus DKM aktif (akun pengguna role `author` di WordPress).
-   - Menautkan akun DKM dengan masjid binaan yang dikelolanya lengkap dengan badge wilayah beraksen emas `#C5A059`.
-   - Menyediakan aksi cepat **Hubungi WA** dengan template salam otomatis serta **Reset Password** akun DKM langsung ke WordPress REST API via modal interaktif yang dilengkapi generator sandi acak kuat.
-2. **Modul Pengaturan Sistem (Tab ke-5: `?tab=pengaturan`)**:
-   - Panel konfigurasi terpusat mencakup **Kontak Resmi & Dukungan Admin**, **Nomor Rekening Donasi Resmi** (BSI & Bank Aladin Syariah) yang tersimpan persisten ke berkas JSON, serta pemantauan visual **Status Integrasi Eksternal API** (WordPress, Mailketing CRM, EQuran.id Shalat, IndexNow Protocol).
-3. **Pembaruan Navigasi Sidebar Desktop (`DashboardSidebar.tsx`)**:
-   - Menghilangkan badge "Segera" pada menu `Pengurus DKM` dan `Pengaturan Sistem`.
-   - Mengaktifkan tautan navigasi langsung ke tab masing-masing dengan indikator aktif berpalet `#093c96`.
+Seluruh sasaran tugas telah sukses diimplementasikan pada branch worktree `staging-website-islam`, diverifikasi bebas error TypeScript dan lulus kompilasi Turbopack produksi (`npm run build`), serta digabungkan (merge) ke branch `main` dan dipush ke GitHub remote `origin main`.
 
 ---
 
-## 2. Rincian Perubahan Berkas
+## 1. Ringkasan Fitur yang Diimplementasikan
 
-### A. Tipe Data: [types/index.ts](file:///C:/website-islam/types/index.ts)
-- Menambahkan interface `DKMUserItem` untuk representasi data akun pengurus DKM.
-- Menambahkan interface `SystemSettings` dan nilai baku `DEFAULT_SYSTEM_SETTINGS` untuk konfigurasi pusat.
-
-### B. Server Actions Baru: [lib/actions/admin.ts](file:///C:/website-islam/lib/actions/admin.ts)
-- **`getDKMUsersList()`**: Mengambil pengguna role `author` dari WordPress REST API, memadukannya secara paralel dengan data direktori masjid (`getMasjidList()`) dan antrean pendaftaran DKM (`getStoredRegistrations()`) untuk memperoleh nama masjid binaan dan nomor WhatsApp.
-- **`resetDKMUserPassword(userId, newPassword)`**: Memperbarui kata sandi akun pengguna WordPress dengan verifikasi otorisasi Super Admin dan panjang minimal sandi (>= 6 karakter).
-- **`getSystemSettings()`**: Membaca konfigurasi pengaturan pusat dari `data/system-settings.json` dengan fallback ke nilai default.
-- **`updateSystemSettings(settings)`**: Menyimpan konfigurasi baru ke `data/system-settings.json` serta merevalidasi path `/dashboard/admin` dan `/donasi`.
-
-### C. Antarmuka Tab Dasbor: [components/dashboard/AdminDashboardTabs.tsx](file:///C:/website-islam/components/dashboard/AdminDashboardTabs.tsx)
-- Menambahkan Tab ke-4 (`pengguna`) dan Tab ke-5 (`pengaturan`) pada tab bar navigasi.
-- **Tab 4 (Pengurus DKM)**:
-  - Bilah pencarian multi-kriteria (nama, email, username, masjid, wilayah).
-  - Tabel modern: Avatar inisial `#093c96`, kartu profil pengurus, identitas masjid binaan dengan badge emas `#C5A059`, tautan langsung WhatsApp, tanggal bergabung, serta tombol aksi "Reset Password".
-  - Modal `AdminResetPasswordModal`: Formulir kata sandi baru dengan fitur intip sandi (eye toggle) dan generator sandi acak kuat.
-- **Tab 5 (Pengaturan Sistem)**:
-  - Kartu 1: Kontak Resmi WhatsApp Admin & Email Notifikasi Utama.
-  - Kartu 2: Rekening Bank Utama (BSI) & Bank Sekunder (Aladin Syariah) dengan tombol simpan perubahan.
-  - Kartu 3: Indikator status konektivitas 4 API eksternal (WordPress, Mailketing, EQuran, IndexNow) ber-badge hijau aktif.
-
-### D. Server Component Dasbor Admin: [app/dashboard/admin/page.tsx](file:///C:/website-islam/app/dashboard/admin/page.tsx)
-- Mengambil `dkmUsers` dan `systemSettings` secara paralel dalam `Promise.all`.
-- Meneruskannya ke `<AdminDashboardTabs />`.
-
-### E. Sidebar Desktop: [components/dashboard/DashboardSidebar.tsx](file:///C:/website-islam/components/dashboard/DashboardSidebar.tsx)
-- Mengaktifkan menu `Pengurus DKM` menuju `/dashboard/admin?tab=pengguna`.
-- Mengaktifkan menu `Pengaturan Sistem` menuju `/dashboard/admin?tab=pengaturan`.
-- Menghapus badge penanda "Segera".
+### A. Implementasi PWA Resmi (Progressive Web App)
+1. **Web App Manifest (`app/manifest.ts`)**:
+   - Menggunakan generator native `MetadataRoute.Manifest` Next.js 14+.
+   - Mendefinisikan nama aplikasi `Banten Mengaji - Pusat Kajian Sunnah Banten`, `display: 'standalone'`, latar belakang `#ffffff`, tema `#093c96`, serta referensi icon 192px, 512px, dan maskable icon.
+   - Endpoint `/manifest.webmanifest` terbukti mengembalikan HTTP 200 dengan payload JSON valid.
+2. **Service Worker Minimalis (`public/sw.js`)**:
+   - Menjalankan caching aset statis dengan strategi network-first fallback to cache untuk ketersediaan offline yang andal.
+   - Menggunakan event `activate` dengan pembersihan cache lama otomatis (`clients.claim()`).
+3. **Komponen PWA Client (`components/pwa/PwaHandler.tsx`)**:
+   - Mendaftarkan `/sw.js` saat aplikasi dimuat.
+   - Menangkap event `beforeinstallprompt` (Chrome & Android) dan menampilkan banner instalasi elegan dengan tombol *Pasang Sekarang*.
+   - Mendeteksi peramban Safari di iOS (iPhone & iPad) dan menampilkan panduan interaktif cara memasang: *"Ketuk tombol Bagikan (Share) lalu pilih Tambahkan ke Layar Utama (Add to Home Screen)"*.
+   - Menyimpan status dismiss di `sessionStorage` agar tidak mengganggu kenyamanan jamaah.
+4. **Konfigurasi Layout Global (`app/layout.tsx`)**:
+   - Menambahkan deklarasi `Viewport` dengan `themeColor: '#093c96'`.
+   - Mengonfigurasi properti `manifest`, `appleWebApp`, dan `icons` resmi.
+   - Menyematkan komponen `<PwaHandler />` pada DOM utama.
 
 ---
 
-## 3. Hasil Verifikasi & Pengujian
-
-### A. Pemeriksaan Tipe Data (TypeScript)
-```bash
-npx tsc --noEmit
-# Exit Code: 0 (Lulus 100% tanpa error)
-```
-
-### B. Kompilasi Produksi (Turbopack)
-```bash
-npm run build
-# Exit Code: 0
-# ✓ Compiled successfully in 14.1s
-# ✓ Generating static pages using 3 workers (20/20) in 5.2s
-# Seluruh rute /dashboard/* dan rute publik berhasil terkompilasi
-```
+### B. Fitur Arsip Faedah & Rekaman Kajian Banten
+1. **Helper Parser URL YouTube (`lib/utils/youtube.ts`)**:
+   - `getYouTubeVideoId(url)`: Ekstraksi 11-karakter Video ID dari berbagai variasi URL (`watch?v=`, `youtu.be/`, `live/`, `embed/`, `shorts/`).
+   - `getYouTubeEmbedUrl(url)`: Mengembalikan URL embed privacy-enhanced `https://www.youtube-nocookie.com/embed/${videoId}`.
+2. **Tab Navigasi Filter Kajian (`components/kajian/KajianFilter.tsx` & `app/jadwal-kajian/page.tsx`)**:
+   - Menghilangkan penghapusan otomatis data kajian masa lampau dari halaman publik, kini meneruskan seluruh kajian (`allKajian`) ke komponen filter.
+   - Menyediakan 2 tab pemisah:
+     * **Tab 1 (Kajian Mendatang)**: Menampilkan jadwal kajian yang belum lewat waktu beserta badge jumlah kajian.
+     * **Tab 2 (Arsip & Rekaman Kajian)**: Menampilkan kajian yang telah selesai dilaksanakan beserta badge jumlah kajian dan banner penjelasan.
+3. **Pembaruan Kartu Kajian (`components/kajian/KajianCard.tsx`)**:
+   - Untuk kajian yang telah selesai:
+     * Jika memiliki `link_streaming`: Menampilkan badge hijau `Selesai - Rekaman Tersedia` dengan ikon Video, serta tombol aksi *"Tonton Rekaman & Faedah"*.
+     * Jika tanpa link streaming: Menampilkan badge abu-abu `Kajian Selesai` beserta tanggal pelaksanaan.
+4. **Halaman Detail Kajian Selesai (`app/jadwal-kajian/[slug]/page.tsx`)**:
+   - Menyembunyikan tombol Google Calendar dan menampilkan banner informasi *"Kajian Telah Selesai Dilaksanakan pada [Tanggal]"*.
+   - Menyematkan pemutar video YouTube responsif berasio 16:9 (`aspect-video rounded-2xl`) jika `link_streaming` tersedia.
+   - Menampilkan bagian *"Catatan & Ringkasan Faedah Kajian"*.
 
 ---
 
-## 4. Alur Git & Status Penggabungan
+### C. Pembaruan Halaman Panduan DKM (`app/panduan-dkm/page.tsx`)
+1. **Kartu Panduan Instalasi PWA**:
+   - Petunjuk langkah demi langkah untuk pengguna Google Chrome (Android).
+   - Petunjuk langkah demi langkah untuk pengguna Safari (iOS iPhone/iPad).
+   - Penjelasan keunggulan PWA (ringan, hemat kuota, akses instan).
+2. **Kartu Panduan Sematan Rekaman YouTube bagi DKM**:
+   - 4 alur mudah: (1) Salin tautan YouTube, (2) Buka Dasbor DKM, (3) Tempel tautan & ringkasan faedah, (4) Publikasi otomatis ke tab arsip kajian.
 
-Sesuai aturan workflow wajib untuk pekerjaan yang menyentuh Server Actions backend:
-1. Commit fitur pada branch `staging-website-islam` (`f7f12d0`).
-2. Commit dokumentasi `walkthrough.md`.
-3. Merge `staging-website-islam` ke `main`.
-4. Push kedua branch (`staging-website-islam` dan `main`) ke remote GitHub `origin`.
+---
+
+## 2. Hasil Verifikasi & Uji Kualitas
+
+| Jenis Pengujian | Perintah / Uji | Status | Keterangan |
+|---|---|---|---|
+| **TypeScript Type Check** | `npx tsc --noEmit` | **LULUS (Exit Code 0)** | Nol error tipe data |
+| **Production Build** | `npm run build` | **LULUS (Exit Code 0)** | Turbopack selesai dalam 21.9s, 21 static route terkompilasi sukses |
+| **PWA Manifest Route** | `GET /manifest.webmanifest` | **LULUS (HTTP 200)** | Next.js melayani manifest JSON dengan benar |
+| **Service Worker** | File `public/sw.js` | **LULUS** | Siap didaftarkan oleh browser |
+
+---
+
+## 3. Catatan Git & Penggabungan
+
+- **Branch Kerja**: `staging-website-islam`
+- **Commit SHA**: `0ec3bd9`
+- **Pesan Commit**: `feat: implementasi pwa native, arsip rekaman video kajian & panduan dkm`
+- **Merge Target**: `main` (Fast-forward merge sukses)
+- **Status Remote**:
+  - `origin/staging-website-islam` -> **Updated**
+  - `origin/main` -> **Updated**
