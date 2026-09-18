@@ -52,9 +52,12 @@ export async function submitKajian(formData: FormData) {
 
       if (!mediaRes.ok) {
         const errText = await mediaRes.text();
-        console.error('Media upload error status:', mediaRes.status);
-        console.error('Media upload error body:', errText);
-        return { success: false, error: `Gagal mengupload poster [${mediaRes.status}]: ${errText}` };
+        console.error('Media upload error status:', mediaRes.status, errText);
+        return {
+          success: false,
+          message: 'Afwan, poster kajian gagal diunggah. Pastikan ukuran gambar di bawah 2MB atau gunakan format JPG/PNG.',
+          error: 'Afwan, poster kajian gagal diunggah. Pastikan ukuran gambar di bawah 2MB atau gunakan format JPG/PNG.',
+        };
       }
 
       const mediaData = await mediaRes.json();
@@ -79,10 +82,10 @@ export async function submitKajian(formData: FormData) {
         ? 'khusus_ikhwan'
         : 'umum';
 
-    // 2. Buat Postingan Kajian Baru
+    // 2. Buat Postingan Kajian Baru (Langsung 'publish' dan 'aktif' untuk DKM resmi)
     const payload = {
       title: formData.get('judul'),
-      status: 'pending',
+      status: 'publish',
       featured_media: mediaId,
       acf: {
         kota_kabupaten: kotaKabupaten,
@@ -113,23 +116,44 @@ export async function submitKajian(formData: FormData) {
 
     if (!kajianRes.ok) {
       const errorBody = await kajianRes.text();
-      console.error('WP Error Response Status:', kajianRes.status);
-      console.error('WP Error Response Body:', errorBody);
-      return { success: false, error: 'Gagal menerbitkan jadwal kajian ke server portal Banten Mengaji. Silakan coba beberapa saat lagi.' };
+      console.error('[submitKajian] WordPress API Error Status:', kajianRes.status, errorBody);
+      return {
+        success: false,
+        message: 'Afwan, jadwal kajian belum dapat disimpan. Silakan periksa isian data Anda atau coba beberapa saat lagi.',
+        error: 'Afwan, jadwal kajian belum dapat disimpan. Silakan periksa isian data Anda atau coba beberapa saat lagi.',
+      };
     }
 
-    revalidatePath('/');
+    const createdKajian = await kajianRes.json();
+    const slug = createdKajian?.slug;
+
+    // Revalidasi cache instan katalog, beranda, sitemap, dan dasbor
     revalidatePath('/jadwal-kajian');
+    revalidatePath('/');
+    revalidatePath('/sitemap.xml');
     revalidatePath('/dashboard/dkm');
     revalidatePath('/dashboard/admin');
 
-    return { success: true };
+    // Auto-ping IndexNow untuk pengindeksan instan ke mesin pencari
+    if (slug) {
+      const host = process.env.NEXT_PUBLIC_SITE_URL?.replace(/^https?:\/\//, '') || 'banten-mengaji.vercel.app';
+      notifySearchEngines([`https://${host}/jadwal-kajian/${slug}`]).catch(() => {});
+    }
+
+    return {
+      success: true,
+      message: 'Jazakallahu khairan. Jadwal kajian berhasil dipublikasikan dan langsung tayang di portal Banten Mengaji.',
+      slug,
+    };
   } catch (err: unknown) {
     if (err instanceof Error) {
-      console.error('Submit kajian error:', err.message);
-      return { success: false, error: err.message };
+      console.error('[submitKajian] Exception:', err.message);
     }
-    return { success: false, error: 'Terjadi kesalahan sistem.' };
+    return {
+      success: false,
+      message: 'Afwan, jadwal kajian belum dapat disimpan. Silakan periksa isian data Anda atau coba beberapa saat lagi.',
+      error: 'Afwan, jadwal kajian belum dapat disimpan. Silakan periksa isian data Anda atau coba beberapa saat lagi.',
+    };
   }
 }
 
@@ -732,7 +756,12 @@ export async function updateKajianByDkm(formData: FormData) {
 
     if (!resUpdate.ok) {
       const errText = await resUpdate.text();
-      return { success: false, error: `Gagal memperbarui jadwal kajian: ${errText}` };
+      console.error('[updateKajianByDkm] WP Error:', resUpdate.status, errText);
+      return {
+        success: false,
+        message: 'Afwan, jadwal kajian belum dapat diperbarui. Silakan periksa isian data Anda atau coba beberapa saat lagi.',
+        error: 'Afwan, jadwal kajian belum dapat diperbarui. Silakan periksa isian data Anda atau coba beberapa saat lagi.',
+      };
     }
 
     const updatedData = await resUpdate.json();
@@ -754,10 +783,13 @@ export async function updateKajianByDkm(formData: FormData) {
     };
   } catch (err: unknown) {
     if (err instanceof Error) {
-      console.error('Error in updateKajianByDkm:', err.message);
-      return { success: false, error: err.message };
+      console.error('[updateKajianByDkm] Exception:', err.message);
     }
-    return { success: false, error: 'Terjadi kesalahan sistem saat memperbarui kajian.' };
+    return {
+      success: false,
+      message: 'Afwan, jadwal kajian belum dapat diperbarui. Silakan periksa isian data Anda atau coba beberapa saat lagi.',
+      error: 'Afwan, jadwal kajian belum dapat diperbarui. Silakan periksa isian data Anda atau coba beberapa saat lagi.',
+    };
   }
 }
 

@@ -58,8 +58,8 @@ export default async function DashboardLayout({ children }: { children: ReactNod
       {/* -------------------------------------------------------------------- */}
       <DashboardSidebar
         userRole={session.role}
-        userName={session.name}
-        userEmail={session.email}
+        userName={session.name || session.username || 'Pengguna'}
+        userEmail={session.email || ''}
         masjidName={session.masjidName}
         masjidId={session.masjidId}
         kecamatanName={kecamatanName}
@@ -108,10 +108,10 @@ export default async function DashboardLayout({ children }: { children: ReactNod
             <ThemeToggle />
             <div className="flex items-center gap-3 pl-4 border-l border-slate-200 dark:border-slate-800">
               <div className="w-8 h-8 rounded-full bg-[#093c96] text-white flex items-center justify-center font-bold text-sm shadow-sm">
-                {session.name.charAt(0).toUpperCase()}
+                {(session.name || session.username || 'U').charAt(0).toUpperCase()}
               </div>
               <div className="text-sm">
-                <p className="font-medium text-slate-900 dark:text-white leading-none">{session.name}</p>
+                <p className="font-medium text-slate-900 dark:text-white leading-none">{session.name || session.username || 'Pengguna'}</p>
                 <p className="text-slate-500 text-xs mt-1 uppercase font-semibold tracking-wider">{session.role}</p>
               </div>
             </div>

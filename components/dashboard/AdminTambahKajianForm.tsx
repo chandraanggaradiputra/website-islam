@@ -284,7 +284,7 @@ export function AdminTambahKajianForm({ masjidList }: AdminTambahKajianFormProps
                   type="time"
                   name="jamMulai"
                   required
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-3.5 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-3.5 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white font-mono"
                 />
               </div>
 
@@ -295,10 +295,13 @@ export function AdminTambahKajianForm({ masjidList }: AdminTambahKajianFormProps
                 <input
                   type="time"
                   name="jamSelesai"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-3.5 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-3.5 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white font-mono"
                 />
               </div>
             </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Format 24 Jam (Contoh: 18.30 untuk Ba&apos;da Maghrib, 20.00 untuk Ba&apos;da Isya)
+            </p>
           </div>
 
           {/* Section 4: Poster & Media */}

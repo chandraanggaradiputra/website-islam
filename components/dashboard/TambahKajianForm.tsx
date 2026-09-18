@@ -8,19 +8,37 @@ import { ImagePlus, Loader2, Calendar, MapPin, Clock, Video, AlertCircle } from 
 import { useRouter } from 'next/navigation';
 import { submitKajian } from '@/lib/actions/kajian';
 
-const kajianSchema = z.object({
-  judul: z.string().min(5, 'Judul kajian minimal 5 karakter'),
-  penceramah: z.string().min(3, 'Nama penceramah minimal 3 karakter'),
-  tanggal: z.string().min(1, 'Tanggal wajib diisi'),
-  hariKajian: z.string().optional(),
-  jamMulai: z.string().min(1, 'Jam mulai wajib diisi'),
-  jamSelesai: z.string().optional(),
-  lokasi: z.string().min(1, 'Lokasi wajib diisi'),
-  linkStreaming: z.string().url('URL tidak valid').optional().or(z.literal('')),
-  jenisKajian: z.enum(['rutin', 'tematik']),
-  kategoriJamaah: z.enum(['umum', 'khusus_ikhwan', 'khusus_akhwat']),
-  kitabBahasan: z.string().optional(),
-});
+const kajianSchema = z
+  .object({
+    judul: z.string().min(5, 'Judul kajian minimal 5 karakter'),
+    penceramah: z.string().min(3, 'Nama penceramah minimal 3 karakter'),
+    tanggal: z.string().optional(),
+    hariKajian: z.string().optional(),
+    jamMulai: z.string().min(1, 'Jam mulai kajian wajib diisi'),
+    jamSelesai: z.string().optional(),
+    lokasi: z.string().min(1, 'Lokasi / ruangan kajian wajib diisi'),
+    linkStreaming: z.string().url('Format URL tautan streaming tidak valid').optional().or(z.literal('')),
+    jenisKajian: z.enum(['rutin', 'tematik']),
+    kategoriJamaah: z.enum(['umum', 'khusus_ikhwan', 'khusus_akhwat']),
+    kitabBahasan: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    // Validasi kondisional: Kajian Rutin wajib memilih Hari, Kajian Tematik wajib memilih Tanggal
+    if (data.jenisKajian === 'rutin' && (!data.hariKajian || data.hariKajian.trim() === '')) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['hariKajian'],
+        message: 'Hari kajian wajib dipilih untuk jenis Kajian Rutin (Pekanan / Bulanan)',
+      });
+    }
+    if (data.jenisKajian === 'tematik' && (!data.tanggal || data.tanggal.trim() === '')) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['tanggal'],
+        message: 'Tanggal pelaksanaan wajib diisi untuk jenis Kajian Tematik',
+      });
+    }
+  });
 
 type KajianValues = z.infer<typeof kajianSchema>;
 
@@ -36,14 +54,20 @@ export function TambahKajianForm({ masjidId, masjidName }: TambahKajianFormProps
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<KajianValues>({
     resolver: zodResolver(kajianSchema),
     defaultValues: {
-      jenisKajian: 'tematik',
+      jenisKajian: 'rutin',
       kategoriJamaah: 'umum',
-    }
+      hariKajian: '',
+      tanggal: '',
+    },
   });
+
+  const selectedJenisKajian = watch('jenisKajian');
+  const isKajianRutin = selectedJenisKajian === 'rutin';
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -66,16 +90,24 @@ export function TambahKajianForm({ masjidId, masjidName }: TambahKajianFormProps
     try {
       const res = await submitKajian(formData);
       if (res.success) {
-        alert("Alhamdulillah, jadwal kajian berhasil diajukan dan sedang menunggu persetujuan Admin.");
+        alert(
+          res.message ||
+            'Jazakallahu khairan. Jadwal kajian berhasil dipublikasikan dan langsung tayang di portal Banten Mengaji.'
+        );
         router.push('/dashboard/dkm');
+        router.refresh();
       } else {
-        setErrorMessage(res.error || 'Terjadi kesalahan saat mengajukan kajian.');
+        setErrorMessage(
+          res.message ||
+            res.error ||
+            'Afwan, jadwal kajian belum dapat disimpan. Silakan periksa isian data Anda atau coba beberapa saat lagi.'
+        );
       }
     } catch (err: unknown) {
       if (err instanceof Error) {
         setErrorMessage(err.message);
       } else {
-        setErrorMessage('Terjadi kesalahan jaringan.');
+        setErrorMessage('Afwan, terjadi kegagalan jaringan saat mengirim data.');
       }
     }
   };
@@ -124,34 +156,87 @@ export function TambahKajianForm({ masjidId, masjidName }: TambahKajianFormProps
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Left Column */}
           <div className="space-y-5">
+            {/* 1. Judul Kajian */}
             <div>
-              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Judul Kajian</label>
+              <label htmlFor="judul" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                Judul / Tema Kajian <span className="text-red-700 dark:text-red-400 font-bold">*</span>
+              </label>
               <input
+                id="judul"
                 type="text"
+                aria-label="Judul atau Tema Kajian"
                 {...register('judul')}
                 className="block w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:ring-[#093c96] rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2"
                 placeholder="Contoh: Pembahasan Kitab Tauhid"
               />
-              {errors.judul && <p className="mt-1.5 text-sm text-red-500">{errors.judul.message}</p>}
+              {errors.judul && <p className="mt-1.5 text-sm text-red-600 dark:text-red-400 font-medium">{errors.judul.message}</p>}
             </div>
 
+            {/* 2. Penceramah */}
             <div>
-              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Penceramah / Ustadz</label>
+              <label htmlFor="penceramah" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                Penceramah / Ustadz <span className="text-red-700 dark:text-red-400 font-bold">*</span>
+              </label>
               <input
+                id="penceramah"
                 type="text"
+                aria-label="Nama Penceramah atau Ustadz"
                 {...register('penceramah')}
                 className="block w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:ring-[#093c96] rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2"
-                placeholder="Contoh: Ustadz Fulan bin Fulan"
+                placeholder="Contoh: Ustadz Abu Usamah, Lc."
               />
-              {errors.penceramah && <p className="mt-1.5 text-sm text-red-500">{errors.penceramah.message}</p>}
+              {errors.penceramah && <p className="mt-1.5 text-sm text-red-600 dark:text-red-400 font-medium">{errors.penceramah.message}</p>}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            {/* 3. Jenis Kajian & Kategori Jamaah */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Hari (Opsional / Rutin)</label>
+                <label htmlFor="jenisKajian" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                  Jenis Kajian <span className="text-red-700 dark:text-red-400 font-bold">*</span>
+                </label>
                 <select
+                  id="jenisKajian"
+                  aria-label="Pilih Jenis Kajian"
+                  {...register('jenisKajian')}
+                  className="block w-full px-3.5 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:ring-[#093c96] rounded-xl text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2"
+                >
+                  <option value="rutin">Kajian Rutin (Pekanan / Bulanan)</option>
+                  <option value="tematik">Kajian Tematik (Tabligh Akbar / Bedah Kitab)</option>
+                </select>
+              </div>
+              <div>
+                <label htmlFor="kategoriJamaah" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                  Kategori Jamaah <span className="text-red-700 dark:text-red-400 font-bold">*</span>
+                </label>
+                <select
+                  id="kategoriJamaah"
+                  aria-label="Pilih Kategori Jamaah"
+                  {...register('kategoriJamaah')}
+                  className="block w-full px-3.5 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:ring-[#093c96] rounded-xl text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2"
+                >
+                  <option value="umum">Umum (Ikhwan & Akhwat)</option>
+                  <option value="khusus_ikhwan">Khusus Ikhwan</option>
+                  <option value="khusus_akhwat">Khusus Akhwat</option>
+                </select>
+              </div>
+            </div>
+
+            {/* 4. Hari Kajian & Tanggal Pelaksanaan (Kondisional Dinamis) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="hariKajian" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  Hari Kajian{' '}
+                  {isKajianRutin ? (
+                    <span className="text-xs font-bold text-red-700 dark:text-red-400">* (Wajib untuk Rutin)</span>
+                  ) : (
+                    <span className="text-xs font-medium text-slate-600 dark:text-slate-400">(Opsional)</span>
+                  )}
+                </label>
+                <select
+                  id="hariKajian"
+                  aria-label="Pilih Hari Kajian"
                   {...register('hariKajian')}
-                  className="block w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#093c96]"
+                  className="block w-full px-3.5 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#093c96]"
                 >
                   <option value="">-- Pilih Hari --</option>
                   <option value="Senin">Senin</option>
@@ -162,81 +247,93 @@ export function TambahKajianForm({ masjidId, masjidName }: TambahKajianFormProps
                   <option value="Sabtu">Sabtu</option>
                   <option value="Ahad">Ahad</option>
                 </select>
+                {errors.hariKajian && <p className="mt-1 text-xs text-red-600 dark:text-red-400 font-medium">{errors.hariKajian.message}</p>}
               </div>
+
               <div>
-                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Tanggal Pelaksanaan</label>
+                <label htmlFor="tanggal" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  Tanggal Pelaksanaan{' '}
+                  {!isKajianRutin ? (
+                    <span className="text-xs font-bold text-red-700 dark:text-red-400">* (Wajib untuk Tematik)</span>
+                  ) : (
+                    <span className="text-xs font-medium text-slate-600 dark:text-slate-400">(Opsional untuk Rutin)</span>
+                  )}
+                </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                     <Calendar className="h-5 w-5 text-slate-400" />
                   </div>
                   <input
+                    id="tanggal"
                     type="date"
+                    aria-label="Tanggal Pelaksanaan Kajian"
                     {...register('tanggal')}
-                    className="block w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:ring-[#093c96] rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2"
+                    className="block w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:ring-[#093c96] rounded-xl text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2"
                   />
                 </div>
-                {errors.tanggal && <p className="mt-1.5 text-sm text-red-500">{errors.tanggal.message}</p>}
+                {errors.tanggal && <p className="mt-1 text-xs text-red-600 dark:text-red-400 font-medium">{errors.tanggal.message}</p>}
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                  Jam Mulai *
-                </label>
-                <input
-                  type="time"
-                  {...register('jamMulai')}
-                  required
-                  className="block w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:ring-[#093c96] rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2"
-                />
-                {errors.jamMulai && <p className="mt-1.5 text-sm text-red-500">{errors.jamMulai.message}</p>}
+            {/* 5. Jam Mulai & Jam Selesai (Format 24 Jam) */}
+            <div className="space-y-1.5">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="jamMulai" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                    Jam Mulai <span className="text-red-700 dark:text-red-400 font-bold">*</span>
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                      <Clock className="h-4 w-4 text-slate-400" />
+                    </div>
+                    <input
+                      id="jamMulai"
+                      type="time"
+                      aria-label="Jam Mulai Kajian"
+                      {...register('jamMulai')}
+                      required
+                      className="block w-full pl-10 pr-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:ring-[#093c96] rounded-xl text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 font-mono"
+                    />
+                  </div>
+                  {errors.jamMulai && <p className="mt-1 text-xs text-red-600 dark:text-red-400 font-medium">{errors.jamMulai.message}</p>}
+                </div>
+                <div>
+                  <label htmlFor="jamSelesai" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                    Jam Selesai <span className="text-xs font-medium text-slate-600 dark:text-slate-400">(Opsional)</span>
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                      <Clock className="h-4 w-4 text-slate-400" />
+                    </div>
+                    <input
+                      id="jamSelesai"
+                      type="time"
+                      aria-label="Jam Selesai Kajian"
+                      {...register('jamSelesai')}
+                      className="block w-full pl-10 pr-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:ring-[#093c96] rounded-xl text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 font-mono"
+                    />
+                  </div>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                  Jam Selesai (Opsional)
-                </label>
-                <input
-                  type="time"
-                  {...register('jamSelesai')}
-                  className="block w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:ring-[#093c96] rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2"
-                />
-              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1 pt-1 font-medium">
+                <span>Format 24 Jam (Contoh: 18.30 untuk Ba&apos;da Maghrib, 20.00 untuk Ba&apos;da Isya)</span>
+              </p>
             </div>
 
+            {/* 6. Lokasi / Ruangan */}
             <div>
-              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Lokasi / Ruangan</label>
+              <label htmlFor="lokasi" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                Lokasi / Ruangan <span className="text-red-700 dark:text-red-400 font-bold">*</span>
+              </label>
               <input
+                id="lokasi"
                 type="text"
+                aria-label="Lokasi atau Ruangan Kajian"
                 {...register('lokasi')}
                 className="block w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:ring-[#093c96] rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2"
                 placeholder="Contoh: Ruang Utama Masjid"
               />
-              {errors.lokasi && <p className="mt-1.5 text-sm text-red-500">{errors.lokasi.message}</p>}
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Jenis Kajian</label>
-                <select
-                  {...register('jenisKajian')}
-                  className="block w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:ring-[#093c96] rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2"
-                >
-                  <option value="rutin">Rutin</option>
-                  <option value="tematik">Tematik</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Kategori Jamaah</label>
-                <select
-                  {...register('kategoriJamaah')}
-                  className="block w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:ring-[#093c96] rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2"
-                >
-                  <option value="umum">Umum</option>
-                  <option value="khusus_ikhwan">Khusus Ikhwan</option>
-                  <option value="khusus_akhwat">Khusus Akhwat</option>
-                </select>
-              </div>
+              {errors.lokasi && <p className="mt-1.5 text-sm text-red-600 dark:text-red-400 font-medium">{errors.lokasi.message}</p>}
             </div>
 
           </div>
@@ -244,10 +341,11 @@ export function TambahKajianForm({ masjidId, masjidName }: TambahKajianFormProps
           {/* Right Column */}
           <div className="space-y-5">
             <div>
-              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Upload Poster Kajian</label>
+              <label htmlFor="poster-upload" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Upload Poster Kajian</label>
               <div className="relative border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-4 text-center hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group cursor-pointer overflow-hidden">
                 <input 
                   id="poster-upload"
+                  aria-label="Upload poster flyer kajian"
                   type="file" 
                   accept="image/*"
                   onChange={handleImageChange}
@@ -265,32 +363,36 @@ export function TambahKajianForm({ masjidId, masjidName }: TambahKajianFormProps
                     <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 text-slate-400 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                       <ImagePlus className="w-8 h-8" />
                     </div>
-                    <p className="font-medium text-slate-700 dark:text-slate-300">Klik untuk upload poster</p>
-                    <p className="text-xs mt-1">PNG, JPG, maksimal 2MB</p>
+                    <p className="font-medium text-slate-800 dark:text-slate-200">Klik untuk upload poster</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 font-medium">PNG, JPG, maksimal 2MB</p>
                   </div>
                 )}
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Link Live Streaming (Opsional)</label>
+              <label htmlFor="linkStreaming" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Link Live Streaming (Opsional)</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                   <Video className="h-5 w-5 text-slate-400" />
                 </div>
                 <input
+                  id="linkStreaming"
                   type="url"
+                  aria-label="Tautan Live Streaming Kajian"
                   {...register('linkStreaming')}
                   className="block w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:ring-[#093c96] rounded-xl text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2"
-                  placeholder="https://youtube.com/..."
+                  placeholder="https://youtube.com/... atau tautan kajian online lainnya"
                 />
               </div>
-              {errors.linkStreaming && <p className="mt-1.5 text-sm text-red-500">{errors.linkStreaming.message}</p>}
+              {errors.linkStreaming && <p className="mt-1.5 text-sm text-red-600 dark:text-red-400 font-medium">{errors.linkStreaming.message}</p>}
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Kitab yang Dibahas (Opsional)</label>
+              <label htmlFor="kitabBahasan" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Kitab yang Dibahas (Opsional)</label>
               <textarea
+                id="kitabBahasan"
+                aria-label="Kitab yang Dibahas"
                 {...register('kitabBahasan')}
                 rows={3}
                 className="block w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:ring-[#093c96] rounded-xl text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2"

@@ -130,6 +130,7 @@ function MasjidFilterContent({
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
           <select
+            aria-label="Filter Kota atau Kabupaten Masjid"
             value={kota}
             onChange={handleKotaChange}
             className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-800 focus:border-[#093c96] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
@@ -143,6 +144,7 @@ function MasjidFilterContent({
           </select>
 
           <select
+            aria-label="Filter Kecamatan Masjid"
             value={kecamatan}
             onChange={(e) => setKecamatan(e.target.value)}
             disabled={!kota}

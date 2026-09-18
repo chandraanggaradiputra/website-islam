@@ -145,6 +145,7 @@ export function PrayerTimesWidget() {
         <div className="flex items-center gap-2 text-blue-100 min-w-0">
           <MapPin className="w-4 h-4 shrink-0" />
           <select
+            aria-label="Pilih Kota atau Wilayah Sholat"
             value={region}
             onChange={handleRegionChange}
             className="bg-transparent border-none text-white font-medium text-sm focus:ring-0 cursor-pointer outline-none appearance-none hover:text-blue-200 transition-colors truncate"

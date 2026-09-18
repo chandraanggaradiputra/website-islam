@@ -159,10 +159,10 @@ function KajianFilterContent({
           <button
             type="button"
             onClick={() => setActiveTab('mendatang')}
-            className={`flex items-center gap-2 py-2.5 px-4 rounded-xl text-sm font-semibold transition-all ${
+            className={`flex items-center gap-2 py-2.5 px-4 rounded-xl text-sm font-semibold transition-all min-h-[44px] cursor-pointer ${
               activeTab === 'mendatang'
                 ? 'bg-[#093c96] text-white shadow-sm'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             <Calendar className="w-4 h-4" />
@@ -171,7 +171,7 @@ function KajianFilterContent({
               className={`text-xs px-2 py-0.5 rounded-full font-bold ${
                 activeTab === 'mendatang'
                   ? 'bg-white/20 text-white'
-                  : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                  : 'bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200'
               }`}
             >
               {upcomingCount}
@@ -181,10 +181,10 @@ function KajianFilterContent({
           <button
             type="button"
             onClick={() => setActiveTab('arsip')}
-            className={`flex items-center gap-2 py-2.5 px-4 rounded-xl text-sm font-semibold transition-all ${
+            className={`flex items-center gap-2 py-2.5 px-4 rounded-xl text-sm font-semibold transition-all min-h-[44px] cursor-pointer ${
               activeTab === 'arsip'
                 ? 'bg-[#093c96] text-white shadow-sm'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             <Video className="w-4 h-4" />
@@ -193,7 +193,7 @@ function KajianFilterContent({
               className={`text-xs px-2 py-0.5 rounded-full font-bold ${
                 activeTab === 'arsip'
                   ? 'bg-white/20 text-white'
-                  : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                  : 'bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200'
               }`}
             >
               {archiveCount}
@@ -204,7 +204,7 @@ function KajianFilterContent({
 
       {/* Banner Penjelasan Tab Arsip */}
       {activeTab === 'arsip' && (
-        <div className="p-4 rounded-2xl bg-blue-50/80 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/50 text-xs sm:text-sm text-blue-900 dark:text-blue-200 flex items-center gap-3">
+        <div className="p-4 rounded-2xl bg-blue-50/80 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/50 text-xs sm:text-sm text-blue-950 dark:text-blue-200 flex items-center gap-3">
           <div className="p-2 rounded-xl bg-blue-100 dark:bg-blue-900/50 text-[#093c96] dark:text-blue-300 shrink-0">
             <Video className="w-4 h-4" />
           </div>
@@ -223,10 +223,11 @@ function KajianFilterContent({
           </div>
           {(kota || kecamatan || jenis || jamaah || ustadz) && (
             <button
+              type="button"
               onClick={handleReset}
-              className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-red-600 dark:text-slate-300 dark:hover:text-red-400 min-h-[36px] px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
             >
-              <RotateCcw className="h-3 w-3" />
+              <RotateCcw className="h-3.5 w-3.5" />
               <span>Reset Filter</span>
             </button>
           )}
@@ -234,9 +235,10 @@ function KajianFilterContent({
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-5">
           <select
+            aria-label="Filter Kota atau Kabupaten"
             value={kota}
             onChange={handleKotaChange}
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-800 focus:border-[#093c96] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-900 focus:border-[#093c96] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
           >
             <option value="">Semua Kota/Kabupaten</option>
             {BANTEN_REGIONS.map((r) => (
@@ -247,10 +249,11 @@ function KajianFilterContent({
           </select>
 
           <select
+            aria-label="Filter Kecamatan"
             value={kecamatan}
             onChange={(e) => setKecamatan(e.target.value)}
             disabled={!kota}
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-800 focus:border-[#093c96] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-900 focus:border-[#093c96] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <option value="">{kota ? 'Semua Kecamatan' : 'Pilih Kota Dulu'}</option>
             {availableKecamatans.map((kecName) => (
@@ -261,9 +264,10 @@ function KajianFilterContent({
           </select>
 
           <select
+            aria-label="Filter Jenis Kajian"
             value={jenis}
             onChange={(e) => setJenis(e.target.value)}
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-800 focus:border-[#093c96] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-900 focus:border-[#093c96] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
           >
             <option value="">Semua Jenis Kajian</option>
             <option value="rutin">Kajian Rutin</option>
@@ -271,9 +275,10 @@ function KajianFilterContent({
           </select>
 
           <select
+            aria-label="Filter Kategori Jamaah"
             value={jamaah}
             onChange={(e) => setJamaah(e.target.value)}
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-800 focus:border-[#093c96] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-900 focus:border-[#093c96] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
           >
             <option value="">Semua Jamaah</option>
             <option value="umum">Umum</option>
@@ -283,10 +288,11 @@ function KajianFilterContent({
 
           <input
             type="text"
+            aria-label="Cari Nama Ustadz"
             placeholder="Cari Nama Ustadz..."
             value={ustadz}
             onChange={(e) => setUstadz(e.target.value)}
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:border-[#093c96] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-[#093c96] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
           />
         </div>
       </div>

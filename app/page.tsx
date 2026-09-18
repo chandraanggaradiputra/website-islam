@@ -103,7 +103,7 @@ export default async function Home() {
             ))}
           </div>
         ) : (
-          <div className="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-8 text-center text-slate-500">
+          <div className="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-8 text-center text-slate-700 dark:text-slate-300 font-medium text-sm">
             Belum ada artikel terbaru.
           </div>
         )}

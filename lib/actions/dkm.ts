@@ -391,9 +391,12 @@ export async function submitDaftarDKM(formDataOrPayload: FormData | DKMRegistrat
 
     if (!res.ok) {
       const errData = await res.json().catch(() => ({}));
-      const detailedMsg = errData.message || 'Gagal mengirim pendaftaran ke server.';
       console.error('[submitDaftarDKM Error]:', errData);
-      return { success: false, error: detailedMsg };
+      return {
+        success: false,
+        message: 'Afwan, formulir pendaftaran belum dapat disimpan ke server. Silakan coba beberapa saat lagi.',
+        error: 'Afwan, formulir pendaftaran belum dapat disimpan ke server. Silakan coba beberapa saat lagi.',
+      };
     }
 
     revalidatePath('/dashboard/admin');
@@ -421,11 +424,11 @@ export async function submitDaftarDKM(formDataOrPayload: FormData | DKMRegistrat
   } catch (err: unknown) {
     if (err instanceof Error) {
       console.error('Error in submitDaftarDKM:', err.message);
-      return { success: false, error: err.message };
     }
     return {
       success: false,
-      error: 'Terjadi kesalahan sistem saat memproses permohonan.',
+      message: 'Afwan, pendaftaran DKM belum dapat diproses. Silakan periksa kembali isian formulir Anda atau coba beberapa saat lagi.',
+      error: 'Afwan, pendaftaran DKM belum dapat diproses. Silakan periksa kembali isian formulir Anda atau coba beberapa saat lagi.',
     };
   }
 }

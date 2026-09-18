@@ -43,12 +43,12 @@ export function MasjidCard({ masjid }: { masjid: WPMasjid }) {
         {fasilitas.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mb-4">
             {fasilitas.slice(0, 3).map((f) => (
-              <span key={f} className="text-[10px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-1 rounded">
+              <span key={f} className="text-[11px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700 px-2 py-0.5 rounded-md">
                 {f}
               </span>
             ))}
             {fasilitas.length > 3 && (
-              <span className="text-[10px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-1 rounded">
+              <span className="text-[11px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700 px-2 py-0.5 rounded-md">
                 +{fasilitas.length - 3}
               </span>
             )}
@@ -59,7 +59,7 @@ export function MasjidCard({ masjid }: { masjid: WPMasjid }) {
       <div className="grid grid-cols-2 border-t border-slate-100 dark:border-slate-800">
         <Link 
           href={`/masjid/${slug}`}
-          className="p-3 text-center text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800/50 text-slate-700 dark:text-slate-300 transition-colors border-r border-slate-100 dark:border-slate-800"
+          className="min-h-[44px] flex items-center justify-center p-3 text-center text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-800/50 text-slate-800 dark:text-slate-200 transition-colors border-r border-slate-100 dark:border-slate-800"
         >
           Lihat Profil
         </Link>
@@ -67,7 +67,7 @@ export function MasjidCard({ masjid }: { masjid: WPMasjid }) {
           href={mapsUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="p-3 flex items-center justify-center gap-1.5 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800/50 text-[#093c96] dark:text-blue-400 transition-colors"
+          className="min-h-[44px] flex items-center justify-center gap-1.5 p-3 text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-800/50 text-[#093c96] dark:text-blue-400 transition-colors"
         >
           <Navigation className="w-4 h-4" />
           <span>Rute Maps</span>
