@@ -8,6 +8,17 @@ export type KotaKabupatenBanten =
   | 'Kabupaten Lebak'
   | 'Kabupaten Tangerang';
 
+export const DAFTAR_KOTA_KABUPATEN: KotaKabupatenBanten[] = [
+  'Kota Serang',
+  'Kota Cilegon',
+  'Kota Tangerang',
+  'Kota Tangerang Selatan',
+  'Kabupaten Serang',
+  'Kabupaten Pandeglang',
+  'Kabupaten Lebak',
+  'Kabupaten Tangerang',
+];
+
 export interface BantenRegion {
   id: string;
   name: KotaKabupatenBanten;

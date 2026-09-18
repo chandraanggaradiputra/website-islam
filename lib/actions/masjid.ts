@@ -90,6 +90,9 @@ export async function updateMasjidProfile(formData: FormData) {
     const rawKecamatan = formData.get('kecamatan')?.toString();
     const kecamatanId = resolveKecamatanTermId(rawKecamatan);
 
+    const rawKota = (formData.get('kota_kabupaten') || formData.get('kotaKabupaten'))?.toString()?.trim();
+    const kotaKabupaten = rawKota && rawKota !== '' ? rawKota : 'Kota Serang';
+
     // Siapkan Payload Update
     const payload: {
       content?: string;
@@ -99,7 +102,7 @@ export async function updateMasjidProfile(formData: FormData) {
     } = {
       content: formData.get('deskripsi')?.toString() || '',
       acf: {
-        kota_kabupaten: formData.get('kotaKabupaten')?.toString() || '',
+        kota_kabupaten: kotaKabupaten,
         alamat_lengkap: formData.get('alamatLengkap')?.toString() || '',
         google_maps_url: formData.get('googleMapsUrl')?.toString() || '',
         no_wa_dkm: formData.get('noWaDkm')?.toString() || '',
@@ -132,8 +135,12 @@ export async function updateMasjidProfile(formData: FormData) {
 
     if (!res.ok) {
       const errText = await res.text();
-      console.error('Error response WP API saat update profil masjid:', errText);
-      return { success: false, error: `Gagal menyimpan data masjid: ${errText}` };
+      console.error('[updateMasjidProfile Error]:', res.status, errText);
+      return {
+        success: false,
+        message: 'Afwan, profil masjid belum dapat disimpan. Silakan periksa kelengkapan data dan coba lagi.',
+        error: 'Afwan, profil masjid belum dapat disimpan. Silakan periksa kelengkapan data dan coba lagi.',
+      };
     }
 
     // Revalidasi Cache
@@ -144,8 +151,14 @@ export async function updateMasjidProfile(formData: FormData) {
 
     return { success: true, message: 'Profil masjid berhasil diperbarui!' };
   } catch (error) {
-    console.error('Error in updateMasjidProfile:', error);
-    return { success: false, error: 'Terjadi kesalahan sistem saat memperbarui profil masjid.' };
+    if (error instanceof Error) {
+      console.error('[updateMasjidProfile Exception]:', error.message);
+    }
+    return {
+      success: false,
+      message: 'Afwan, terjadi kendala saat memperbarui profil masjid.',
+      error: 'Afwan, terjadi kendala saat memperbarui profil masjid.',
+    };
   }
 }
 
@@ -194,6 +207,9 @@ export async function createMasjidByAdmin(formData: FormData) {
     const fasilitasRaw = formData.getAll('fasilitas');
     const fasilitasList: string[] = normalizeFasilitas(fasilitasRaw.map((f) => f.toString()).filter(Boolean));
 
+    const rawKota = (formData.get('kota_kabupaten') || formData.get('kotaKabupaten'))?.toString()?.trim();
+    const kotaKabupaten = rawKota && rawKota !== '' ? rawKota : 'Kota Serang';
+
     const payload: {
       title: string;
       content: string;
@@ -207,7 +223,7 @@ export async function createMasjidByAdmin(formData: FormData) {
       status: 'publish',
       kecamatan: kecamatanId ? [kecamatanId] : [],
       acf: {
-        kota_kabupaten: formData.get('kotaKabupaten')?.toString() || '',
+        kota_kabupaten: kotaKabupaten,
         alamat_lengkap: formData.get('alamatLengkap')?.toString() || '',
         google_maps_url: formData.get('googleMapsUrl')?.toString() || '',
         no_wa_dkm: formData.get('noWaDkm')?.toString() || '',
@@ -236,17 +252,29 @@ export async function createMasjidByAdmin(formData: FormData) {
 
     if (!res.ok) {
       const errText = await res.text();
-      return { success: false, error: `Gagal membuat masjid: ${errText}` };
+      console.error('[createMasjidByAdmin Error]:', res.status, errText);
+      return {
+        success: false,
+        message: 'Afwan, masjid baru belum dapat diterbitkan. Silakan periksa kelengkapan data dan coba lagi.',
+        error: 'Afwan, masjid baru belum dapat diterbitkan. Silakan periksa kelengkapan data dan coba lagi.',
+      };
     }
 
     revalidatePath('/');
     revalidatePath('/masjid');
+    revalidatePath('/sitemap.xml');
     revalidatePath('/dashboard/admin');
 
     return { success: true, message: 'Masjid baru berhasil diterbitkan!' };
   } catch (error) {
-    console.error('Error in createMasjidByAdmin:', error);
-    return { success: false, error: 'Terjadi kesalahan sistem saat membuat masjid.' };
+    if (error instanceof Error) {
+      console.error('[createMasjidByAdmin Exception]:', error.message);
+    }
+    return {
+      success: false,
+      message: 'Afwan, terjadi kendala saat membuat data masjid.',
+      error: 'Afwan, terjadi kendala saat membuat data masjid.',
+    };
   }
 }
 
@@ -297,6 +325,9 @@ export async function updateMasjidByAdmin(formData: FormData) {
     const fasilitasRaw = formData.getAll('fasilitas');
     const fasilitasList: string[] = normalizeFasilitas(fasilitasRaw.map((f) => f.toString()).filter(Boolean));
 
+    const rawKota = (formData.get('kota_kabupaten') || formData.get('kotaKabupaten'))?.toString()?.trim();
+    const kotaKabupaten = rawKota && rawKota !== '' ? rawKota : 'Kota Serang';
+
     const payload: {
       title?: string;
       content?: string;
@@ -305,7 +336,7 @@ export async function updateMasjidByAdmin(formData: FormData) {
       acf: Record<string, unknown>;
     } = {
       acf: {
-        kota_kabupaten: formData.get('kotaKabupaten')?.toString() || '',
+        kota_kabupaten: kotaKabupaten,
         alamat_lengkap: formData.get('alamatLengkap')?.toString() || '',
         google_maps_url: formData.get('googleMapsUrl')?.toString() || '',
         no_wa_dkm: formData.get('noWaDkm')?.toString() || '',
@@ -335,17 +366,29 @@ export async function updateMasjidByAdmin(formData: FormData) {
 
     if (!res.ok) {
       const errText = await res.text();
-      return { success: false, error: `Gagal memperbarui masjid: ${errText}` };
+      console.error('[updateMasjidByAdmin Error]:', res.status, errText);
+      return {
+        success: false,
+        message: 'Afwan, data masjid belum dapat diperbarui. Silakan periksa kelengkapan isian wilayah dan coba lagi.',
+        error: 'Afwan, data masjid belum dapat diperbarui. Silakan periksa kelengkapan isian wilayah dan coba lagi.',
+      };
     }
 
     revalidatePath('/');
     revalidatePath('/masjid');
+    revalidatePath('/sitemap.xml');
     revalidatePath('/dashboard/admin');
 
     return { success: true, message: 'Data masjid berhasil diperbarui!' };
   } catch (error) {
-    console.error('Error in updateMasjidByAdmin:', error);
-    return { success: false, error: 'Terjadi kesalahan sistem saat memperbarui masjid.' };
+    if (error instanceof Error) {
+      console.error('[updateMasjidByAdmin Exception]:', error.message);
+    }
+    return {
+      success: false,
+      message: 'Afwan, terjadi kendala saat memperbarui data masjid.',
+      error: 'Afwan, terjadi kendala saat memperbarui data masjid.',
+    };
   }
 }
 
@@ -368,16 +411,28 @@ export async function deleteMasjidByAdmin(id: number) {
 
     if (!res.ok) {
       const errText = await res.text();
-      return { success: false, error: `Gagal menghapus masjid: ${errText}` };
+      console.error('[deleteMasjidByAdmin Error]:', res.status, errText);
+      return {
+        success: false,
+        message: 'Afwan, masjid belum dapat dihapus. Silakan coba beberapa saat lagi.',
+        error: 'Afwan, masjid belum dapat dihapus. Silakan coba beberapa saat lagi.',
+      };
     }
 
     revalidatePath('/');
     revalidatePath('/masjid');
+    revalidatePath('/sitemap.xml');
     revalidatePath('/dashboard/admin');
 
     return { success: true, message: 'Masjid berhasil dihapus.' };
   } catch (error) {
-    console.error('Error in deleteMasjidByAdmin:', error);
-    return { success: false, error: 'Terjadi kesalahan sistem saat menghapus masjid.' };
+    if (error instanceof Error) {
+      console.error('[deleteMasjidByAdmin Exception]:', error.message);
+    }
+    return {
+      success: false,
+      message: 'Afwan, terjadi kendala saat menghapus masjid.',
+      error: 'Afwan, terjadi kendala saat menghapus masjid.',
+    };
   }
 }

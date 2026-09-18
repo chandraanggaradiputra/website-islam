@@ -259,7 +259,12 @@ export async function updateKajianStatus(
 
     if (!res.ok) {
       const err = await res.text();
-      return { success: false, error: `Gagal memperbarui status: ${err}` };
+      console.error('[updateKajianStatus Error]:', res.status, err);
+      return {
+        success: false,
+        message: 'Afwan, status kajian belum dapat diperbarui. Silakan coba beberapa saat lagi.',
+        error: 'Afwan, status kajian belum dapat diperbarui. Silakan coba beberapa saat lagi.',
+      };
     }
 
     const data = await res.json();
@@ -279,10 +284,13 @@ export async function updateKajianStatus(
     return { success: true, message: 'Status kajian berhasil diperbarui!' };
   } catch (err: unknown) {
     if (err instanceof Error) {
-      console.error('Error in updateKajianStatus:', err.message);
-      return { success: false, error: err.message };
+      console.error('[updateKajianStatus Exception]:', err.message);
     }
-    return { success: false, error: 'Terjadi kesalahan sistem.' };
+    return {
+      success: false,
+      message: 'Afwan, terjadi kendala saat memperbarui status kajian.',
+      error: 'Afwan, terjadi kendala saat memperbarui status kajian.',
+    };
   }
 }
 
@@ -393,7 +401,12 @@ export async function createKajianByAdmin(formData: FormData) {
 
     if (!res.ok) {
       const err = await res.text();
-      return { success: false, error: `Gagal membuat kajian: ${err}` };
+      console.error('[createKajianByAdmin Error]:', res.status, err);
+      return {
+        success: false,
+        message: 'Afwan, jadwal kajian baru belum dapat diterbitkan. Silakan periksa kelengkapan data dan coba lagi.',
+        error: 'Afwan, jadwal kajian baru belum dapat diterbitkan. Silakan periksa kelengkapan data dan coba lagi.',
+      };
     }
 
     const data = await res.json();
@@ -413,10 +426,13 @@ export async function createKajianByAdmin(formData: FormData) {
     return { success: true, message: 'Jadwal kajian baru berhasil diterbitkan!' };
   } catch (err: unknown) {
     if (err instanceof Error) {
-      console.error('Error in createKajianByAdmin:', err.message);
-      return { success: false, error: err.message };
+      console.error('[createKajianByAdmin Exception]:', err.message);
     }
-    return { success: false, error: 'Terjadi kesalahan sistem.' };
+    return {
+      success: false,
+      message: 'Afwan, terjadi kendala saat membuat jadwal kajian.',
+      error: 'Afwan, terjadi kendala saat membuat jadwal kajian.',
+    };
   }
 }
 
@@ -525,7 +541,12 @@ export async function updateKajianByAdmin(formData: FormData) {
 
     if (!res.ok) {
       const err = await res.text();
-      return { success: false, error: `Gagal memperbarui kajian: ${err}` };
+      console.error('[updateKajianByAdmin Error]:', res.status, err);
+      return {
+        success: false,
+        message: 'Afwan, jadwal kajian belum dapat diperbarui. Silakan periksa kelengkapan data dan coba lagi.',
+        error: 'Afwan, jadwal kajian belum dapat diperbarui. Silakan periksa kelengkapan data dan coba lagi.',
+      };
     }
 
     const data = await res.json();
@@ -545,10 +566,13 @@ export async function updateKajianByAdmin(formData: FormData) {
     return { success: true, message: 'Jadwal kajian berhasil diperbarui!' };
   } catch (err: unknown) {
     if (err instanceof Error) {
-      console.error('Error in updateKajianByAdmin:', err.message);
-      return { success: false, error: err.message };
+      console.error('[updateKajianByAdmin Exception]:', err.message);
     }
-    return { success: false, error: 'Terjadi kesalahan sistem.' };
+    return {
+      success: false,
+      message: 'Afwan, terjadi kendala saat memperbarui jadwal kajian.',
+      error: 'Afwan, terjadi kendala saat memperbarui jadwal kajian.',
+    };
   }
 }
 
@@ -571,7 +595,12 @@ export async function deleteKajian(id: number) {
 
     if (!res.ok) {
       const err = await res.text();
-      return { success: false, error: `Gagal menghapus kajian: ${err}` };
+      console.error('[deleteKajian Error]:', res.status, err);
+      return {
+        success: false,
+        message: 'Afwan, kajian belum dapat dihapus. Silakan coba beberapa saat lagi.',
+        error: 'Afwan, kajian belum dapat dihapus. Silakan coba beberapa saat lagi.',
+      };
     }
 
     revalidatePath('/');
@@ -582,10 +611,13 @@ export async function deleteKajian(id: number) {
     return { success: true, message: 'Kajian berhasil dihapus.' };
   } catch (err: unknown) {
     if (err instanceof Error) {
-      console.error('Error in deleteKajian:', err.message);
-      return { success: false, error: err.message };
+      console.error('[deleteKajian Exception]:', err.message);
     }
-    return { success: false, error: 'Terjadi kesalahan sistem.' };
+    return {
+      success: false,
+      message: 'Afwan, terjadi kendala saat menghapus kajian.',
+      error: 'Afwan, terjadi kendala saat menghapus kajian.',
+    };
   }
 }
 

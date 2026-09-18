@@ -1,129 +1,131 @@
-# Implementation Plan: Pembenahan Aksesibilitas WCAG 2.2, Alur Auto-Publish DKM, Caching, & UX Formulir Kajian
+# Implementation Plan: Pembenahan Menyeluruh CRUD Masjid & Jadwal Kajian Super Admin
 
-Berdasarkan evaluasi sistem dan masukan pengurus DKM Masjid At Taqwa WILDAN Kota Serang, rencana implementasi ini menyempurnakan alur publikasi jadwal kajian, performa caching dan SEO instan, antarmuka pengisian formulir kajian (UX & pemilih waktu 24 jam), serta pemenuhan standar aksesibilitas internasional **WCAG 2.2 Level AA**.
+Rencana implementasi ini mengatasi masalah kegagalan pembaruan data masjid (HTTP 400 `rest_invalid_param`) di dasbor Super Admin (`/dashboard/admin?tab=masjid`), melengkapi field pilihan 8 Kota/Kabupaten resmi se-Banten dengan *smart default*, serta membersihkan penanganan error di seluruh aksi CRUD (Masjid & Kajian) agar selalu menampilkan pesan bahasa Indonesia yang santun dan ramah, bukan string JSON mentah.
 
 ---
 
 ## User Review Required
 
 > [!IMPORTANT]
-> **Perubahan Alur Bisnis: Auto-Publish Jadwal Kajian DKM**  
-> Jadwal kajian yang dikirim oleh pengurus DKM terverifikasi akan **langsung terbit (`status: 'publish'`, ACF `status_kajian: 'aktif'`)** tanpa menunggu moderasi atau persetujuan manual Super Admin. Jadwal baru akan langsung muncul di katalog publik `/jadwal-kajian`, halaman beranda `/`, dan sitemap XML `/sitemap.xml`, serta memicu notifikasi otomatis ke mesin pencari melalui protokol IndexNow.
+> **Penyebab Utama HTTP 400 `rest_invalid_param`:**  
+> Modal `AdminMasjidModal` di [`components/dashboard/AdminDashboardTabs.tsx`](file:///C:/website-islam/components/dashboard/AdminDashboardTabs.tsx) sebelumnya **tidak memiliki elemen input/select untuk `kota_kabupaten`**. Akibatnya, `formData.get('kotaKabupaten')` bernilai `null` dan dikirim sebagai string kosong `""` ke WordPress REST API. Karena ACF mewajibkan nilai enum dari 8 wilayah Banten, WordPress menolak pembaruan data dan mengembalikan raw JSON error.
 
 > [!NOTE]
-> **Penyelarasan Skema Validasi Jenis Kajian (Rutin vs Tematik)**  
-> - **Kajian Rutin**: Pilihan Hari Kajian (Senin–Ahad) menjadi **wajib**, sedangkan tanggal pelaksanaan spesifik bersifat opsional.  
-> - **Kajian Tematik**: Tanggal pelaksanaan menjadi **wajib**, sedangkan pilihan hari bersifat opsional.  
-> - **Kategori Jamaah**: Diselaraskan ke opsi baku syar'i: *"Umum (Ikhwan & Akhwat)"*, *"Khusus Ikhwan"*, dan *"Khusus Akhwat"*.
+> **Kredensial Super Admin untuk Pengujian Lokal:**  
+> Kredensial Super Admin (`anggarasixteen@gmail.com`) telah disimpan secara aman di berkas lingkungan lokal `.env.local` yang masuk dalam daftar `.gitignore`, sehingga tidak akan pernah bocor atau ter-commit ke repositori Git publik.
 
 ---
 
 ## Proposed Changes
 
-Grouped by layer & component:
-
-### A. Backend & Caching Layer (`lib/actions/`)
-
-#### [MODIFY] [lib/actions/kajian.ts](file:///C:/website-islam/lib/actions/kajian.ts)
-- **Fungsi `submitKajian(formData: FormData)`**:
-  - Ubah parameter status posting WordPress REST API dari `'pending'` menjadi `'publish'`.
-  - Pastikan ACF field `status_kajian` diset ke `'aktif'`.
-  - Tangkap atribut `slug` dari respon WordPress saat kajian baru dibuat.
-  - Tambahkan revalidasi cache instan:
-    ```typescript
-    revalidatePath('/jadwal-kajian');
-    revalidatePath('/');
-    revalidatePath('/sitemap.xml');
-    revalidatePath('/dashboard/dkm');
-    revalidatePath('/dashboard/admin');
-    ```
-  - Panggil auto-ping IndexNow ke Bing, Yandex, & Naver:
-    ```typescript
-    if (slug) {
-      const host = process.env.NEXT_PUBLIC_SITE_URL?.replace(/^https?:\/\//, '') || 'banten-mengaji.vercel.app';
-      notifySearchEngines([`https://${host}/jadwal-kajian/${slug}`]).catch(() => {});
-    }
-    ```
-  - Tangani error dengan pesan ramah, santun, dan informatif (menghilangkan istilah teknis REST API / Database):
-    ```typescript
-    return {
-      success: false,
-      message: "Afwan, jadwal kajian belum dapat disimpan. Silakan periksa isian data Anda atau coba beberapa saat lagi.",
-      error: "Afwan, jadwal kajian belum dapat disimpan. Silakan periksa isian data Anda atau coba beberapa saat lagi."
-    };
-    ```
-- **Fungsi `updateKajianByDkm(formData: FormData)`**:
-  - Perbaiki pesan error teknis menjadi bahasa Indonesia yang santun.
-  - Pastikan revalidasi mencakup `/jadwal-kajian`, `/`, `/sitemap.xml`, dan detail kajian slug terkait.
-
-#### [MODIFY] [lib/actions/dkm.ts](file:///C:/website-islam/lib/actions/dkm.ts)
-- Bersihkan pesan error mentah database/server menjadi pesan informatif yang ramah.
-- Pastikan revalidasi jalur caching lengkap saat DKM disetujui atau dimutakhirkan.
-
----
-
-### B. Form UX & Input Guide (`components/dashboard/`)
-
-#### [MODIFY] [components/dashboard/TambahKajianForm.tsx](file:///C:/website-islam/components/dashboard/TambahKajianForm.tsx)
-- **Skema Zod Dinamis (`zodResolver`)**:
-  - Gunakan `.superRefine` untuk memvalidasi:
-    * Jika `jenisKajian === 'rutin'`: `hariKajian` wajib diisi.
-    * Jika `jenisKajian === 'tematik'`: `tanggal` wajib diisi.
-- **Label & Panduan Antarmuka Pengguna**:
-  - *Jenis Kajian*: Pilihan jelas:
-    * `"Kajian Rutin (Pekanan / Bulanan)"`
-    * `"Kajian Tematik (Tabligh Akbar / Bedah Kitab)"`
-  - *Indikator Wajib*: Teks dinamis pada label `Hari Kajian` ("Wajib untuk Rutin") dan `Tanggal Pelaksanaan` ("Wajib untuk Tematik").
-  - *Jam Mulai & Selesai*: Tambahkan teks bantuan:
-    `"Format 24 Jam (Contoh: 18.30 untuk Ba'da Maghrib, 20.00 untuk Ba'da Isya)"`
-  - *Kategori Jamaah*: Opsi baku:
-    * `umum`: `"Umum (Ikhwan & Akhwat)"`
-    * `khusus_ikhwan`: `"Khusus Ikhwan"`
-    * `khusus_akhwat`: `"Khusus Akhwat"`
-  - *Tautan Streaming*: Placeholder informatif `"https://youtube.com/... atau tautan kajian online lainnya"`.
-- **Notifikasi Sukses**:
-  - Ganti pesan konfirmasi menjadi:
-    `"Jazakallahu khairan. Jadwal kajian berhasil dipublikasikan dan langsung tayang di portal Banten Mengaji."`
+### A. Komponen Antarmuka Dasbor Admin (`components/dashboard/`)
 
 #### [MODIFY] [components/dashboard/AdminDashboardTabs.tsx](file:///C:/website-islam/components/dashboard/AdminDashboardTabs.tsx)
-- Selaraskan modal `AdminKajianModal` dengan panduan format waktu 24 jam dan pilihan jenis kajian yang seragam.
+
+1. **Konstanta & Tipe 8 Wilayah Banten**:
+   - Impor konstanta wilayah baku:
+     ```tsx
+     import { DAFTAR_KOTA_KABUPATEN, KotaKabupatenBanten } from '@/lib/constants/bantenRegions';
+     ```
+2. **Formulir `AdminMasjidModal`**:
+   - Tambahkan state `selectedKota` dengan inisialisasi default cerdas (*smart default*):
+     * Jika mengedit masjid (`initialMasjid?.acf?.kota_kabupaten`), gunakan nilai tersebut.
+     * Jika kosong atau buat masjid baru, gunakan `'Kota Serang'` sebagai default aman.
+   - Tambahkan elemen dropdown `<select id="adminMasjidKota" name="kota_kabupaten">` berisi 8 pilihan resmi se-Provinsi Banten:
+     * `Kota Serang`, `Kota Cilegon`, `Kota Tangerang`, `Kota Tangerang Selatan`, `Kabupaten Serang`, `Kabupaten Pandeglang`, `Kabupaten Lebak`, `Kabupaten Tangerang`.
+   - Di `handleSubmit`:
+     * Pastikan `formData.set('kota_kabupaten', selectedKota)` dan `formData.set('kotaKabupaten', selectedKota)` selalu terisi sebelum dikirim ke Server Action.
+   - Sanitasi pesan error di UI:
+     * Buat helper `sanitizeErrorMessage` agar jika ada pesan berformat JSON dari server, secara otomatis diubah menjadi pesan bersih:
+       *"Afwan, data masjid belum dapat diperbarui. Silakan periksa kelengkapan isian wilayah dan coba lagi."*
+3. **Formulir `AdminKajianModal`**:
+   - Terapkan fungsi pembersihan error (`sanitizeErrorMessage`) agar tidak pernah memunculkan string JSON mentah.
+   - Tambahkan input unggah poster flyer baru opsional (`<input type="file" name="poster" accept="image/*" />`).
+   - Pastikan seluruh pemetaan ACF (jenis kajian, kategori jamaah syar'i, status pelaksanaan) tersimpan dengan benar.
+4. **Konfirmasi Penghapusan (`handleDeleteMasjid` & `handleDeleteKajian`)**:
+   - Perbaiki alert penanganan kegagalan agar menampilkan pesan santun jika server gagal menghapus data.
 
 ---
 
-### C. Standar Aksesibilitas WCAG 2.2 Level AA
+### B. Server Actions Backend (`lib/actions/`)
 
-#### [MODIFY] [components/kajian/KajianCard.tsx](file:///C:/website-islam/components/kajian/KajianCard.tsx)
-- **Target Size (SC 2.5.8)**:
-  - Tautan "Lihat Detail Lengkap" / "Tonton Rekaman" diperbarui dengan padding yang proporsional dan `min-h-[44px]` (fleksibel dengan sentuhan jari layar sentuh).
-- **Kontras Warna Badge (SC 1.4.3 - Minimum 4.5:1)**:
-  - Badge Tematik: Ubah `text-amber-700 bg-amber-100` (rasio < 4.5:1) menjadi `bg-amber-100 text-amber-950 border border-amber-300 dark:bg-amber-950/70 dark:text-amber-200 dark:border-amber-800` (rasio kontras > 6.5:1).
-  - Badge Rutin: `bg-blue-100 text-blue-900 border border-blue-200 dark:bg-blue-950/70 dark:text-blue-200 dark:border-blue-800` (rasio kontras > 7:1).
-  - Badge Jamaah & Status: Tingkatkan kontras teks ke minimum 4.5:1 pada latar terang maupun mode gelap.
+#### [MODIFY] [lib/actions/masjid.ts](file:///C:/website-islam/lib/actions/masjid.ts)
 
-#### [MODIFY] [components/masjid/MasjidCard.tsx](file:///C:/website-islam/components/masjid/MasjidCard.tsx)
-- Tingkatkan kontras badge fasilitas dari `text-slate-600` menjadi `text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700` (rasio > 7:1).
-- Pastikan tombol "Lihat Profil" dan "Rute Maps" memenuhi tinggi minimum `min-h-[44px]`.
+1. **Fungsi `updateMasjidByAdmin(formData: FormData)`**:
+   - Ekstrak `kota_kabupaten` dari `formData` secara fleksibel:
+     ```typescript
+     const rawKota = (formData.get('kota_kabupaten') || formData.get('kotaKabupaten'))?.toString()?.trim();
+     const kotaKabupaten = rawKota && rawKota !== '' ? rawKota : 'Kota Serang';
+     ```
+   - Masukkan `kota_kabupaten` ke dalam objek `payload.acf`:
+     ```typescript
+     acf: {
+       ...
+       kota_kabupaten: kotaKabupaten,
+     }
+     ```
+   - Catat error server ke console (`console.error('[updateMasjidByAdmin Error]:', res.status, errText)`) dan kembalikan respon santun:
+     ```typescript
+     if (!res.ok) {
+       return {
+         success: false,
+         message: 'Afwan, data masjid belum dapat diperbarui. Silakan periksa kelengkapan data dan coba lagi.',
+         error: 'Afwan, data masjid belum dapat diperbarui. Silakan periksa kelengkapan data dan coba lagi.',
+       };
+     }
+     ```
+   - Tambahkan revalidasi lengkap: `/masjid`, `/`, `/sitemap.xml`, `/dashboard/admin`, dan `/dashboard/dkm`.
+2. **Fungsi `createMasjidByAdmin(formData: FormData)`**:
+   - Terapkan ekstraksi `kota_kabupaten` yang sama dengan fallback `'Kota Serang'`.
+   - Hilangkan `errText` mentah, ganti dengan pesan santun.
+3. **Fungsi `deleteMasjidByAdmin(id: number)`**:
+   - Hilangkan `errText` mentah, ganti dengan pesan santun.
+4. **Fungsi `updateMasjidProfile(formData: FormData)`**:
+   - Terapkan validasi `kota_kabupaten` dan error handling santun yang serupa.
 
-#### [MODIFY] [components/ui/ShareButton.tsx](file:///C:/website-islam/components/ui/ShareButton.tsx)
-- **Label in Name (SC 2.5.3)**:
-  - Selaraskan label yang terlihat dengan nama aksesibilitas: tombol dengan teks tampak *"Bagikan ke WhatsApp"* dan atribut `aria-label="Bagikan ke WhatsApp"`.
-  - Pastikan tinggi tombol memenuhi `min-h-[40px]`.
+#### [MODIFY] [lib/actions/kajian.ts](file:///C:/website-islam/lib/actions/kajian.ts)
 
-#### [MODIFY] [components/ui/FontResizer.tsx](file:///C:/website-islam/components/ui/FontResizer.tsx)
-- **Label in Name (SC 2.5.3)**:
-  - Ubah `aria-label` agar menyertakan teks yang terlihat:
-    * Tombol `A-`: `aria-label="A- (Perkecil ukuran teks)"`
-    * Tombol `A+`: `aria-label="A+ (Perbesar ukuran teks)"`
-  - Berikan target sentuh `min-h-[36px] min-w-[36px]`.
+1. **Fungsi `updateKajianByAdmin(formData: FormData)`**:
+   - Hapus eksposur string mentah `${err}` pada kegagalan HTTP REST API.
+   - Kembalikan pesan santun:
+     ```typescript
+     return {
+       success: false,
+       message: 'Afwan, jadwal kajian belum dapat diperbarui. Silakan periksa isian data Anda.',
+       error: 'Afwan, jadwal kajian belum dapat diperbarui. Silakan periksa isian data Anda.',
+     };
+     ```
+2. **Fungsi `createKajianByAdmin(formData: FormData)`**:
+   - Hapus `${err}` mentah, kembalikan pesan santun.
+3. **Fungsi `deleteKajian(id: number)`**:
+   - Hapus `${err}` mentah, kembalikan pesan santun.
+4. **Fungsi `updateKajianStatus(id, status, statusKajian)`**:
+   - Hapus `${err}` mentah, kembalikan pesan santun.
 
-#### [MODIFY] [components/kajian/KajianFilter.tsx](file:///C:/website-islam/components/kajian/KajianFilter.tsx)
-- Pastikan tombol filter reset, tab "Mendatang" dan "Arsip" memiliki target sentuh minimum 44px dan rasio kontras teks badge memenuhi kriteria WCAG 2.2.
+---
+
+### C. Konstanta Wilayah (`lib/constants/bantenRegions.ts`)
+
+#### [MODIFY] [lib/constants/bantenRegions.ts](file:///C:/website-islam/lib/constants/bantenRegions.ts)
+- Ekspor konstanta array `DAFTAR_KOTA_KABUPATEN`:
+  ```typescript
+  export const DAFTAR_KOTA_KABUPATEN: KotaKabupatenBanten[] = [
+    'Kota Serang',
+    'Kota Cilegon',
+    'Kota Tangerang',
+    'Kota Tangerang Selatan',
+    'Kabupaten Serang',
+    'Kabupaten Pandeglang',
+    'Kabupaten Lebak',
+    'Kabupaten Tangerang',
+  ];
+  ```
 
 ---
 
 ## Verification Plan
 
-### Automated Build & Type Tests
+### Automated Tests
 1. **TypeScript Type Safety**:
    ```bash
    npx tsc --noEmit
@@ -133,22 +135,31 @@ Grouped by layer & component:
    ```bash
    npm run build
    ```
-   *Target*: 100% seluruh 21 rute aplikasi terkompilasi sukses.
+   *Target*: 100% dari 21 rute aplikasi berhasil terkompilasi tanpa kendala.
 
-### Runtime Verification via Chrome DevTools MCP (Brave)
-1. **Pengujian Form Tambah Kajian**:
-   - Jalankan server `npm run dev` pada `http://localhost:3000`.
-   - Buka halaman `/dashboard/dkm/tambah-kajian` menggunakan viewport smartphone (390×844 px).
-   - Uji validasi jenis kajian Rutin (Hari wajib) dan Tematik (Tanggal wajib).
-   - Periksa format pemilih waktu jam (format 24 jam).
-2. **Audit Lighthouse Aksesibilitas WCAG 2.2**:
-   - Jalankan Lighthouse audit pada halaman `/jadwal-kajian` dan `/dashboard/dkm/tambah-kajian`.
-   - *Target*: Skor Accessibility ≥ 95 dan SEO 100.
-3. **Dokumentasi Hasil**:
-   - Catat hasil pengujian dan tangkapan layar ke dalam dokumen `walkthrough.md`.
+### Runtime Verification via Chrome DevTools MCP & Brave
+1. **Login Sesi Super Admin**:
+   - Buka `http://localhost:3000/login` di browser via DevTools MCP.
+   - Input kredensial Super Admin (`anggarasixteen@gmail.com` / `Maschan@10`).
+   - Pastikan login sukses dan diarahkan ke `/dashboard/admin`.
+2. **Uji Coba Edit Masjid ("Masjid At Taqwa WILDAN Kota Serang", ID 91)**:
+   - Di tab Masjid `/dashboard/admin?tab=masjid`, klik tombol Edit pada *Masjid At Taqwa WILDAN*.
+   - Periksa dropdown Kota/Kabupaten: Terpilih otomatis *"Kota Serang"*.
+   - Ubah deskripsi atau alamat sedikit (misal merapikan format alamat) lalu klik *"Simpan Perubahan"*.
+   - Verifikasi respon jaringan: Status **200 OK** (tidak ada lagi HTTP 400 `rest_invalid_param`).
+   - Pastikan modal tertutup otomatis dan data terbaru langsung tampil.
+3. **Uji Coba Edit Jadwal Kajian**:
+   - Di tab Kajian `/dashboard/admin?tab=kajian`, klik tombol Edit pada salah satu kajian.
+   - Periksa seluruh field ACF terisi sesuai data aslinya.
+   - Simpan perubahan dan verifikasi status 200 OK serta revalidasi instan.
+4. **Dokumentasi Bukti Hasil Uji**:
+   - Ambil screenshot dan susun seluruh bukti log ke berkas `walkthrough.md`.
 
 ### Git Fast-Forward Merge Protocol
-1. Commit di branch `staging-website-islam`.
-2. Push ke remote `origin staging-website-islam`.
-3. Checkout ke `main`, merge `staging-website-islam` (--ff-only), lalu push ke `origin main`.
+1. Commit di branch `staging-website-islam`:
+   `git commit -m "fix(admin): pembenahan crud masjid dan kajian, perbaikan acf kota_kabupaten, dan sanitasi error handling"`
+2. Checkout `main`, jalankan fast-forward merge:
+   `git checkout main; git merge staging-website-islam --ff-only`
+3. Push ke remote origin:
+   `git push origin main staging-website-islam`
 4. Kembalikan branch kerja ke `staging-website-islam`.

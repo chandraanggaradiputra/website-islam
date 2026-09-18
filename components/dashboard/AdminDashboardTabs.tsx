@@ -78,6 +78,26 @@ const KECAMATAN_OPTIONS = [
 ];
 
 import { normalizeFasilitas } from '@/lib/utils/fasilitas';
+import { DAFTAR_KOTA_KABUPATEN, KotaKabupatenBanten } from '@/lib/constants/bantenRegions';
+
+/**
+ * Sanitasi pesan galat dari backend agar ramah dan sopan bagi pengguna
+ */
+function sanitizeErrorMessage(error: unknown, fallback: string): string {
+  if (!error) return fallback;
+  const raw = typeof error === 'string' ? error : (error as Error).message || '';
+  if (
+    raw.includes('rest_') ||
+    raw.includes('<!DOCTYPE') ||
+    raw.includes('<html') ||
+    raw.includes('{') ||
+    raw.includes('400') ||
+    raw.includes('500')
+  ) {
+    return fallback;
+  }
+  return raw;
+}
 
 const FASILITAS_OPTIONS = [
   'Parkir Mobil & Motor',
@@ -309,8 +329,11 @@ export function AdminDashboardTabs({
     if (confirm(`Hapus masjid "${name}" secara permanen? Data kajian terkait mungkin terpengaruh.`)) {
       startTransition(async () => {
         const res = await deleteMasjidByAdmin(id);
-        if (!res.success) alert(res.error);
-        else router.refresh();
+        if (!res.success) {
+          alert(sanitizeErrorMessage(res.error, 'Afwan, masjid belum dapat dihapus. Silakan coba beberapa saat lagi.'));
+        } else {
+          router.refresh();
+        }
       });
     }
   };
@@ -319,8 +342,11 @@ export function AdminDashboardTabs({
     if (confirm(`Hapus jadwal kajian "${title}" secara permanen?`)) {
       startTransition(async () => {
         const res = await deleteKajian(id);
-        if (!res.success) alert(res.error);
-        else router.refresh();
+        if (!res.success) {
+          alert(sanitizeErrorMessage(res.error, 'Afwan, jadwal kajian belum dapat dihapus. Silakan coba beberapa saat lagi.'));
+        } else {
+          router.refresh();
+        }
       });
     }
   };
@@ -332,8 +358,11 @@ export function AdminDashboardTabs({
   ) => {
     startTransition(async () => {
       const res = await updateKajianStatus(id, status, statusKajian);
-      if (!res.success) alert(res.error);
-      else router.refresh();
+      if (!res.success) {
+        alert(sanitizeErrorMessage(res.error, 'Afwan, status kajian belum dapat diperbarui. Silakan coba beberapa saat lagi.'));
+      } else {
+        router.refresh();
+      }
     });
   };
 
@@ -1738,6 +1767,10 @@ function AdminMasjidModal({
 
   const isEdit = Boolean(initialMasjid);
 
+  const [selectedKota, setSelectedKota] = useState<KotaKabupatenBanten>(
+    (initialMasjid?.acf?.kota_kabupaten as KotaKabupatenBanten) || 'Kota Serang'
+  );
+
   const initialFasilitas = Array.isArray(initialMasjid?.acf?.fasilitas)
     ? normalizeFasilitas(initialMasjid.acf.fasilitas).map((f) =>
         f.replace(/^•\s*/, '').replace(/Akhawat/g, 'Akhwat')
@@ -1761,6 +1794,9 @@ function AdminMasjidModal({
       formData.set('id', initialMasjid.id.toString());
     }
 
+    formData.set('kota_kabupaten', selectedKota);
+    formData.set('kotaKabupaten', selectedKota);
+
     formData.delete('fasilitas');
     normalizeFasilitas(selectedFasilitas).forEach((f) => formData.append('fasilitas', f));
 
@@ -1772,13 +1808,13 @@ function AdminMasjidModal({
       if (res.success) {
         onSuccess();
       } else {
-        setError(res.error || 'Gagal memproses data masjid.');
+        setError(sanitizeErrorMessage(res.error, 'Afwan, data masjid belum dapat disimpan. Silakan periksa kelengkapan data.'));
       }
     } catch (err: unknown) {
       if (err instanceof Error) {
-        setError(err.message);
+        setError(sanitizeErrorMessage(err.message, 'Afwan, terjadi kendala saat menyimpan data masjid.'));
       } else {
-        setError('Terjadi kesalahan koneksi.');
+        setError('Afwan, terjadi kesalahan koneksi.');
       }
     } finally {
       setIsSubmitting(false);
@@ -1824,10 +1860,29 @@ function AdminMasjidModal({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                Kecamatan
+              <label htmlFor="adminMasjidKota" className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Kota / Kabupaten *
               </label>
               <select
+                id="adminMasjidKota"
+                name="kota_kabupaten"
+                value={selectedKota}
+                onChange={(e) => setSelectedKota(e.target.value as KotaKabupatenBanten)}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-3.5 text-sm text-slate-900 focus:border-[#093c96] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              >
+                {DAFTAR_KOTA_KABUPATEN.map((kota) => (
+                  <option key={kota} value={kota}>
+                    {kota}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="adminMasjidKecamatan" className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Kecamatan (Opsional)
+              </label>
+              <select
+                id="adminMasjidKecamatan"
                 name="kecamatan"
                 defaultValue={initialMasjid?.kecamatan?.[0] || ''}
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-3.5 text-sm text-slate-900 focus:border-[#093c96] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
@@ -1840,6 +1895,9 @@ function AdminMasjidModal({
                 ))}
               </select>
             </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
                 Foto Masjid (Opsional)
@@ -1849,6 +1907,18 @@ function AdminMasjidModal({
                 name="foto"
                 accept="image/*"
                 className="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-[#093c96] file:text-white hover:file:bg-blue-800"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Link Google Maps (Opsional)
+              </label>
+              <input
+                type="url"
+                name="googleMapsUrl"
+                defaultValue={initialMasjid?.acf?.google_maps_url || ''}
+                placeholder="https://maps.google.com/..."
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-3.5 text-sm text-slate-900 focus:border-[#093c96] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               />
             </div>
           </div>
@@ -2025,13 +2095,13 @@ function AdminKajianModal({
       if (res.success) {
         onSuccess();
       } else {
-        setError(res.error || `Gagal ${isEdit ? 'memperbarui' : 'membuat'} jadwal kajian.`);
+        setError(sanitizeErrorMessage(res.error, `Afwan, gagal ${isEdit ? 'memperbarui' : 'membuat'} jadwal kajian.`));
       }
     } catch (err: unknown) {
       if (err instanceof Error) {
-        setError(err.message);
+        setError(sanitizeErrorMessage(err.message, 'Afwan, terjadi kendala saat memproses jadwal kajian.'));
       } else {
-        setError('Terjadi kesalahan sistem saat memproses jadwal kajian.');
+        setError('Afwan, terjadi kesalahan sistem saat memproses jadwal kajian.');
       }
     } finally {
       setIsSubmitting(false);
@@ -2252,17 +2322,30 @@ function AdminKajianModal({
             </div>
           </div>
 
-          <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
-              Link Live Streaming (Opsional)
-            </label>
-            <input
-              type="url"
-              name="linkStreaming"
-              defaultValue={kajian?.acf?.link_streaming || ''}
-              placeholder="https://youtube.com/live/..."
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 px-3.5 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Poster Kajian (Opsional)
+              </label>
+              <input
+                type="file"
+                name="poster"
+                accept="image/*"
+                className="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-[#093c96] file:text-white hover:file:bg-blue-800"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Link Live Streaming (Opsional)
+              </label>
+              <input
+                type="url"
+                name="linkStreaming"
+                defaultValue={kajian?.acf?.link_streaming || ''}
+                placeholder="https://youtube.com/live/..."
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 px-3.5 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              />
+            </div>
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
