@@ -71,7 +71,11 @@ export default async function DashboardLayout({ children }: { children: ReactNod
       <div className="flex-1 flex flex-col min-w-0 min-h-screen overflow-hidden">
         {/* Header Khusus Mobile (< md) */}
         <header className="h-14 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 shrink-0 md:hidden">
-          <Link href="/" className="flex items-center gap-2 font-bold text-base text-[#093c96] dark:text-blue-400">
+          <Link
+            href={isAdmin ? '/dashboard/admin' : '/dashboard/dkm'}
+            className="flex items-center gap-2 font-bold text-base text-[#093c96] dark:text-blue-400 hover:opacity-90 transition-opacity"
+            title={isAdmin ? 'Kembali ke Dasbor Utama Admin' : 'Kembali ke Dasbor Utama DKM'}
+          >
             <Image
               src="/banten-mengaji.jpeg"
               alt="Logo Banten Mengaji"

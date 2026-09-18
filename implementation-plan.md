@@ -1,165 +1,97 @@
-# Implementation Plan: Pembenahan Menyeluruh CRUD Masjid & Jadwal Kajian Super Admin
+# Rencana Implementasi: Penyempurnaan Navigasi Mobile Dasbor DKM
 
-Rencana implementasi ini mengatasi masalah kegagalan pembaruan data masjid (HTTP 400 `rest_invalid_param`) di dasbor Super Admin (`/dashboard/admin?tab=masjid`), melengkapi field pilihan 8 Kota/Kabupaten resmi se-Banten dengan *smart default*, serta membersihkan penanganan error di seluruh aksi CRUD (Masjid & Kajian) agar selalu menampilkan pesan bahasa Indonesia yang santun dan ramah, bukan string JSON mentah.
+Rencana teknis ini disusun untuk menyempurnakan pengalaman navigasi pengguna pengurus DKM pada perangkat seluler (mobile). Solusi ini menghilangkan kondisi "dead-end" saat berada di sub-halaman DKM, menghubungkan teks/logo "DKM Panel" sebagai tautan aktif kembali ke dasbor utama, menyediakan tab navigasi cepat horizontal berstandar WCAG 2.2 touch target (min 44px), serta membuat bilah Bottom Navigation Bar adaptif terhadap rute dasbor DKM.
 
 ---
 
 ## User Review Required
 
 > [!IMPORTANT]
-> **Penyebab Utama HTTP 400 `rest_invalid_param`:**  
-> Modal `AdminMasjidModal` di [`components/dashboard/AdminDashboardTabs.tsx`](file:///C:/website-islam/components/dashboard/AdminDashboardTabs.tsx) sebelumnya **tidak memiliki elemen input/select untuk `kota_kabupaten`**. Akibatnya, `formData.get('kotaKabupaten')` bernilai `null` dan dikirim sebagai string kosong `""` ke WordPress REST API. Karena ACF mewajibkan nilai enum dari 8 wilayah Banten, WordPress menolak pembaruan data dan mengembalikan raw JSON error.
-
-> [!NOTE]
-> **Kredensial Super Admin untuk Pengujian Lokal:**  
-> Kredensial Super Admin (`anggarasixteen@gmail.com`) telah disimpan secara aman di berkas lingkungan lokal `.env.local` yang masuk dalam daftar `.gitignore`, sehingga tidak akan pernah bocor atau ter-commit ke repositori Git publik.
+> **Penyelarasan URL Profil Masjid**:
+> Di codebase saat ini, rute resmi untuk profil masjid DKM adalah `/dashboard/dkm/profil-masjid`. Pada prompt tugas, terdapat penyebutan `/dashboard/dkm/profil`.
+> Rencana ini akan:
+> 1. Menggunakan tautan `/dashboard/dkm/profil-masjid` pada navigasi utama agar langsung memuat form profil masjid tanpa jeda pengalihan.
+> 2. Membuat berkas pembantu `app/dashboard/dkm/profil/page.tsx` yang melakukan `redirect('/dashboard/dkm/profil-masjid')` sehingga bila ada pengguna atau bookmark yang mengakses `/dashboard/dkm/profil`, sistem tidak akan menampilkan 404 melainkan langsung dialihkan secara transparan.
+> 3. Memastikan deteksi status aktif pada `DkmSubNav` dan `BottomNav` mencakup kedua pola rute (`/dashboard/dkm/profil*`).
 
 ---
 
 ## Proposed Changes
 
-### A. Komponen Antarmuka Dasbor Admin (`components/dashboard/`)
+### 1. Komponen Baru Navigasi Tab Seluler DKM
 
-#### [MODIFY] [components/dashboard/AdminDashboardTabs.tsx](file:///C:/website-islam/components/dashboard/AdminDashboardTabs.tsx)
-
-1. **Konstanta & Tipe 8 Wilayah Banten**:
-   - Impor konstanta wilayah baku:
-     ```tsx
-     import { DAFTAR_KOTA_KABUPATEN, KotaKabupatenBanten } from '@/lib/constants/bantenRegions';
-     ```
-2. **Formulir `AdminMasjidModal`**:
-   - Tambahkan state `selectedKota` dengan inisialisasi default cerdas (*smart default*):
-     * Jika mengedit masjid (`initialMasjid?.acf?.kota_kabupaten`), gunakan nilai tersebut.
-     * Jika kosong atau buat masjid baru, gunakan `'Kota Serang'` sebagai default aman.
-   - Tambahkan elemen dropdown `<select id="adminMasjidKota" name="kota_kabupaten">` berisi 8 pilihan resmi se-Provinsi Banten:
-     * `Kota Serang`, `Kota Cilegon`, `Kota Tangerang`, `Kota Tangerang Selatan`, `Kabupaten Serang`, `Kabupaten Pandeglang`, `Kabupaten Lebak`, `Kabupaten Tangerang`.
-   - Di `handleSubmit`:
-     * Pastikan `formData.set('kota_kabupaten', selectedKota)` dan `formData.set('kotaKabupaten', selectedKota)` selalu terisi sebelum dikirim ke Server Action.
-   - Sanitasi pesan error di UI:
-     * Buat helper `sanitizeErrorMessage` agar jika ada pesan berformat JSON dari server, secara otomatis diubah menjadi pesan bersih:
-       *"Afwan, data masjid belum dapat diperbarui. Silakan periksa kelengkapan isian wilayah dan coba lagi."*
-3. **Formulir `AdminKajianModal`**:
-   - Terapkan fungsi pembersihan error (`sanitizeErrorMessage`) agar tidak pernah memunculkan string JSON mentah.
-   - Tambahkan input unggah poster flyer baru opsional (`<input type="file" name="poster" accept="image/*" />`).
-   - Pastikan seluruh pemetaan ACF (jenis kajian, kategori jamaah syar'i, status pelaksanaan) tersimpan dengan benar.
-4. **Konfirmasi Penghapusan (`handleDeleteMasjid` & `handleDeleteKajian`)**:
-   - Perbaiki alert penanganan kegagalan agar menampilkan pesan santun jika server gagal menghapus data.
+#### [NEW] [DkmSubNav.tsx](file:///C:/website-islam/components/dashboard/DkmSubNav.tsx)
+- Membuat komponen client `"use client"` yang menampilkan:
+  - **Tautan Balik Cepat (`← Kembali ke Dasbor Utama`)**: Hanya muncul saat berada di sub-halaman (misalnya `/dashboard/dkm/tambah-kajian` atau `/dashboard/dkm/profil-masjid`), dengan target sentuh min 36-44px dan label aksesibilitas ARIA yang jelas.
+  - **3 Tab Cepat Horizontal (Pills)**:
+    - `Dasbor` (`/dashboard/dkm`, ikon `LayoutDashboard`)
+    - `Profil Masjid` (`/dashboard/dkm/profil-masjid`, ikon `Building2`)
+    - `Tambah Kajian` (`/dashboard/dkm/tambah-kajian`, ikon `PlusCircle`)
+  - Standar WCAG 2.2: target sentuh `min-h-[44px]`, kontras warna tinggi (warna aktif Emerald `bg-emerald-700 text-white shadow-sm`), serta atribut `aria-current="page"`.
 
 ---
 
-### B. Server Actions Backend (`lib/actions/`)
+### 2. Tata Letak Dasbor DKM & Tautan Header Mobile
 
-#### [MODIFY] [lib/actions/masjid.ts](file:///C:/website-islam/lib/actions/masjid.ts)
+#### [NEW] [app/dashboard/dkm/layout.tsx](file:///C:/website-islam/app/dashboard/dkm/layout.tsx)
+- Membuat layout khusus untuk area DKM yang secara modular memasang `<DkmSubNav />` di bagian atas area konten seluruh halaman DKM (`/dashboard/dkm`, `/dashboard/dkm/profil-masjid`, `/dashboard/dkm/tambah-kajian`).
+- Menjamin konsistensi antarmuka tanpa perlu menyisipkan kode komponen secara manual di setiap berkas halaman.
 
-1. **Fungsi `updateMasjidByAdmin(formData: FormData)`**:
-   - Ekstrak `kota_kabupaten` dari `formData` secara fleksibel:
-     ```typescript
-     const rawKota = (formData.get('kota_kabupaten') || formData.get('kotaKabupaten'))?.toString()?.trim();
-     const kotaKabupaten = rawKota && rawKota !== '' ? rawKota : 'Kota Serang';
-     ```
-   - Masukkan `kota_kabupaten` ke dalam objek `payload.acf`:
-     ```typescript
-     acf: {
-       ...
-       kota_kabupaten: kotaKabupaten,
-     }
-     ```
-   - Catat error server ke console (`console.error('[updateMasjidByAdmin Error]:', res.status, errText)`) dan kembalikan respon santun:
-     ```typescript
-     if (!res.ok) {
-       return {
-         success: false,
-         message: 'Afwan, data masjid belum dapat diperbarui. Silakan periksa kelengkapan data dan coba lagi.',
-         error: 'Afwan, data masjid belum dapat diperbarui. Silakan periksa kelengkapan data dan coba lagi.',
-       };
-     }
-     ```
-   - Tambahkan revalidasi lengkap: `/masjid`, `/`, `/sitemap.xml`, `/dashboard/admin`, dan `/dashboard/dkm`.
-2. **Fungsi `createMasjidByAdmin(formData: FormData)`**:
-   - Terapkan ekstraksi `kota_kabupaten` yang sama dengan fallback `'Kota Serang'`.
-   - Hilangkan `errText` mentah, ganti dengan pesan santun.
-3. **Fungsi `deleteMasjidByAdmin(id: number)`**:
-   - Hilangkan `errText` mentah, ganti dengan pesan santun.
-4. **Fungsi `updateMasjidProfile(formData: FormData)`**:
-   - Terapkan validasi `kota_kabupaten` dan error handling santun yang serupa.
+#### [NEW] [app/dashboard/dkm/profil/page.tsx](file:///C:/website-islam/app/dashboard/dkm/profil/page.tsx)
+- Menambahkan Server Component pengalihan cepat (`redirect('/dashboard/dkm/profil-masjid')`) untuk memastikan URL alias `/dashboard/dkm/profil` selalu valid dan tidak dead-link.
 
-#### [MODIFY] [lib/actions/kajian.ts](file:///C:/website-islam/lib/actions/kajian.ts)
-
-1. **Fungsi `updateKajianByAdmin(formData: FormData)`**:
-   - Hapus eksposur string mentah `${err}` pada kegagalan HTTP REST API.
-   - Kembalikan pesan santun:
-     ```typescript
-     return {
-       success: false,
-       message: 'Afwan, jadwal kajian belum dapat diperbarui. Silakan periksa isian data Anda.',
-       error: 'Afwan, jadwal kajian belum dapat diperbarui. Silakan periksa isian data Anda.',
-     };
-     ```
-2. **Fungsi `createKajianByAdmin(formData: FormData)`**:
-   - Hapus `${err}` mentah, kembalikan pesan santun.
-3. **Fungsi `deleteKajian(id: number)`**:
-   - Hapus `${err}` mentah, kembalikan pesan santun.
-4. **Fungsi `updateKajianStatus(id, status, statusKajian)`**:
-   - Hapus `${err}` mentah, kembalikan pesan santun.
+#### [MODIFY] [app/dashboard/layout.tsx](file:///C:/website-islam/app/dashboard/layout.tsx)
+- Mengubah tautan logo dan teks di bilah atas mobile (`<header className="... md:hidden">`):
+  - Saat ini: `<Link href="/" ...>DKM Panel</Link>` (melempar pengguna ke beranda publik).
+  - Diubah menjadi: `<Link href={isAdmin ? '/dashboard/admin' : '/dashboard/dkm'} ...>DKM Panel</Link>`.
+  - Memberikan efek visual hover/focus dan `title` aksesibilitas agar pengurus DKM dapat kembali ke dasbor utama hanya dengan mengetuk logo/judul di bilah atas.
 
 ---
 
-### C. Konstanta Wilayah (`lib/constants/bantenRegions.ts`)
+### 3. Bilah Navigasi Bawah Adaptif (Adaptive Bottom Navigation)
 
-#### [MODIFY] [lib/constants/bantenRegions.ts](file:///C:/website-islam/lib/constants/bantenRegions.ts)
-- Ekspor konstanta array `DAFTAR_KOTA_KABUPATEN`:
-  ```typescript
-  export const DAFTAR_KOTA_KABUPATEN: KotaKabupatenBanten[] = [
-    'Kota Serang',
-    'Kota Cilegon',
-    'Kota Tangerang',
-    'Kota Tangerang Selatan',
-    'Kabupaten Serang',
-    'Kabupaten Pandeglang',
-    'Kabupaten Lebak',
-    'Kabupaten Tangerang',
-  ];
-  ```
+#### [MODIFY] [components/layout/BottomNav.tsx](file:///C:/website-islam/components/layout/BottomNav.tsx)
+- Menambahkan pemeriksaan kondisi `isDkmDashboard = pathname.startsWith('/dashboard/dkm')`.
+- **Tab 1 (Kiri)**:
+  - Jika `isDkmDashboard`: Diarahkan ke `/dashboard/dkm` dengan ikon `LayoutDashboard`, label `"Dasbor"`, dan status aktif saat berada di root dasbor DKM.
+  - Jika di luar dasbor DKM: Tetap mengarah ke `/` dengan label `"Beranda"` dan ikon `Home`.
+- **Tab 3 (Tengah)**:
+  - Memastikan tautan mengarah langsung ke `/dashboard/dkm/tambah-kajian` dengan penanda visual aktif yang serasi saat berada di halaman tambah jadwal.
+- **Tab 4**:
+  - Mengarah ke `/dashboard/dkm/profil-masjid` dengan label `"Profil Masjid"`, ikon `Building2`/`Landmark`, dan aktif saat `pathname.startsWith('/dashboard/dkm/profil')`.
+- **Tab 5 (Menu Drawer)**:
+  - Mempertahankan kartu profil DKM dan tombol pintas navigasi di dalam bottom sheet drawer.
 
 ---
 
 ## Verification Plan
 
 ### Automated Tests
-1. **TypeScript Type Safety**:
+1. **Pemeriksaan Tipe Data**:
    ```bash
    npx tsc --noEmit
    ```
-   *Target*: 0 error (`exit code 0`).
-2. **Turbopack Production Compilation**:
+   Ekspektasi: 0 error.
+2. **Build Produksi Next.js**:
    ```bash
    npm run build
    ```
-   *Target*: 100% dari 21 rute aplikasi berhasil terkompilasi tanpa kendala.
+   Ekspektasi: Seluruh rute terkompilasi optimal (termasuk rute baru `app/dashboard/dkm/profil` dan `app/dashboard/dkm/layout.tsx`).
 
-### Runtime Verification via Chrome DevTools MCP & Brave
-1. **Login Sesi Super Admin**:
-   - Buka `http://localhost:3000/login` di browser via DevTools MCP.
-   - Input kredensial Super Admin (`anggarasixteen@gmail.com` / `Maschan@10`).
-   - Pastikan login sukses dan diarahkan ke `/dashboard/admin`.
-2. **Uji Coba Edit Masjid ("Masjid At Taqwa WILDAN Kota Serang", ID 91)**:
-   - Di tab Masjid `/dashboard/admin?tab=masjid`, klik tombol Edit pada *Masjid At Taqwa WILDAN*.
-   - Periksa dropdown Kota/Kabupaten: Terpilih otomatis *"Kota Serang"*.
-   - Ubah deskripsi atau alamat sedikit (misal merapikan format alamat) lalu klik *"Simpan Perubahan"*.
-   - Verifikasi respon jaringan: Status **200 OK** (tidak ada lagi HTTP 400 `rest_invalid_param`).
-   - Pastikan modal tertutup otomatis dan data terbaru langsung tampil.
-3. **Uji Coba Edit Jadwal Kajian**:
-   - Di tab Kajian `/dashboard/admin?tab=kajian`, klik tombol Edit pada salah satu kajian.
-   - Periksa seluruh field ACF terisi sesuai data aslinya.
-   - Simpan perubahan dan verifikasi status 200 OK serta revalidasi instan.
-4. **Dokumentasi Bukti Hasil Uji**:
-   - Ambil screenshot dan susun seluruh bukti log ke berkas `walkthrough.md`.
-
-### Git Fast-Forward Merge Protocol
-1. Commit di branch `staging-website-islam`:
-   `git commit -m "fix(admin): pembenahan crud masjid dan kajian, perbaikan acf kota_kabupaten, dan sanitasi error handling"`
-2. Checkout `main`, jalankan fast-forward merge:
-   `git checkout main; git merge staging-website-islam --ff-only`
-3. Push ke remote origin:
-   `git push origin main staging-website-islam`
-4. Kembalikan branch kerja ke `staging-website-islam`.
+### Manual Verification via Chrome DevTools MCP (Brave)
+1. Menjalankan server lokal `npm run dev` pada port 3000.
+2. Mengatur viewport seluler iPhone 12/14/15 standard: `390×844 px` (touch enabled).
+3. Melakukan login sebagai DKM atau membuka `/dashboard/dkm`.
+4. Memverifikasi elemen-elemen baru:
+   - Header atas bertuliskan "DKM Panel" dapat diklik dan mengarah ke `/dashboard/dkm`.
+   - Di bawah header muncul horizontal pills `DkmSubNav`: Tab "Dasbor", "Profil Masjid", dan "Tambah Kajian".
+   - Bottom Navigation Bar bawah pada Tab 1 menampilkan "Dasbor" (ikon `LayoutDashboard`), bukan "Beranda".
+5. Mengetuk tab "Tambah Kajian":
+   - Memastikan URL berpindah ke `/dashboard/dkm/tambah-kajian`.
+   - Memastikan tombol `← Kembali ke Dasbor Utama` muncul di atas pills navigasi.
+   - Mengetuk tombol kembali, memastikan pengguna kembali ke `/dashboard/dkm`.
+6. Mengetuk tab "Profil Masjid":
+   - Memastikan berpindah ke profil masjid, tombol kembali tampil, dan tab "Profil Masjid" menyala aktif.
+7. Menguji pengalihan rute alias `/dashboard/dkm/profil` -> otomatis diarahkan ke `/dashboard/dkm/profil-masjid`.
+8. Menangkap bukti visual (screenshot) dan menyusun berkas laporan akhir `walkthrough.md`.
+9. Melakukan commit di branch `staging-website-islam`, fast-forward merge ke branch `main`, dan push ke GitHub `origin`.

@@ -10,6 +10,7 @@ import {
   Home, 
   Calendar, 
   Landmark, 
+  Building2,
   Menu, 
   Plus, 
   ShieldCheck, 
@@ -31,6 +32,10 @@ export function BottomNav() {
   const pathname = usePathname();
   const { user, role, logout } = useAuthSession();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  // Deteksi status rute aktif dasbor untuk navigasi kontekstual smartphone
+  const isDkmDashboard = pathname.startsWith('/dashboard/dkm');
+  const isAdminDashboard = pathname.startsWith('/dashboard/admin');
 
   // Penutup otomatis ketika rute (pathname) berpindah
   useEffect(() => {
@@ -59,16 +64,42 @@ export function BottomNav() {
         aria-label="Navigasi Utama Smartphone"
         className="fixed bottom-0 left-0 right-0 z-40 flex h-16 items-center justify-around border-t border-slate-200/80 bg-white/95 px-2 backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-950/95 md:hidden transition-colors"
       >
-        {/* Tab 1: Beranda */}
-        <Link
-          href="/"
-          className={`flex flex-col items-center justify-center gap-1 px-2 py-1 text-[11px] font-medium transition-colors ${
-            pathname === '/' ? 'text-[#093c96] dark:text-blue-400 font-bold' : 'text-slate-500 dark:text-slate-400'
-          }`}
-        >
-          <Home className="h-5 w-5" />
-          <span>Beranda</span>
-        </Link>
+        {/* Tab 1: Beranda / Dasbor Adaptif */}
+        {isDkmDashboard ? (
+          <Link
+            href="/dashboard/dkm"
+            className={`flex flex-col items-center justify-center gap-1 px-2 py-1 text-[11px] font-medium transition-colors ${
+              pathname === '/dashboard/dkm'
+                ? 'text-emerald-700 dark:text-emerald-400 font-bold'
+                : 'text-slate-500 dark:text-slate-400'
+            }`}
+          >
+            <LayoutDashboard className="h-5 w-5" />
+            <span>Dasbor</span>
+          </Link>
+        ) : isAdminDashboard ? (
+          <Link
+            href="/dashboard/admin"
+            className={`flex flex-col items-center justify-center gap-1 px-2 py-1 text-[11px] font-medium transition-colors ${
+              pathname === '/dashboard/admin'
+                ? 'text-[#093c96] dark:text-blue-400 font-bold'
+                : 'text-slate-500 dark:text-slate-400'
+            }`}
+          >
+            <LayoutDashboard className="h-5 w-5" />
+            <span>Dasbor</span>
+          </Link>
+        ) : (
+          <Link
+            href="/"
+            className={`flex flex-col items-center justify-center gap-1 px-2 py-1 text-[11px] font-medium transition-colors ${
+              pathname === '/' ? 'text-[#093c96] dark:text-blue-400 font-bold' : 'text-slate-500 dark:text-slate-400'
+            }`}
+          >
+            <Home className="h-5 w-5" />
+            <span>Beranda</span>
+          </Link>
+        )}
 
         {/* Tab 2: Jadwal Kajian */}
         <Link
@@ -81,28 +112,42 @@ export function BottomNav() {
           <span>Kajian</span>
         </Link>
 
-        {/* Tab 3 (Tengah - Adaptif Berdasarkan Role) */}
-        {role === 'dkm' ? (
+        {/* Tab 3 (Tengah - Adaptif Berdasarkan Role & Rute) */}
+        {role === 'dkm' || isDkmDashboard ? (
           <Link
             href="/dashboard/dkm/tambah-kajian"
             className="flex flex-col items-center justify-center -mt-5 group"
             aria-label="Tambah Jadwal Kajian Baru"
           >
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#093c96] text-white shadow-lg shadow-blue-900/30 group-hover:scale-105 transition-transform">
+            <div
+              className={`flex h-12 w-12 items-center justify-center rounded-full text-white shadow-lg transition-transform group-hover:scale-105 ${
+                pathname === '/dashboard/dkm/tambah-kajian'
+                  ? 'bg-emerald-700 shadow-emerald-900/40 ring-2 ring-emerald-400'
+                  : 'bg-emerald-600 shadow-emerald-900/30'
+              }`}
+            >
               <Plus className="h-6 w-6 stroke-[2.5]" />
             </div>
-            <span className="text-[10px] font-bold text-[#093c96] dark:text-blue-400 mt-0.5">Tambah</span>
+            <span
+              className={`text-[10px] font-bold mt-0.5 ${
+                pathname === '/dashboard/dkm/tambah-kajian'
+                  ? 'text-emerald-700 dark:text-emerald-400 font-extrabold'
+                  : 'text-emerald-600 dark:text-emerald-400'
+              }`}
+            >
+              Tambah
+            </span>
           </Link>
-        ) : role === 'admin' ? (
+        ) : role === 'admin' || isAdminDashboard ? (
           <Link
             href="/dashboard/admin"
             className="flex flex-col items-center justify-center -mt-5 group"
             aria-label="Moderasi Jadwal Kajian"
           >
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg shadow-emerald-900/30 group-hover:scale-105 transition-transform">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#093c96] text-white shadow-lg shadow-blue-900/30 group-hover:scale-105 transition-transform">
               <ShieldCheck className="h-6 w-6 stroke-[2.5]" />
             </div>
-            <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">Moderasi</span>
+            <span className="text-[10px] font-bold text-[#093c96] dark:text-blue-400 mt-0.5">Moderasi</span>
           </Link>
         ) : (
           <Link
@@ -116,23 +161,25 @@ export function BottomNav() {
           </Link>
         )}
 
-        {/* Tab 4 */}
-        {role === 'dkm' ? (
+        {/* Tab 4: Profil Masjid / Data DKM / Artikel */}
+        {role === 'dkm' || isDkmDashboard ? (
           <Link
             href="/dashboard/dkm/profil-masjid"
             className={`flex flex-col items-center justify-center gap-1 px-2 py-1 text-[11px] font-medium transition-colors ${
-              pathname.startsWith('/dashboard/dkm/profil-masjid') ? 'text-[#093c96] dark:text-blue-400 font-bold' : 'text-slate-500 dark:text-slate-400'
+              pathname.startsWith('/dashboard/dkm/profil')
+                ? 'text-emerald-700 dark:text-emerald-400 font-bold'
+                : 'text-slate-500 dark:text-slate-400'
             }`}
           >
-            <Landmark className="h-5 w-5" />
+            <Building2 className="h-5 w-5" />
             <span>Profil Masjid</span>
           </Link>
-        ) : role === 'admin' ? (
+        ) : role === 'admin' || isAdminDashboard ? (
           <Link
             href="/dashboard/admin?tab=dkm"
             className={`flex flex-col items-center justify-center gap-1 px-2 py-1 text-[11px] font-medium transition-colors ${
               pathname === '/dashboard/admin' && typeof window !== 'undefined' && window.location.search.includes('tab=dkm')
-                ? 'text-emerald-600 dark:text-emerald-400 font-bold' 
+                ? 'text-[#093c96] dark:text-blue-400 font-bold' 
                 : 'text-slate-500 dark:text-slate-400'
             }`}
           >
