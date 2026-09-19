@@ -35,6 +35,8 @@ import {
   updateSystemSettings,
 } from '@/lib/actions/admin';
 import { sendBroadcastNotification } from '@/lib/actions/push';
+import { WhatsAppScratchpad } from '@/components/dashboard/WhatsAppScratchpad';
+import { stripHtmlToWhatsAppText } from '@/lib/utils/whatsappText';
 import {
   Users,
   Building2,
@@ -2152,6 +2154,13 @@ function AdminKajianModal({
         )}
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+          {/* Kolom Teks Broadcast WhatsApp (Smart Scratchpad - Opsi A) */}
+          <WhatsAppScratchpad
+            id="modal-content"
+            name="content"
+            defaultValue={stripHtmlToWhatsAppText(kajian?.content?.rendered || '')}
+          />
+
           <div>
             <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
               Judul / Tema Kajian *

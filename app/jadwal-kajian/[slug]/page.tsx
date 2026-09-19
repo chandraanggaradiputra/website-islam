@@ -8,7 +8,9 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { CalendarButton } from '@/components/kajian/CalendarButton';
 import { ShareButton } from '@/components/ui/ShareButton';
-import { Calendar, MapPin, User, ArrowLeft, Book, AlertCircle, CheckCircle2, Video } from 'lucide-react';
+import { CopyWhatsAppButton } from '@/components/kajian/CopyWhatsAppButton';
+import { stripHtmlToWhatsAppText, generateDefaultKajianBroadcast } from '@/lib/utils/whatsappText';
+import { Calendar, MapPin, User, ArrowLeft, Book, AlertCircle, CheckCircle2, Video, MessageSquareShare } from 'lucide-react';
 import htmlParser from 'html-react-parser';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { isKajianExpired } from '@/lib/kajian';
@@ -111,6 +113,22 @@ export default async function SingleKajianPage({ params }: { params: Promise<{ s
       tanggalKajianDisplay = `${parseInt(day, 10)} ${monthNames[parseInt(month, 10) - 1]} ${year}`;
     }
   }
+
+  // Siapkan teks format siaran WhatsApp untuk salin clipboard
+  const rawContentText = stripHtmlToWhatsAppText(content?.rendered || '');
+  const finalWhatsAppText = rawContentText.trim()
+    ? rawContentText
+    : generateDefaultKajianBroadcast({
+        judul: title.rendered.replace(/<[^>]+>/g, ''),
+        ustadz: acf?.nama_ustadz,
+        kitab: acf?.kitab_bahasan,
+        waktu: isRutin ? `Setiap ${acf?.hari_kajian || ''}` : (tanggalKajianDisplay || acf?.tanggal_kajian || ''),
+        waktuKeterangan: wktKeterangan,
+        namaMasjid: finalMasjidName,
+        alamatMasjid: finalMasjidAlamat || undefined,
+        linkStreaming: acf?.link_streaming || undefined,
+        slug,
+      });
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -244,8 +262,9 @@ export default async function SingleKajianPage({ params }: { params: Promise<{ s
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-3 mb-8 pb-8 border-b border-slate-200 dark:border-slate-800">
+          <div className="flex flex-wrap items-center gap-3 mb-8 pb-8 border-b border-slate-200 dark:border-slate-800">
             {!isSelesai && <CalendarButton kajian={kajian} masjid={finalMasjid} />}
+            <CopyWhatsAppButton textToCopy={finalWhatsAppText} title={title.rendered} />
             <ShareButton title={title.rendered} text={`Bersama: ${acf?.nama_ustadz || 'Asatidz'}\nLokasi: ${finalMasjidName}\nWaktu: ${isRutin ? 'Setiap ' + (acf?.hari_kajian || '') : (acf?.tanggal_kajian || '')} jam ${acf?.jam_mulai || ''}`} url="" />
           </div>
 
@@ -273,19 +292,36 @@ export default async function SingleKajianPage({ params }: { params: Promise<{ s
             </div>
           )}
 
-          {/* Catatan & Ringkasan Faedah Kajian */}
+          {/* Teks Siaran / Broadcast WhatsApp & Catatan Faedah Kajian */}
           {(content.rendered || acf?.catatan_faedah) && (
-            <div className={isSelesai && youtubeEmbedUrl ? 'mt-8 pt-6 border-t border-slate-200 dark:border-slate-800' : ''}>
-              <h3 className="font-bold text-lg mb-4 text-slate-900 dark:text-white">
-                {isSelesai ? 'Catatan & Ringkasan Faedah Kajian' : 'Catatan Tambahan'}
-              </h3>
+            <div className={isSelesai && youtubeEmbedUrl ? 'mt-8 pt-6 border-t border-slate-200 dark:border-slate-800' : 'mt-8 pt-6 border-t border-slate-200 dark:border-slate-800'}>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-xl bg-emerald-600 text-white shadow-xs">
+                    <MessageSquareShare className="w-4 h-4" />
+                  </div>
+                  <h3 className="font-bold text-lg text-slate-900 dark:text-white">
+                    {isSelesai ? 'Catatan & Ringkasan Faedah Kajian' : 'Informasi & Teks Siaran WhatsApp'}
+                  </h3>
+                </div>
+                <CopyWhatsAppButton
+                  textToCopy={finalWhatsAppText}
+                  title={title.rendered}
+                  variant="compact"
+                />
+              </div>
+
               {acf?.catatan_faedah && (
                 <div className="mb-4 p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/50 text-slate-800 dark:text-slate-200 text-sm leading-relaxed whitespace-pre-line">
                   {acf.catatan_faedah}
                 </div>
               )}
+
               {content.rendered && (
-                <div className="prose dark:prose-invert max-w-none prose-sm md:prose-base">
+                <div
+                  dir="auto"
+                  className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-950/50 border border-slate-200/80 dark:border-slate-800 text-slate-800 dark:text-slate-200 text-sm leading-relaxed whitespace-pre-wrap font-sans"
+                >
                   {htmlParser(content.rendered)}
                 </div>
               )}

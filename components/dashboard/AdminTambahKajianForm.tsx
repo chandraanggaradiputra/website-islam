@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { WPMasjid } from '@/types';
 import { createKajianByAdmin } from '@/lib/actions/kajian';
+import { WhatsAppScratchpad } from '@/components/dashboard/WhatsAppScratchpad';
 import {
   BookOpen,
   Building2,
@@ -166,6 +167,12 @@ export function AdminTambahKajianForm({ masjidList }: AdminTambahKajianFormProps
               </p>
             </div>
           </div>
+
+          {/* Kolom Teks Broadcast WhatsApp (Smart Scratchpad - Opsi A) */}
+          <WhatsAppScratchpad
+            id="admin-content"
+            name="content"
+          />
 
           {/* Section 2: Informasi Utama Kajian */}
           <div className="space-y-4">

@@ -7,11 +7,13 @@ import { z } from 'zod';
 import { ImagePlus, Loader2, Calendar, MapPin, Clock, Video, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { submitKajian } from '@/lib/actions/kajian';
+import { WhatsAppScratchpad } from '@/components/dashboard/WhatsAppScratchpad';
 
 const kajianSchema = z
   .object({
     judul: z.string().min(5, 'Judul kajian minimal 5 karakter'),
     penceramah: z.string().min(3, 'Nama penceramah minimal 3 karakter'),
+    content: z.string().optional(),
     tanggal: z.string().optional(),
     hariKajian: z.string().optional(),
     jamMulai: z.string().min(1, 'Jam mulai kajian wajib diisi'),
@@ -55,10 +57,12 @@ export function TambahKajianForm({ masjidId, masjidName }: TambahKajianFormProps
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<KajianValues>({
     resolver: zodResolver(kajianSchema),
     defaultValues: {
+      content: '',
       jenisKajian: 'rutin',
       kategoriJamaah: 'umum',
       hariKajian: '',
@@ -152,6 +156,16 @@ export function TambahKajianForm({ masjidId, masjidName }: TambahKajianFormProps
           </div>
         </div>
         <input type="hidden" name="masjid_terkait" value={masjidId} />
+
+        {/* Kolom Teks Broadcast WhatsApp (Smart Scratchpad - Opsi A) */}
+        <div>
+          <WhatsAppScratchpad
+            id="content"
+            name="content"
+            value={watch('content') || ''}
+            onChange={(val) => setValue('content', val, { shouldDirty: true })}
+          />
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Left Column */}

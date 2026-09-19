@@ -83,8 +83,10 @@ export async function submitKajian(formData: FormData) {
         : 'umum';
 
     // 2. Buat Postingan Kajian Baru (Langsung 'publish' dan 'aktif' untuk DKM resmi)
+    const rawContent = formData.get('content')?.toString() || formData.get('deskripsi')?.toString() || '';
     const payload = {
       title: formData.get('judul'),
+      content: rawContent,
       status: 'publish',
       featured_media: mediaId,
       acf: {
@@ -353,13 +355,17 @@ export async function createKajianByAdmin(formData: FormData) {
         ? 'khusus_ikhwan'
         : 'umum';
 
+    const rawContent = formData.get('content')?.toString() || formData.get('deskripsi')?.toString() || '';
+
     const payload: {
       title: string;
+      content?: string;
       status: string;
       featured_media?: number;
       acf: Record<string, unknown>;
     } = {
       title: judul,
+      content: rawContent,
       status: formData.get('postStatus')?.toString() || 'publish',
       acf: {
         nama_ustadz: formData.get('namaUstadz')?.toString() || '',
@@ -495,13 +501,17 @@ export async function updateKajianByAdmin(formData: FormData) {
         ? 'khusus_ikhwan'
         : 'umum';
 
+    const rawContent = formData.get('content') ?? formData.get('deskripsi');
+
     const payload: {
       title?: string;
+      content?: string;
       status?: string;
       featured_media?: number;
       acf: Record<string, unknown>;
     } = {
       title: formData.get('judul')?.toString(),
+      ...(rawContent !== null && rawContent !== undefined ? { content: String(rawContent) } : {}),
       status: formData.get('postStatus')?.toString() || 'publish',
       acf: {
         nama_ustadz: formData.get('namaUstadz')?.toString() || '',
