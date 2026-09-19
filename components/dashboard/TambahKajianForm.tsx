@@ -18,6 +18,7 @@ const kajianSchema = z
     hariKajian: z.string().optional(),
     jamMulai: z.string().min(1, 'Jam mulai kajian wajib diisi'),
     jamSelesai: z.string().optional(),
+    waktuKeterangan: z.string().optional(),
     lokasi: z.string().min(1, 'Lokasi / ruangan kajian wajib diisi'),
     linkStreaming: z.string().url('Format URL tautan streaming tidak valid').optional().or(z.literal('')),
     jenisKajian: z.enum(['rutin', 'tematik']),
@@ -67,6 +68,7 @@ export function TambahKajianForm({ masjidId, masjidName }: TambahKajianFormProps
       kategoriJamaah: 'umum',
       hariKajian: '',
       tanggal: '',
+      waktuKeterangan: '',
     },
   });
 
@@ -80,6 +82,8 @@ export function TambahKajianForm({ masjidId, masjidName }: TambahKajianFormProps
     
     const formData = new FormData();
     formData.append('masjid_terkait', String(masjidId));
+    formData.append('title', data.judul);
+    formData.append('namaUstadz', data.penceramah);
     Object.entries(data).forEach(([key, value]) => {
       if (value !== undefined) {
         formData.append(key, value as string);
@@ -180,7 +184,7 @@ export function TambahKajianForm({ masjidId, masjidName }: TambahKajianFormProps
                 type="text"
                 aria-label="Judul atau Tema Kajian"
                 {...register('judul')}
-                className="block w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:ring-[#093c96] rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2"
+                className="block w-full min-h-[44px] px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:ring-[#093c96] rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2"
                 placeholder="Contoh: Pembahasan Kitab Tauhid"
               />
               {errors.judul && <p className="mt-1.5 text-sm text-red-600 dark:text-red-400 font-medium">{errors.judul.message}</p>}
@@ -196,7 +200,7 @@ export function TambahKajianForm({ masjidId, masjidName }: TambahKajianFormProps
                 type="text"
                 aria-label="Nama Penceramah atau Ustadz"
                 {...register('penceramah')}
-                className="block w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:ring-[#093c96] rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2"
+                className="block w-full min-h-[44px] px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:ring-[#093c96] rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2"
                 placeholder="Contoh: Ustadz Abu Usamah, Lc."
               />
               {errors.penceramah && <p className="mt-1.5 text-sm text-red-600 dark:text-red-400 font-medium">{errors.penceramah.message}</p>}
@@ -212,7 +216,7 @@ export function TambahKajianForm({ masjidId, masjidName }: TambahKajianFormProps
                   id="jenisKajian"
                   aria-label="Pilih Jenis Kajian"
                   {...register('jenisKajian')}
-                  className="block w-full px-3.5 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:ring-[#093c96] rounded-xl text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2"
+                  className="block w-full min-h-[44px] px-3.5 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:ring-[#093c96] rounded-xl text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2"
                 >
                   <option value="rutin">Kajian Rutin (Pekanan / Bulanan)</option>
                   <option value="tematik">Kajian Tematik (Tabligh Akbar / Bedah Kitab)</option>
@@ -226,9 +230,9 @@ export function TambahKajianForm({ masjidId, masjidName }: TambahKajianFormProps
                   id="kategoriJamaah"
                   aria-label="Pilih Kategori Jamaah"
                   {...register('kategoriJamaah')}
-                  className="block w-full px-3.5 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:ring-[#093c96] rounded-xl text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2"
+                  className="block w-full min-h-[44px] px-3.5 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:ring-[#093c96] rounded-xl text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2"
                 >
-                  <option value="umum">Umum (Ikhwan & Akhwat)</option>
+                  <option value="umum">Umum (Ikhwan &amp; Akhwat)</option>
                   <option value="khusus_ikhwan">Khusus Ikhwan</option>
                   <option value="khusus_akhwat">Khusus Akhwat</option>
                 </select>
@@ -250,7 +254,7 @@ export function TambahKajianForm({ masjidId, masjidName }: TambahKajianFormProps
                   id="hariKajian"
                   aria-label="Pilih Hari Kajian"
                   {...register('hariKajian')}
-                  className="block w-full px-3.5 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#093c96]"
+                  className="block w-full min-h-[44px] px-3.5 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#093c96]"
                 >
                   <option value="">-- Pilih Hari --</option>
                   <option value="Senin">Senin</option>
@@ -282,7 +286,7 @@ export function TambahKajianForm({ masjidId, masjidName }: TambahKajianFormProps
                     type="date"
                     aria-label="Tanggal Pelaksanaan Kajian"
                     {...register('tanggal')}
-                    className="block w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:ring-[#093c96] rounded-xl text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2"
+                    className="block w-full min-h-[44px] pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:ring-[#093c96] rounded-xl text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2"
                   />
                 </div>
                 {errors.tanggal && <p className="mt-1 text-xs text-red-600 dark:text-red-400 font-medium">{errors.tanggal.message}</p>}
@@ -290,7 +294,7 @@ export function TambahKajianForm({ masjidId, masjidName }: TambahKajianFormProps
             </div>
 
             {/* 5. Jam Mulai & Jam Selesai (Format 24 Jam) */}
-            <div className="space-y-1.5">
+            <div className="space-y-3">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="jamMulai" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
@@ -306,14 +310,14 @@ export function TambahKajianForm({ masjidId, masjidName }: TambahKajianFormProps
                       aria-label="Jam Mulai Kajian"
                       {...register('jamMulai')}
                       required
-                      className="block w-full pl-10 pr-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:ring-[#093c96] rounded-xl text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 font-mono"
+                      className="block w-full min-h-[44px] pl-10 pr-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:ring-[#093c96] rounded-xl text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 font-mono"
                     />
                   </div>
                   {errors.jamMulai && <p className="mt-1 text-xs text-red-600 dark:text-red-400 font-medium">{errors.jamMulai.message}</p>}
                 </div>
                 <div>
                   <label htmlFor="jamSelesai" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                    Jam Selesai <span className="text-xs font-medium text-slate-600 dark:text-slate-400">(Opsional)</span>
+                    Jam Selesai <span className="text-xs font-normal text-slate-500 dark:text-slate-400">(Opsional)</span>
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
@@ -324,14 +328,29 @@ export function TambahKajianForm({ masjidId, masjidName }: TambahKajianFormProps
                       type="time"
                       aria-label="Jam Selesai Kajian"
                       {...register('jamSelesai')}
-                      className="block w-full pl-10 pr-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:ring-[#093c96] rounded-xl text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 font-mono"
+                      className="block w-full min-h-[44px] pl-10 pr-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:ring-[#093c96] rounded-xl text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 font-mono"
                     />
                   </div>
                 </div>
               </div>
-              <p className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1 pt-1 font-medium">
+              <p className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1 font-medium">
                 <span>Format 24 Jam (Contoh: 18.30 untuk Ba&apos;da Maghrib, 20.00 untuk Ba&apos;da Isya)</span>
               </p>
+
+              {/* Keterangan Waktu Tambahan */}
+              <div>
+                <label htmlFor="waktuKeterangan" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  Keterangan Waktu <span className="text-xs font-normal text-slate-500 dark:text-slate-400">(Opsional)</span>
+                </label>
+                <input
+                  id="waktuKeterangan"
+                  type="text"
+                  aria-label="Keterangan Waktu Tambahan"
+                  {...register('waktuKeterangan')}
+                  className="block w-full min-h-[44px] px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:ring-[#093c96] rounded-xl text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2"
+                  placeholder="Contoh: Ba'da Isya pukul 20.00 WIB"
+                />
+              </div>
             </div>
 
             {/* 6. Lokasi / Ruangan */}
@@ -344,7 +363,7 @@ export function TambahKajianForm({ masjidId, masjidName }: TambahKajianFormProps
                 type="text"
                 aria-label="Lokasi atau Ruangan Kajian"
                 {...register('lokasi')}
-                className="block w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:ring-[#093c96] rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2"
+                className="block w-full min-h-[44px] px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:ring-[#093c96] rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2"
                 placeholder="Contoh: Ruang Utama Masjid"
               />
               {errors.lokasi && <p className="mt-1.5 text-sm text-red-600 dark:text-red-400 font-medium">{errors.lokasi.message}</p>}
@@ -395,7 +414,7 @@ export function TambahKajianForm({ masjidId, masjidName }: TambahKajianFormProps
                   type="url"
                   aria-label="Tautan Live Streaming Kajian"
                   {...register('linkStreaming')}
-                  className="block w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:ring-[#093c96] rounded-xl text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2"
+                  className="block w-full min-h-[44px] pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:ring-[#093c96] rounded-xl text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2"
                   placeholder="https://youtube.com/... atau tautan kajian online lainnya"
                 />
               </div>
@@ -421,7 +440,7 @@ export function TambahKajianForm({ masjidId, masjidName }: TambahKajianFormProps
         <button
           type="submit"
           disabled={isSubmitting}
-          className="flex items-center gap-2 bg-[#093c96] hover:bg-[#072a6b] text-white px-8 py-3 rounded-xl font-bold transition-all disabled:opacity-50 cursor-pointer"
+          className="flex items-center gap-2 bg-[#093c96] hover:bg-[#072a6b] text-white px-8 py-3 min-h-[44px] rounded-xl font-bold transition-all disabled:opacity-50 cursor-pointer"
         >
           {isSubmitting ? (
             <>

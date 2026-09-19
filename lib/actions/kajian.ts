@@ -84,23 +84,28 @@ export async function submitKajian(formData: FormData) {
 
     // 2. Buat Postingan Kajian Baru (Langsung 'publish' dan 'aktif' untuk DKM resmi)
     const rawContent = formData.get('content')?.toString() || formData.get('deskripsi')?.toString() || '';
+    const judul = (formData.get('title') || formData.get('judul'))?.toString()?.trim();
+    const namaUstadz = formData.get('namaUstadz')?.toString() || formData.get('penceramah')?.toString() || '';
+    const rawTanggal = formData.get('tanggal') || formData.get('tanggalKajian');
+    const tanggalKajian = rawTanggal ? rawTanggal.toString().split('-').join('') : '';
+
     const payload = {
-      title: formData.get('judul'),
+      title: judul,
       content: rawContent,
       status: 'publish',
       featured_media: mediaId,
       acf: {
         kota_kabupaten: kotaKabupaten,
         kota__kabupaten: kotaKabupaten,
-        nama_ustadz: formData.get('penceramah'),
+        nama_ustadz: namaUstadz,
         jenis_kajian: formData.get('jenisKajian'),
         kategori_jamaah: cleanKategori,
         kitab_bahasan: formData.get('kitabBahasan') || formData.get('kitab_bahasan') || '',
         hari_kajian: formData.get('hariKajian')?.toString() || '',
-        tanggal_kajian: formData.get('tanggal')?.toString().split('-').join('') || '',
+        tanggal_kajian: tanggalKajian,
         jam_mulai: formData.get('jamMulai')?.toString() || '',
         jam_selesai: formData.get('jamSelesai')?.toString() || '',
-        waktu_keterangan: formData.get('waktuKeterangan')?.toString() || `${formData.get('jamMulai')?.toString() || ''} - ${formData.get('jamSelesai')?.toString() || 'Selesai'}`,
+        waktu_keterangan: formData.get('waktuKeterangan')?.toString() || (formData.get('jamMulai') ? `${formData.get('jamMulai')} WIB` : ''),
         status_kajian: 'aktif',
         masjid_terkait: session.masjidId ? [session.masjidId] : [],
         link_streaming: formData.get('linkStreaming') || '',
@@ -737,9 +742,16 @@ export async function updateKajianByDkm(formData: FormData) {
     }
 
     // 4. Siapkan payload update
-    const judul = formData.get('judul')?.toString()?.trim();
+    const rawContent = formData.get('content') ?? formData.get('deskripsi');
+    const judul = (formData.get('title') || formData.get('judul'))?.toString()?.trim();
+    const namaUstadz =
+      formData.get('namaUstadz')?.toString() ||
+      formData.get('penceramah')?.toString() ||
+      currentKajian.acf?.nama_ustadz ||
+      '';
     const statusKajian = formData.get('statusKajian')?.toString() || 'aktif';
-    const tanggalKajian = formData.get('tanggalKajian')?.toString().split('-').join('') || '';
+    const rawTanggal = formData.get('tanggalKajian') || formData.get('tanggal');
+    const tanggalKajian = rawTanggal ? rawTanggal.toString().split('-').join('') : '';
 
     const rawKategori = formData.get('kategoriJamaah')?.toString() || currentKajian.acf?.kategori_jamaah || 'umum';
     const cleanKategori =
@@ -751,11 +763,15 @@ export async function updateKajianByDkm(formData: FormData) {
 
     const payload: {
       title?: string;
+      content?: string;
+      status?: string;
       featured_media?: number;
       acf: Record<string, unknown>;
     } = {
+      status: 'publish',
+      ...(rawContent !== null && rawContent !== undefined ? { content: String(rawContent) } : {}),
       acf: {
-        nama_ustadz: formData.get('namaUstadz')?.toString() || currentKajian.acf?.nama_ustadz || '',
+        nama_ustadz: namaUstadz,
         jenis_kajian: formData.get('jenisKajian')?.toString() || currentKajian.acf?.jenis_kajian || 'rutin',
         kategori_jamaah: cleanKategori,
         kitab_bahasan: formData.get('kitabBahasan')?.toString() || '',
@@ -818,6 +834,12 @@ export async function updateKajianByDkm(formData: FormData) {
     }
     revalidatePath('/');
     revalidatePath('/dashboard/dkm');
+
+    // Auto-ping IndexNow untuk pengindeksan instan
+    if (slug) {
+      const host = process.env.NEXT_PUBLIC_SITE_URL?.replace(/^https?:\/\//, '') || 'banten-mengaji.vercel.app';
+      notifySearchEngines([`https://${host}/jadwal-kajian/${slug}`]).catch(() => {});
+    }
 
     return {
       success: true,

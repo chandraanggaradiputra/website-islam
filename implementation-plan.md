@@ -1,115 +1,157 @@
-# Rencana Implementasi: Kolom Teks Broadcast WhatsApp (Smart Scratchpad & Live Preview) & Salin Format WA
+# Implementation Plan - Tahap 2: Penyelarasan Menyeluruh CRUD Jadwal Kajian Sisi DKM
 
-Rencana teknis ini disusun untuk menambahkan fitur penampung dan pengolah teks siaran (*broadcast*) WhatsApp pada formulir penambahan & penyuntingan jadwal kajian (DKM & Admin) menggunakan pendekatan **Opsi A (Smart Scratchpad)**, serta menyajikan teks siaran tersebut pada halaman detail kajian publik dengan tombol **"📋 Salin Format WhatsApp"**.
+Menyelaraskan pengalaman pengurus DKM saat menambah dan mengedit jadwal kajian di area DKM (`/dashboard/dkm` dan `/dashboard/dkm/tambah-kajian`) agar 100% identik dengan standar yang telah diterapkan di sisi Super Admin pada Tahap 1.
 
 ---
 
 ## User Review Required
 
 > [!IMPORTANT]
-> **Penyimpanan Teks Broadcast WhatsApp:**
-> Teks broadcast disimpan ke WordPress REST API pada field standar `content` (`post_content`), sehingga otomatis kompatibel dengan WP REST API tanpa memerlukan penambahan ACF field baru.
-> 
-> **Kebijakan MCP:**
-> Sesuai instruksi pengguna, pengujian dilakukan dalam **MODE CEPAT (Terminal Only)** menggunakan `npx tsc --noEmit` dan `npm run build`, **tanpa** menjalankan Chrome DevTools MCP browser otomatis.
+> - Di modal edit kajian DKM (`DKMKajianList.tsx`), `WhatsAppScratchpad` akan ditambahkan di posisi paling atas dengan `defaultValue` yang didekode dari `editingKajian?.content?.rendered`.
+> - Input Hari Kajian diubah dari teks bebas menjadi `<select>` dengan 7 hari baku: *Senin, Selasa, Rabu, Kamis, Jumat, Sabtu, Ahad*.
+> - Kolom `waktuKeterangan` ditambahkan secara seragam di `DKMKajianList.tsx` dan `TambahKajianForm.tsx`.
+> - Server action `updateKajianByDkm` di `lib/actions/kajian.ts` diperbarui untuk menerima field `content` (teks broadcast WhatsApp), mendukung fallback `title || judul`, dan `namaUstadz || penceramah`, serta mempertahankan status langsung tayang (`publish`).
+> - Seluruh elemen interaktif dan tombol diberi `min-h-[44px]` dan label diberi asosiasi `htmlFor` - `id` (WCAG 2.2 AA).
 
 ---
 
 ## Proposed Changes
 
-### 1. Helper Pemformat & Pembersih Teks WhatsApp
+### 1. Komponen Modal Edit Kajian DKM
 
-#### [NEW] [whatsappText.ts](file:///C:/website-islam/lib/utils/whatsappText.ts)
-- `formatWhatsAppText(text: string): string`:
-  - Mengamankan karakter HTML dasar (`&`, `<`, `>`).
-  - Mengubah sintaks tebal WhatsApp `*teks*` menjadi `<strong>teks</strong>`.
-  - Mengubah sintaks miring WhatsApp `_teks_` menjadi `<em>teks</em>`.
-  - Mengubah URL aktif (`http://` atau `https://`) menjadi tautan `<a href="..." target="_blank" ...>`.
-- `stripHtmlToWhatsAppText(html: string): string`:
-  - Mengonversi HTML yang disimpan WordPress kembali menjadi teks murni siap kirim ke grup WhatsApp.
-  - Mengonversi `<br>`, `<p>`, entitas HTML (`&amp;`, `&quot;`, `&#8211;`), dan mempertahankan format `*bold*` serta baris baru.
-- `generateDefaultKajianBroadcast(params)`:
-  - Generator teks siaran standar untuk kajian lama yang belum memiliki isi teks broadcast kustom, sehingga tombol "Salin Format WhatsApp" tetap berfungsi 100% pada semua kajian.
+#### [MODIFY] [DKMKajianList.tsx](file:///C:/website-islam/components/dashboard/DKMKajianList.tsx)
+
+1. **Import `WhatsAppScratchpad` dan helper `stripHtmlToWhatsAppText`**:
+   - Impor komponen `WhatsAppScratchpad` dan utility `stripHtmlToWhatsAppText` dari `@/lib/utils/whatsappText`.
+2. **Pasang `WhatsAppScratchpad` di Paling Atas Form Modal**:
+   - Tempatkan sebelum pilihan status pelaksanaan kajian:
+     ```tsx
+     <WhatsAppScratchpad
+       id="edit-dkm-content"
+       name="content"
+       defaultValue={stripHtmlToWhatsAppText(editingKajian.content?.rendered || '')}
+     />
+     ```
+3. **Penyelarasan Input Judul / Tema Kajian**:
+   - Ganti `name="judul"` menjadi `name="title"` (dengan fallback `judul` di server action).
+   - Pasang `id="edit-dkm-title"` dan `<label htmlFor="edit-dkm-title">`.
+   - Nilai awal menggunakan `defaultValue={decodeHtmlEntities(editingKajian.title.rendered)}`.
+   - Tambahkan kelas `min-h-[44px]`.
+4. **Penyelarasan Hari & Tanggal Kajian (Baku 7 Hari)**:
+   - Ubah `hariKajian` dari `<input type="text">` menjadi `<select id="edit-dkm-hariKajian" name="hariKajian">` dengan 7 hari baku:
+     `-- Pilih Hari --`, `Senin`, `Selasa`, `Rabu`, `Kamis`, `Jumat`, `Sabtu`, `Ahad`.
+   - Tanggal Kajian: `<input type="date" id="edit-dkm-tanggalKajian" name="tanggalKajian">`.
+   - Tambahkan label dinamis: `* (Wajib untuk Rutin)` pada Hari dan `* (Wajib untuk Tematik)` pada Tanggal tergantung pada `selectedJenisKajian`.
+5. **Penyelarasan Kolom Waktu**:
+   - `jamMulai` dan `jamSelesai`: gunakan `font-mono`, `min-h-[44px]`, label `htmlFor`, dan helper text format 24 jam WIB.
+   - Tambahkan kolom `waktuKeterangan` dengan `id="edit-dkm-waktuKeterangan"`, `name="waktuKeterangan"`, `min-h-[44px]`.
+6. **Penyelarasan Jenis Kajian & Kategori Jamaah**:
+   - Jenis Kajian: `rutin` vs `tematik`.
+   - Kategori Jamaah: `umum`, `khusus_ikhwan`, `khusus_akhwat`.
+   - Berikan `id`, `htmlFor`, dan `min-h-[44px]`.
+7. **Masjid Penyelenggara Terkunci**:
+   - Tambahkan penanda visual masjid terkunci & `<input type="hidden" name="masjid_terkait" value={userMasjidId} />`.
+8. **Poster Flyer & Live Streaming**:
+   - Tampilkan thumbnail poster saat ini di modal dari `editingKajian.featured_media_url` atau `editingKajian._embedded['wp:featuredmedia'][0].source_url`.
+   - Sediakan tombol ganti/unggah poster dengan `min-h-[44px]`.
+   - Input `linkStreaming` dengan label `htmlFor`, `id`, dan `min-h-[44px]`.
+9. **Aksesibilitas & Target Sentuh WCAG 2.2**:
+   - Seluruh `<label>` diberi `htmlFor` yang cocok dengan `id` input/select.
+   - Seluruh elemen input, tombol status (`Aktif` / `Diliburkan`), tombol batal, dan tombol simpan diberi `min-h-[44px]`.
 
 ---
 
-### 2. Komponen Smart Scratchpad (DKM & Admin)
-
-#### [NEW] [WhatsAppScratchpad.tsx](file:///C:/website-islam/components/dashboard/WhatsAppScratchpad.tsx)
-- Komponen client (`'use client'`) dengan 2 tab:
-  1. **Tab [Tulis / Tempel Teks]**:
-     - Area `<textarea>` luas (7-9 baris) dengan `dir="auto"` (otomatis RTL untuk teks Arab dan LTR untuk teks Latin/Indonesia).
-     - Placeholder informatif yang memandu pengurus DKM menempelkan draf siaran WhatsApp mereka.
-     - Badge ringkas berisi panduan sintaks WhatsApp (`*teks*` untuk tebal, `_teks_` untuk miring, tautan otomatis, dan baris baru).
-  2. **Tab [Pratinjau Web]**:
-     - Menampilkan tampilan siaran langsung yang dirender dengan `formatWhatsAppText()`, `whitespace-pre-wrap`, dan styling pesan yang rapi.
-- Mendukung mode *controlled* (`value` & `onChange`) untuk `react-hook-form` serta mode *uncontrolled* (`name="content"` & `defaultValue`) untuk form standar.
-
----
-
-### 3. Integrasi Formulir DKM
+### 2. Formulir Tambah Kajian DKM
 
 #### [MODIFY] [TambahKajianForm.tsx](file:///C:/website-islam/components/dashboard/TambahKajianForm.tsx)
-- Menambahkan field `content` (opsional) pada skema validasi `zod` (`kajianSchema`).
-- Menempatkan komponen `WhatsAppScratchpad` di **posisi paling atas formulir** (langsung di bawah kartu status masjid pengurus DKM, sebelum kolom rincian).
-- Mengirimkan nilai `content` melalui `formData.append('content', data.content)`.
+
+1. **Skema Zod & Form Values**:
+   - Tambahkan `waktuKeterangan: z.string().optional()` ke `kajianSchema`.
+   - Tambahkan default value `waktuKeterangan: ''`.
+2. **Input `waktuKeterangan`**:
+   - Tambahkan input `waktuKeterangan` di bawah baris Jam Mulai / Selesai dengan label `htmlFor="waktuKeterangan"`, `id="waktuKeterangan"`, `placeholder="Contoh: Ba'da Isya pukul 20.00 WIB"`, serta `min-h-[44px]`.
+3. **Penyelarasan Nama Ustadz**:
+   - Tambahkan `formData.append('namaUstadz', data.penceramah)` agar backend menerima kedua nama key (`namaUstadz` dan `penceramah`).
+4. **Aksesibilitas WCAG 2.2**:
+   - Pastikan seluruh input/select/button memiliki target sentuh `min-h-[44px]`.
 
 ---
 
-### 4. Integrasi Formulir Admin
-
-#### [MODIFY] [AdminTambahKajianForm.tsx](file:///C:/website-islam/components/dashboard/AdminTambahKajianForm.tsx)
-- Menempatkan `WhatsAppScratchpad` di posisi teratas Section 2 (Informasi Materi & Pemateri) dengan input `name="content"`.
-
-#### [MODIFY] [AdminDashboardTabs.tsx](file:///C:/website-islam/components/dashboard/AdminDashboardTabs.tsx) (Komponen `AdminKajianModal`)
-- Menempatkan `WhatsAppScratchpad` di bagian atas formulir modal edit/tambah kajian dengan nilai awal `defaultValue={stripHtmlToWhatsAppText(kajian?.content?.rendered || '')}`.
-
----
-
-### 5. Penyesuaian Server Actions
+### 3. Server Actions Kajian
 
 #### [MODIFY] [lib/actions/kajian.ts](file:///C:/website-islam/lib/actions/kajian.ts)
-- `submitKajian`: Mengambil `formData.get('content')` dan menyertakannya ke payload WordPress REST API `content`.
-- `createKajianByAdmin`: Mengambil `formData.get('content')` dan menyertakannya ke payload WordPress REST API `content`.
-- `updateKajianByAdmin`: Mengambil `formData.get('content')` jika tersedia dan memperbarui field `content` pada postingan WordPress terkait.
 
----
-
-### 6. Komponen Tombol Salin Format WhatsApp
-
-#### [NEW] [CopyWhatsAppButton.tsx](file:///C:/website-islam/components/kajian/CopyWhatsAppButton.tsx)
-- Komponen client (`'use client'`) dengan fitur:
-  - Menyalin teks ke clipboard perangkat pengguna via `navigator.clipboard.writeText` dengan fallback.
-  - Umpan balik visual interaktif: status berubah menjadi "✓ Format WhatsApp Tersalin!" dengan warna hijau emerald selama 2,5 detik.
-  - Memenuhi standar aksesibilitas WCAG 2.2: target sentuh `min-h-[44px]`, label ARIA deskriptif.
-
----
-
-### 7. Halaman Detail Kajian Publik
-
-#### [MODIFY] [app/jadwal-kajian/[slug]/page.tsx](file:///C:/website-islam/app/jadwal-kajian/%5Bslug%5D/page.tsx)
-- Menambahkan tombol `CopyWhatsAppButton` pada bilah aksi cepat di bagian atas (bersebelahan dengan `CalendarButton` dan `ShareButton`).
-- Menyajikan blok khusus "Teks Informasi & Siaran WhatsApp" yang merender teks broadcast menggunakan `formatWhatsAppText`, lengkap dengan tombol salin format WA tepat di atas blok teks tersebut.
+1. **Perbaikan `updateKajianByDkm`**:
+   - Baca teks broadcast WhatsApp:
+     ```typescript
+     const content = (formData.get('content') || formData.get('deskripsi'))?.toString()?.trim() || '';
+     ```
+   - Baca judul kajian dengan fallback ganda:
+     ```typescript
+     const judul = (formData.get('title') || formData.get('judul'))?.toString()?.trim();
+     ```
+   - Baca nama ustadz dengan fallback:
+     ```typescript
+     const namaUstadz = formData.get('namaUstadz')?.toString() || formData.get('penceramah')?.toString() || currentKajian.acf?.nama_ustadz || '';
+     ```
+   - Sertakan `content` dalam payload ke WordPress REST API:
+     ```typescript
+     const payload: {
+       title?: string;
+       content?: string;
+       status?: string;
+       featured_media?: number;
+       acf: Record<string, unknown>;
+     } = {
+       status: 'publish',
+       ...(content ? { content } : {}),
+       acf: {
+         nama_ustadz: namaUstadz,
+         jenis_kajian: formData.get('jenisKajian')?.toString() || currentKajian.acf?.jenis_kajian || 'rutin',
+         kategori_jamaah: cleanKategori,
+         kitab_bahasan: formData.get('kitabBahasan')?.toString() || '',
+         hari_kajian: formData.get('hariKajian')?.toString() || '',
+         tanggal_kajian: tanggalKajian || currentKajian.acf?.tanggal_kajian || '',
+         jam_mulai: formData.get('jamMulai')?.toString() || '',
+         jam_selesai: formData.get('jamSelesai')?.toString() || '',
+         waktu_keterangan: formData.get('waktuKeterangan')?.toString() || (formData.get('jamMulai') ? `${formData.get('jamMulai')} WIB` : ''),
+         status_kajian: statusKajian,
+         link_streaming: formData.get('linkStreaming')?.toString() || '',
+       }
+     };
+     ```
+   - Pastikan jika ada poster baru yang diunggah, `mediaId` disimpan ke `payload.featured_media`.
+   - Revalidasi rute:
+     ```typescript
+     revalidatePath('/sitemap.xml');
+     revalidatePath('/jadwal-kajian');
+     if (slug) revalidatePath(`/jadwal-kajian/${slug}`);
+     revalidatePath('/');
+     revalidatePath('/dashboard/dkm');
+     ```
+   - Auto-ping IndexNow jika slug kajian tersedia dan status kajian 'publish'.
+2. **Pengecekan `submitKajian`**:
+   - Pastikan fallback `formData.get('title') || formData.get('judul')`.
+   - Pastikan fallback `formData.get('namaUstadz') || formData.get('penceramah')`.
+   - Pastikan `waktu_keterangan` menerima nilai dari `formData.get('waktuKeterangan')`.
 
 ---
 
 ## Verification Plan
 
-### Automated / Terminal Tests (Mode Cepat)
-1. **Validasi Tipe TypeScript:**
+### Automated Tests
+1. **TypeScript Typecheck**:
    ```bash
    npx tsc --noEmit
    ```
-   *Target: 0 error.*
-2. **Uji Build Produksi Next.js:**
+   *Ekspektasi: 0 error.*
+2. **Next.js Production Build**:
    ```bash
    npm run build
    ```
-   *Target: Build sukses tanpa peringatan atau kegagalan kompilasi pada semua 22+ rute.*
+   *Ekspektasi: Seluruh 22 rute berhasil terkompilasi.*
 
-### Git Workflow
-1. Branch kerja: `staging-website-islam`.
-2. Commit perubahan dengan pesan konvensi yang jelas.
-3. Fast-forward merge `staging-website-islam` ke `main`.
-4. Push kedua branch ke GitHub remote `origin`.
-5. Penyusunan laporan akhir `walkthrough.md`.
+### Manual / Git Verification
+1. Periksa `git diff` untuk memastikan keselarasan field antara DKM dan Admin.
+2. Lakukan commit di `staging-website-islam`, merge fast-forward ke `main`, dan push ke remote repository `origin`.
+3. Buat dokumentasi resmi `walkthrough.md`.

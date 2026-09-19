@@ -20,6 +20,8 @@ import {
   AlertTriangle,
   Upload,
 } from 'lucide-react';
+import { WhatsAppScratchpad } from '@/components/dashboard/WhatsAppScratchpad';
+import { stripHtmlToWhatsAppText } from '@/lib/utils/whatsappText';
 
 function decodeHtmlEntities(str: string): string {
   if (!str) return '';
@@ -66,6 +68,7 @@ export function DKMKajianList({ initialKajian }: { initialKajian: WPKajian[] }) 
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<StatusKajian>('aktif');
+  const [editJenisKajian, setEditJenisKajian] = useState<'rutin' | 'tematik'>('rutin');
   const [posterPreview, setPosterPreview] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -82,7 +85,14 @@ export function DKMKajianList({ initialKajian }: { initialKajian: WPKajian[] }) 
 
     setEditingKajian(kajian);
     setSelectedStatus(kajian.acf?.status_kajian === 'libur' ? 'libur' : 'aktif');
-    setPosterPreview(kajian.featured_media_url || null);
+    setEditJenisKajian(
+      kajian.acf?.jenis_kajian === 'tematik' ? 'tematik' : 'rutin'
+    );
+    const initialPoster =
+      kajian.featured_media_url ||
+      (kajian._embedded?.['wp:featuredmedia']?.[0] as { source_url?: string } | undefined)?.source_url ||
+      null;
+    setPosterPreview(initialPoster);
     setErrorMsg(null);
     setSuccessMsg(null);
   };
@@ -119,13 +129,56 @@ export function DKMKajianList({ initialKajian }: { initialKajian: WPKajian[] }) 
       if (res.success) {
         setSuccessMsg(res.message || 'Jadwal kajian berhasil diperbarui.');
 
-        // Update state lokal langsung
-        const updatedTitle = formData.get('judul')?.toString() || editingKajian.title.rendered;
-        const updatedUstadz = formData.get('namaUstadz')?.toString() || editingKajian.acf?.nama_ustadz || '';
-        const updatedKitab = formData.get('kitabBahasan')?.toString() || editingKajian.acf?.kitab_bahasan || '';
-        const updatedTanggal = formData.get('tanggalKajian')?.toString() || editingKajian.acf?.tanggal_kajian || '';
-        const updatedJamMulai = formData.get('jamMulai')?.toString() || editingKajian.acf?.jam_mulai || '';
-        const updatedJamSelesai = formData.get('jamSelesai')?.toString() || editingKajian.acf?.jam_selesai || '';
+        // Update state lokal langsung agar UI DKM seketika sinkron
+        const updatedTitle =
+          formData.get('title')?.toString() ||
+          formData.get('judul')?.toString() ||
+          editingKajian.title.rendered;
+        const updatedUstadz =
+          formData.get('namaUstadz')?.toString() ||
+          formData.get('penceramah')?.toString() ||
+          editingKajian.acf?.nama_ustadz ||
+          '';
+        const updatedKitab =
+          formData.get('kitabBahasan')?.toString() ||
+          editingKajian.acf?.kitab_bahasan ||
+          '';
+        const updatedJenisKajian: 'rutin' | 'tematik' =
+          (formData.get('jenisKajian')?.toString() as 'rutin' | 'tematik') ||
+          editingKajian.acf?.jenis_kajian ||
+          'rutin';
+        const updatedKategoriJamaah: 'umum' | 'khusus_ikhwan' | 'khusus_akhwat' =
+          (formData.get('kategoriJamaah')?.toString() as 'umum' | 'khusus_ikhwan' | 'khusus_akhwat') ||
+          editingKajian.acf?.kategori_jamaah ||
+          'umum';
+        const updatedHari =
+          formData.get('hariKajian')?.toString() ||
+          editingKajian.acf?.hari_kajian ||
+          '';
+        const updatedTanggal =
+          formData.get('tanggalKajian')?.toString() ||
+          editingKajian.acf?.tanggal_kajian ||
+          '';
+        const updatedJamMulai =
+          formData.get('jamMulai')?.toString() ||
+          editingKajian.acf?.jam_mulai ||
+          '';
+        const updatedJamSelesai =
+          formData.get('jamSelesai')?.toString() ||
+          editingKajian.acf?.jam_selesai ||
+          '';
+        const updatedWaktuKeterangan =
+          formData.get('waktuKeterangan')?.toString() ||
+          editingKajian.acf?.waktu_keterangan ||
+          '';
+        const updatedLinkStreaming =
+          formData.get('linkStreaming')?.toString() ||
+          editingKajian.acf?.link_streaming ||
+          '';
+        const updatedContent =
+          formData.get('content')?.toString() ||
+          editingKajian.content?.rendered ||
+          '';
 
         setKajianList((prev) =>
           prev.map((item) => {
@@ -133,15 +186,21 @@ export function DKMKajianList({ initialKajian }: { initialKajian: WPKajian[] }) 
               return {
                 ...item,
                 title: { rendered: updatedTitle },
+                content: { rendered: updatedContent },
                 featured_media_url: posterPreview || item.featured_media_url,
                 acf: {
                   ...item.acf,
                   status_kajian: selectedStatus,
                   nama_ustadz: updatedUstadz,
                   kitab_bahasan: updatedKitab,
+                  jenis_kajian: updatedJenisKajian,
+                  kategori_jamaah: updatedKategoriJamaah,
+                  hari_kajian: updatedHari,
                   tanggal_kajian: updatedTanggal,
                   jam_mulai: updatedJamMulai,
                   jam_selesai: updatedJamSelesai,
+                  waktu_keterangan: updatedWaktuKeterangan,
+                  link_streaming: updatedLinkStreaming,
                 },
               };
             }
@@ -341,6 +400,13 @@ export function DKMKajianList({ initialKajian }: { initialKajian: WPKajian[] }) 
                 </div>
               )}
 
+              {/* Kolom Teks Broadcast WhatsApp (Smart Scratchpad - Opsi A) */}
+              <WhatsAppScratchpad
+                id="edit-dkm-content"
+                name="content"
+                defaultValue={stripHtmlToWhatsAppText(editingKajian.content?.rendered || '')}
+              />
+
               {/* Pilihan Status Operasional Kajian: Aktif vs Libur */}
               <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 space-y-3">
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
@@ -350,7 +416,7 @@ export function DKMKajianList({ initialKajian }: { initialKajian: WPKajian[] }) 
                   <button
                     type="button"
                     onClick={() => setSelectedStatus('aktif')}
-                    className={`flex items-center justify-center gap-2 p-3 rounded-xl border text-xs font-bold transition-all ${
+                    className={`flex items-center justify-center gap-2 p-3 min-h-[44px] rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                       selectedStatus === 'aktif'
                         ? 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 shadow-sm'
                         : 'border-slate-200 bg-white text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400'
@@ -363,7 +429,7 @@ export function DKMKajianList({ initialKajian }: { initialKajian: WPKajian[] }) 
                   <button
                     type="button"
                     onClick={() => setSelectedStatus('libur')}
-                    className={`flex items-center justify-center gap-2 p-3 rounded-xl border text-xs font-bold transition-all ${
+                    className={`flex items-center justify-center gap-2 p-3 min-h-[44px] rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                       selectedStatus === 'libur'
                         ? 'border-red-500 bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300 shadow-sm'
                         : 'border-slate-200 bg-white text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400'
@@ -391,42 +457,56 @@ export function DKMKajianList({ initialKajian }: { initialKajian: WPKajian[] }) 
 
               {/* Judul & Tema Kajian */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                <label
+                  htmlFor="edit-dkm-title"
+                  className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1"
+                >
                   Judul / Tema Kajian <span className="text-red-500">*</span>
                 </label>
                 <input
+                  id="edit-dkm-title"
                   type="text"
-                  name="judul"
+                  name="title"
                   required
                   defaultValue={decodeHtmlEntities(editingKajian.title.rendered)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-[#093c96] focus:outline-none"
+                  placeholder="Contoh: Kajian Tafsir Ibnu Katsir"
+                  className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-[#093c96] focus:outline-none"
                 />
               </div>
 
               {/* Ustadz & Kitab */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  <label
+                    htmlFor="edit-dkm-namaUstadz"
+                    className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1"
+                  >
                     Nama Pemateri / Ustadz <span className="text-red-500">*</span>
                   </label>
                   <input
+                    id="edit-dkm-namaUstadz"
                     type="text"
                     name="namaUstadz"
                     required
                     defaultValue={editingKajian.acf?.nama_ustadz || ''}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-[#093c96] focus:outline-none"
+                    placeholder="Contoh: Ustadz Abu Usamah, Lc."
+                    className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-[#093c96] focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Kitab Bahasan
+                  <label
+                    htmlFor="edit-dkm-kitabBahasan"
+                    className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1"
+                  >
+                    Kitab Bahasan (Opsional)
                   </label>
                   <input
+                    id="edit-dkm-kitabBahasan"
                     type="text"
                     name="kitabBahasan"
                     defaultValue={editingKajian.acf?.kitab_bahasan || ''}
                     placeholder="Contoh: Kitab Tauhid, Bulughul Maram"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-[#093c96] focus:outline-none"
+                    className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-[#093c96] focus:outline-none"
                   />
                 </div>
               </div>
@@ -434,26 +514,35 @@ export function DKMKajianList({ initialKajian }: { initialKajian: WPKajian[] }) 
               {/* Jenis Kajian & Kategori Jamaah */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  <label
+                    htmlFor="edit-dkm-jenisKajian"
+                    className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1"
+                  >
                     Jenis Kajian
                   </label>
                   <select
+                    id="edit-dkm-jenisKajian"
                     name="jenisKajian"
-                    defaultValue={editingKajian.acf?.jenis_kajian || 'rutin'}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-[#093c96] focus:outline-none"
+                    value={editJenisKajian}
+                    onChange={(e) => setEditJenisKajian(e.target.value as 'rutin' | 'tematik')}
+                    className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-[#093c96] focus:outline-none"
                   >
-                    <option value="rutin">Kajian Rutin</option>
+                    <option value="rutin">Kajian Rutin (Pekanan / Bulanan)</option>
                     <option value="tematik">Kajian Tematik / Tabligh Akbar</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  <label
+                    htmlFor="edit-dkm-kategoriJamaah"
+                    className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1"
+                  >
                     Kategori Jamaah
                   </label>
                   <select
+                    id="edit-dkm-kategoriJamaah"
                     name="kategoriJamaah"
                     defaultValue={editingKajian.acf?.kategori_jamaah || 'umum'}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-[#093c96] focus:outline-none"
+                    className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-[#093c96] focus:outline-none"
                   >
                     <option value="umum">Umum (Ikhwan &amp; Akhwat)</option>
                     <option value="khusus_ikhwan">Khusus Ikhwan</option>
@@ -462,25 +551,58 @@ export function DKMKajianList({ initialKajian }: { initialKajian: WPKajian[] }) 
                 </div>
               </div>
 
-              {/* Hari & Tanggal Kajian */}
+              {/* Hari & Tanggal Kajian (Baku 7 Hari) */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Hari Kajian (Untuk Rutin)
+                  <label
+                    htmlFor="edit-dkm-hariKajian"
+                    className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1"
+                  >
+                    Hari Kajian{' '}
+                    {editJenisKajian === 'rutin' ? (
+                      <span className="text-xs font-bold text-red-600 dark:text-red-400">
+                        * (Wajib untuk Rutin)
+                      </span>
+                    ) : (
+                      <span className="text-xs font-normal text-slate-500 dark:text-slate-400">
+                        (Opsional)
+                      </span>
+                    )}
                   </label>
-                  <input
-                    type="text"
+                  <select
+                    id="edit-dkm-hariKajian"
                     name="hariKajian"
                     defaultValue={editingKajian.acf?.hari_kajian || ''}
-                    placeholder="Contoh: Ahad, Senin Malam"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-[#093c96] focus:outline-none"
-                  />
+                    className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-[#093c96] focus:outline-none"
+                  >
+                    <option value="">-- Pilih Hari --</option>
+                    <option value="Senin">Senin</option>
+                    <option value="Selasa">Selasa</option>
+                    <option value="Rabu">Rabu</option>
+                    <option value="Kamis">Kamis</option>
+                    <option value="Jumat">Jumat</option>
+                    <option value="Sabtu">Sabtu</option>
+                    <option value="Ahad">Ahad</option>
+                  </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Tanggal Kajian (Untuk Tematik)
+                  <label
+                    htmlFor="edit-dkm-tanggalKajian"
+                    className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1"
+                  >
+                    Tanggal Kajian{' '}
+                    {editJenisKajian === 'tematik' ? (
+                      <span className="text-xs font-bold text-red-600 dark:text-red-400">
+                        * (Wajib untuk Tematik)
+                      </span>
+                    ) : (
+                      <span className="text-xs font-normal text-slate-500 dark:text-slate-400">
+                        (Opsional untuk Rutin)
+                      </span>
+                    )}
                   </label>
                   <input
+                    id="edit-dkm-tanggalKajian"
                     type="date"
                     name="tanggalKajian"
                     defaultValue={
@@ -490,73 +612,98 @@ export function DKMKajianList({ initialKajian }: { initialKajian: WPKajian[] }) 
                           : `${editingKajian.acf.tanggal_kajian.slice(0, 4)}-${editingKajian.acf.tanggal_kajian.slice(4, 6)}-${editingKajian.acf.tanggal_kajian.slice(6, 8)}`
                         : ''
                     }
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-[#093c96] focus:outline-none"
+                    className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-[#093c96] focus:outline-none"
                   />
                 </div>
               </div>
 
-              {/* Jam Mulai & Jam Selesai */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Jam Mulai
-                  </label>
-                  <input
-                    type="time"
-                    name="jamMulai"
-                    defaultValue={editingKajian.acf?.jam_mulai || ''}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-[#093c96] focus:outline-none"
-                  />
+              {/* Jam Mulai & Jam Selesai (Format 24 Jam) */}
+              <div className="space-y-1.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label
+                      htmlFor="edit-dkm-jamMulai"
+                      className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1"
+                    >
+                      Jam Mulai <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      id="edit-dkm-jamMulai"
+                      type="time"
+                      name="jamMulai"
+                      required
+                      defaultValue={editingKajian.acf?.jam_mulai || ''}
+                      className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-[#093c96] focus:outline-none font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="edit-dkm-jamSelesai"
+                      className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1"
+                    >
+                      Jam Selesai <span className="text-xs font-normal text-slate-500">(Opsional)</span>
+                    </label>
+                    <input
+                      id="edit-dkm-jamSelesai"
+                      type="time"
+                      name="jamSelesai"
+                      defaultValue={editingKajian.acf?.jam_selesai || ''}
+                      className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-[#093c96] focus:outline-none font-mono"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Jam Selesai
-                  </label>
-                  <input
-                    type="time"
-                    name="jamSelesai"
-                    defaultValue={editingKajian.acf?.jam_selesai || ''}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-[#093c96] focus:outline-none"
-                  />
-                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                  Format 24 Jam (Contoh: 18.30 untuk Ba&apos;da Maghrib, 20.00 untuk Ba&apos;da Isya)
+                </p>
               </div>
 
               {/* Keterangan Waktu & Link Streaming */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Keterangan Waktu Tambahan
+                  <label
+                    htmlFor="edit-dkm-waktuKeterangan"
+                    className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1"
+                  >
+                    Keterangan Waktu (Opsional)
                   </label>
                   <input
+                    id="edit-dkm-waktuKeterangan"
                     type="text"
                     name="waktuKeterangan"
                     defaultValue={editingKajian.acf?.waktu_keterangan || ''}
-                    placeholder="Contoh: Ba'da Maghrib s/d Isya"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-[#093c96] focus:outline-none"
+                    placeholder="Contoh: Ba'da Isya pukul 20.00 WIB"
+                    className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-[#093c96] focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Link Streaming (Opsional)
+                  <label
+                    htmlFor="edit-dkm-linkStreaming"
+                    className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1"
+                  >
+                    Link Live Streaming (Opsional)
                   </label>
                   <input
+                    id="edit-dkm-linkStreaming"
                     type="url"
                     name="linkStreaming"
                     defaultValue={editingKajian.acf?.link_streaming || ''}
                     placeholder="https://youtube.com/live/..."
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-[#093c96] focus:outline-none"
+                    className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-[#093c96] focus:outline-none"
                   />
                 </div>
               </div>
 
               {/* Ganti Poster Kajian */}
               <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 space-y-3">
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                  Poster Kajian
+                <label
+                  htmlFor="edit-dkm-poster"
+                  className="block text-xs font-bold text-slate-700 dark:text-slate-300"
+                >
+                  Poster Flyer Kajian
                 </label>
                 <div className="flex items-center gap-4">
                   {posterPreview ? (
-                    <div className="relative w-24 h-24 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 shrink-0">
+                    <div className="relative w-24 h-24 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 shrink-0 bg-slate-100 dark:bg-slate-800">
                       <Image
                         src={posterPreview}
                         alt="Preview Poster"
@@ -565,15 +712,19 @@ export function DKMKajianList({ initialKajian }: { initialKajian: WPKajian[] }) 
                       />
                     </div>
                   ) : (
-                    <div className="w-24 h-24 rounded-lg bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-400 shrink-0">
+                    <div className="w-24 h-24 rounded-xl bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-400 shrink-0">
                       <Calendar className="w-8 h-8" />
                     </div>
                   )}
-                  <div className="flex-grow space-y-1">
-                    <label className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-                      <Upload className="w-3.5 h-3.5 text-[#093c96]" />
+                  <div className="flex-grow space-y-1.5">
+                    <label
+                      htmlFor="edit-dkm-poster"
+                      className="inline-flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm"
+                    >
+                      <Upload className="w-4 h-4 text-[#093c96] dark:text-blue-400" />
                       <span>{posterPreview ? 'Ganti Berkas Poster' : 'Unggah Poster'}</span>
                       <input
+                        id="edit-dkm-poster"
                         type="file"
                         name="poster"
                         accept="image/*"
@@ -594,18 +745,18 @@ export function DKMKajianList({ initialKajian }: { initialKajian: WPKajian[] }) 
                   type="button"
                   onClick={handleCloseEdit}
                   disabled={isSubmitting}
-                  className="px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                  className="px-5 py-2.5 min-h-[44px] rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting || isPending}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#093c96] hover:bg-[#072a6b] text-white text-xs font-semibold transition-colors disabled:opacity-50"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-2.5 min-h-[44px] rounded-xl bg-[#093c96] hover:bg-[#072a6b] text-white text-xs font-semibold transition-colors disabled:opacity-50 cursor-pointer shadow-sm"
                 >
                   {isSubmitting ? (
                     <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <Loader2 className="w-4 h-4 animate-spin" />
                       <span>Menyimpan Perubahan...</span>
                     </>
                   ) : (
