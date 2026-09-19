@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { CalendarButton } from '@/components/kajian/CalendarButton';
 import { ShareButton } from '@/components/ui/ShareButton';
 import { CopyWhatsAppButton } from '@/components/kajian/CopyWhatsAppButton';
-import { stripHtmlToWhatsAppText, formatWhatsAppText, generateDefaultKajianBroadcast } from '@/lib/utils/whatsappText';
+import { stripHtmlToWhatsAppText, formatWhatsAppText, generateDefaultKajianBroadcast, decodeHtmlEntities } from '@/lib/utils/whatsappText';
 import { Calendar, MapPin, User, ArrowLeft, Book, AlertCircle, CheckCircle2, Video, MessageSquareShare } from 'lucide-react';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { isKajianExpired } from '@/lib/kajian';
@@ -118,7 +118,7 @@ export default async function SingleKajianPage({ params }: { params: Promise<{ s
   const finalWhatsAppText = rawContentText.trim()
     ? rawContentText
     : generateDefaultKajianBroadcast({
-        judul: title.rendered.replace(/<[^>]+>/g, ''),
+        judul: decodeHtmlEntities(title.rendered.replace(/<[^>]+>/g, '')),
         ustadz: acf?.nama_ustadz,
         kitab: acf?.kitab_bahasan,
         waktu: isRutin ? `Setiap ${acf?.hari_kajian || ''}` : (tanggalKajianDisplay || acf?.tanggal_kajian || ''),
@@ -208,7 +208,7 @@ export default async function SingleKajianPage({ params }: { params: Promise<{ s
           )}
 
           <h1 className="text-2xl md:text-3xl font-bold mb-6 text-slate-900 dark:text-white">
-            {title.rendered}
+            {decodeHtmlEntities(title.rendered)}
           </h1>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 bg-slate-50 dark:bg-slate-950 p-6 rounded-xl border border-slate-100 dark:border-slate-800">
@@ -263,8 +263,8 @@ export default async function SingleKajianPage({ params }: { params: Promise<{ s
 
           <div className="flex flex-wrap items-center gap-3 mb-8 pb-8 border-b border-slate-200 dark:border-slate-800">
             {!isSelesai && <CalendarButton kajian={kajian} masjid={finalMasjid} />}
-            <CopyWhatsAppButton textToCopy={finalWhatsAppText} title={title.rendered} />
-            <ShareButton title={title.rendered} text={`Bersama: ${acf?.nama_ustadz || 'Asatidz'}\nLokasi: ${finalMasjidName}\nWaktu: ${isRutin ? 'Setiap ' + (acf?.hari_kajian || '') : (acf?.tanggal_kajian || '')} jam ${acf?.jam_mulai || ''}`} url="" />
+            <CopyWhatsAppButton textToCopy={finalWhatsAppText} title={decodeHtmlEntities(title.rendered)} />
+            <ShareButton title={decodeHtmlEntities(title.rendered)} text={`Bersama: ${acf?.nama_ustadz ? decodeHtmlEntities(acf.nama_ustadz) : 'Asatidz'}\nLokasi: ${finalMasjidName}\nWaktu: ${isRutin ? 'Setiap ' + (acf?.hari_kajian || '') : (acf?.tanggal_kajian || '')} jam ${acf?.jam_mulai || ''}`} url="" />
           </div>
 
           {/* Pemutar Video Rekaman YouTube */}
@@ -305,7 +305,7 @@ export default async function SingleKajianPage({ params }: { params: Promise<{ s
                 </div>
                 <CopyWhatsAppButton
                   textToCopy={finalWhatsAppText}
-                  title={title.rendered}
+                  title={decodeHtmlEntities(title.rendered)}
                   variant="compact"
                 />
               </div>

@@ -21,20 +21,7 @@ import {
   Upload,
 } from 'lucide-react';
 import { WhatsAppScratchpad } from '@/components/dashboard/WhatsAppScratchpad';
-import { stripHtmlToWhatsAppText } from '@/lib/utils/whatsappText';
-
-function decodeHtmlEntities(str: string): string {
-  if (!str) return '';
-  return str
-    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(dec))
-    .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
-    .replace(/&quot;/g, '"')
-    .replace(/&apos;|&#039;/g, "'")
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&amp;/g, '&')
-    .replace(/<[^>]*>/g, '');
-}
+import { stripHtmlToWhatsAppText, decodeHtmlEntities } from '@/lib/utils/whatsappText';
 
 function formatDateDisplay(dateStr?: string): string {
   if (!dateStr) return '';
@@ -488,7 +475,7 @@ export function DKMKajianList({ initialKajian }: { initialKajian: WPKajian[] }) 
                     type="text"
                     name="namaUstadz"
                     required
-                    defaultValue={editingKajian.acf?.nama_ustadz || ''}
+                    defaultValue={decodeHtmlEntities(editingKajian.acf?.nama_ustadz || '')}
                     placeholder="Contoh: Ustadz Abu Usamah, Lc."
                     className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-[#093c96] focus:outline-none"
                   />
@@ -504,7 +491,7 @@ export function DKMKajianList({ initialKajian }: { initialKajian: WPKajian[] }) 
                     id="edit-dkm-kitabBahasan"
                     type="text"
                     name="kitabBahasan"
-                    defaultValue={editingKajian.acf?.kitab_bahasan || ''}
+                    defaultValue={decodeHtmlEntities(editingKajian.acf?.kitab_bahasan || '')}
                     placeholder="Contoh: Kitab Tauhid, Bulughul Maram"
                     className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-[#093c96] focus:outline-none"
                   />

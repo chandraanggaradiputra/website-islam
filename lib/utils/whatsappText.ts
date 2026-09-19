@@ -43,6 +43,51 @@ export function formatWhatsAppText(text: string): string {
 }
 
 /**
+ * Mendecode seluruh entitas HTML baik bernama maupun numerik desimal/heksadesimal
+ * Contoh: &#038; -> &, &#8217; -> ’, &#8220; -> “, &#039; -> '
+ */
+export function decodeHtmlEntities(str: string): string {
+  if (!str) return '';
+
+  return str
+    // 1. Entitas bernama umum
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&ndash;/g, '–')
+    .replace(/&mdash;/g, '—')
+    .replace(/&hellip;/g, '…')
+    // 2. Entitas numerik umum WordPress (penanganan langsung untuk kecepatan & konsistensi)
+    .replace(/&#038;|&#38;/g, '&')
+    .replace(/&#039;|&#39;/g, "'")
+    .replace(/&#8216;/g, '‘')
+    .replace(/&#8217;/g, '’')
+    .replace(/&#8220;/g, '“')
+    .replace(/&#8221;/g, '”')
+    .replace(/&#8211;/g, '–')
+    .replace(/&#8212;/g, '—')
+    .replace(/&#8230;/g, '…')
+    // 3. Generic numeric & hex entity decoder (mencakup SEMUA entitas numerik desimal & heksadesimal lainnya)
+    .replace(/&#(\d+);/g, (_, dec) => {
+      try {
+        return String.fromCodePoint(Number(dec));
+      } catch {
+        return String.fromCharCode(Number(dec));
+      }
+    })
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => {
+      try {
+        return String.fromCodePoint(parseInt(hex, 16));
+      } catch {
+        return String.fromCharCode(parseInt(hex, 16));
+      }
+    });
+}
+
+/**
  * Mengonversi konten HTML (misal dari post_content WordPress atau wpautop)
  * kembali menjadi teks bersih berformat WhatsApp untuk disalin ke clipboard
  * dan ditampilkan di antarmuka web.
@@ -79,26 +124,8 @@ export function stripHtmlToWhatsAppText(html: string): string {
   // 6. Bersihkan semua sisa tag HTML lainnya
   text = text.replace(/<[^>]+>/g, '');
 
-  // 7. Decode entitas HTML umum
-  const entities: Record<string, string> = {
-    '&amp;': '&',
-    '&lt;': '<',
-    '&gt;': '>',
-    '&quot;': '"',
-    '&#039;': "'",
-    '&apos;': "'",
-    '&nbsp;': ' ',
-    '&#8211;': '–',
-    '&#8212;': '—',
-    '&#8216;': "'",
-    '&#8217;': "'",
-    '&#8220;': '"',
-    '&#8221;': '"',
-  };
-
-  text = text.replace(/&(?:amp|lt|gt|quot|#039|apos|nbsp|#8211|#8212|#8216|#8217|#8220|#8221);/g, (match) => {
-    return entities[match] || match;
-  });
+  // 7. Decode seluruh entitas HTML baik bernama maupun numerik desimal/heksadesimal (&#038;, &#8217;, dsb)
+  text = decodeHtmlEntities(text);
 
   // 8. Hapus spasi pada baris yang hanya berisi whitespace
   text = text.replace(/^[ \t]+$/gm, '');
@@ -124,31 +151,37 @@ export function generateDefaultKajianBroadcast(params: {
   linkStreaming?: string;
   slug?: string;
 }): string {
+  const cleanJudul = decodeHtmlEntities(params.judul);
+  const cleanUstadz = params.ustadz ? decodeHtmlEntities(params.ustadz) : undefined;
+  const cleanKitab = params.kitab ? decodeHtmlEntities(params.kitab) : undefined;
+  const cleanNamaMasjid = params.namaMasjid ? decodeHtmlEntities(params.namaMasjid) : undefined;
+  const cleanAlamatMasjid = params.alamatMasjid ? decodeHtmlEntities(params.alamatMasjid) : undefined;
+
   const lines: string[] = [
     '﷽',
     '',
     '*INFO JADWAL KAJIAN ISLAM ILMIAH*',
     'Propinsi Banten',
     '',
-    `📌 *Tema / Judul:* ${params.judul}`,
-    `🎙️ *Pemateri:* ${params.ustadz || 'Asatidz'}`,
+    `📌 *Tema / Judul:* ${cleanJudul}`,
+    `🎙️ *Pemateri:* ${cleanUstadz || 'Asatidz'}`,
   ];
 
-  if (params.kitab && params.kitab !== '-') {
-    lines.push(`📖 *Kitab:* ${params.kitab}`);
+  if (cleanKitab && cleanKitab !== '-') {
+    lines.push(`📖 *Kitab:* ${cleanKitab}`);
   }
 
   if (params.waktu) {
-    const detailWaktu = params.waktuKeterangan ? ` (${params.waktuKeterangan})` : '';
-    lines.push(`🗓️ *Waktu:* ${params.waktu}${detailWaktu}`);
+    const detailWaktu = params.waktuKeterangan ? ` (${decodeHtmlEntities(params.waktuKeterangan)})` : '';
+    lines.push(`🗓️ *Waktu:* ${decodeHtmlEntities(params.waktu)}${detailWaktu}`);
   }
 
-  if (params.namaMasjid) {
-    lines.push(`🕌 *Tempat:* ${params.namaMasjid}`);
+  if (cleanNamaMasjid) {
+    lines.push(`🕌 *Tempat:* ${cleanNamaMasjid}`);
   }
 
-  if (params.alamatMasjid) {
-    lines.push(`📍 *Alamat:* ${params.alamatMasjid}`);
+  if (cleanAlamatMasjid) {
+    lines.push(`📍 *Alamat:* ${cleanAlamatMasjid}`);
   }
 
   if (params.linkStreaming) {

@@ -36,7 +36,7 @@ import {
 } from '@/lib/actions/admin';
 import { sendBroadcastNotification } from '@/lib/actions/push';
 import { WhatsAppScratchpad } from '@/components/dashboard/WhatsAppScratchpad';
-import { stripHtmlToWhatsAppText } from '@/lib/utils/whatsappText';
+import { stripHtmlToWhatsAppText, decodeHtmlEntities } from '@/lib/utils/whatsappText';
 import {
   Users,
   Building2,
@@ -793,8 +793,8 @@ export function AdminDashboardTabs({
                     </tr>
                   ) : (
                     filteredKajian.map((kajian) => {
-                      const ustadz = kajian.acf?.nama_ustadz || '-';
-                      const masjid = kajian.masjid_name || 'Belum terhubung';
+                      const ustadz = kajian.acf?.nama_ustadz ? decodeHtmlEntities(kajian.acf.nama_ustadz) : '-';
+                      const masjid = kajian.masjid_name ? decodeHtmlEntities(kajian.masjid_name) : 'Belum terhubung';
                       const waktu =
                         kajian.acf?.waktu_keterangan ||
                         (kajian.acf?.jam_mulai ? `${kajian.acf.jam_mulai} WIB` : '-');
@@ -806,11 +806,11 @@ export function AdminDashboardTabs({
                         >
                           <td className="p-4 min-w-[200px]">
                             <p className="font-bold text-slate-900 dark:text-white line-clamp-2">
-                              {kajian.title?.rendered}
+                              {decodeHtmlEntities(kajian.title?.rendered || '')}
                             </p>
                             {kajian.acf?.kitab_bahasan && (
                               <p className="text-xs text-slate-400 truncate max-w-xs">
-                                Kitab: {kajian.acf.kitab_bahasan}
+                                Kitab: {decodeHtmlEntities(kajian.acf.kitab_bahasan)}
                               </p>
                             )}
                           </td>
@@ -2174,20 +2174,7 @@ function AdminKajianModal({
               type="text"
               name="title"
               required
-              defaultValue={
-                kajian?.title?.rendered
-                  ? kajian.title.rendered
-                      .replace(/&amp;/g, '&')
-                      .replace(/&quot;/g, '"')
-                      .replace(/&#039;/g, "'")
-                      .replace(/&apos;/g, "'")
-                      .replace(/&#8217;/g, '\u2019')
-                      .replace(/&#8216;/g, '\u2018')
-                      .replace(/&#8220;/g, '\u201c')
-                      .replace(/&#8221;/g, '\u201d')
-                      .replace(/<[^>]+>/g, '')
-                  : ''
-              }
+              defaultValue={decodeHtmlEntities(kajian?.title?.rendered?.replace(/<[^>]+>/g, '') || '')}
               placeholder="Contoh: Kajian Tafsir Ibnu Katsir"
               className="w-full min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 py-2 px-3.5 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
             />
@@ -2207,7 +2194,7 @@ function AdminKajianModal({
                 type="text"
                 name="namaUstadz"
                 required
-                defaultValue={kajian?.acf?.nama_ustadz || ''}
+                defaultValue={decodeHtmlEntities(kajian?.acf?.nama_ustadz || '')}
                 placeholder="Ustadz Abu Fulan"
                 className="w-full min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 py-2 px-3.5 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               />
@@ -2230,7 +2217,7 @@ function AdminKajianModal({
                 <option value="">-- Pilih Masjid Terkait (se-Banten) --</option>
                 {masjidList.map((m) => (
                   <option key={m.id} value={m.id}>
-                    {m.title?.rendered} {m.acf?.kota_kabupaten ? `(${m.acf.kota_kabupaten})` : ''}
+                    {decodeHtmlEntities(m.title?.rendered || '')} {m.acf?.kota_kabupaten ? `(${decodeHtmlEntities(m.acf.kota_kabupaten)})` : ''}
                   </option>
                 ))}
               </select>
@@ -2250,7 +2237,7 @@ function AdminKajianModal({
                 id="modal-kitabBahasan"
                 type="text"
                 name="kitabBahasan"
-                defaultValue={kajian?.acf?.kitab_bahasan || ''}
+                defaultValue={decodeHtmlEntities(kajian?.acf?.kitab_bahasan || '')}
                 placeholder="Contoh: Kitab Tauhid"
                 className="w-full min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 py-2 px-3 text-xs text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               />
