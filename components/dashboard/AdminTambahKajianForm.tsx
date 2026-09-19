@@ -146,14 +146,18 @@ export function AdminTambahKajianForm({ masjidList }: AdminTambahKajianFormProps
               <span>1. Masjid Penyelenggara</span>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              <label
+                htmlFor="tambah-masjidTerkait"
+                className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5"
+              >
                 Pilih Masjid Terkait (se-Provinsi Banten) *
               </label>
               <select
+                id="tambah-masjidTerkait"
                 name="masjidTerkait"
                 required
                 defaultValue=""
-                className="w-full rounded-xl border border-slate-200 bg-white py-2.5 px-4 text-sm text-slate-900 focus:border-[#093c96] focus:ring-1 focus:ring-[#093c96] dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                className="w-full min-h-[44px] rounded-xl border border-slate-200 bg-white py-2.5 px-4 text-sm text-slate-900 focus:border-[#093c96] focus:ring-1 focus:ring-[#093c96] dark:border-slate-700 dark:bg-slate-900 dark:text-white"
               >
                 <option value="">-- Pilih Masjid Penyelenggara --</option>
                 {masjidList.map((m) => (
@@ -177,58 +181,74 @@ export function AdminTambahKajianForm({ masjidList }: AdminTambahKajianFormProps
           {/* Section 2: Informasi Utama Kajian */}
           <div className="space-y-4">
             <h4 className="text-sm font-bold text-slate-900 dark:text-white pb-2 border-b border-slate-100 dark:border-slate-800">
-              2. Informasi Materi & Pemateri
+              2. Informasi Materi &amp; Pemateri
             </h4>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              <label
+                htmlFor="tambah-judul"
+                className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5"
+              >
                 Judul / Tema Kajian *
               </label>
               <input
+                id="tambah-judul"
                 type="text"
                 name="judul"
                 required
                 placeholder="Contoh: Kajian Tematik: Meniti Jalan Golongan yang Selamat"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-sm text-slate-900 focus:border-[#093c96] focus:bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:bg-slate-900"
+                className="w-full min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-sm text-slate-900 focus:border-[#093c96] focus:bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:bg-slate-900"
               />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                <label
+                  htmlFor="tambah-namaUstadz"
+                  className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5"
+                >
                   Nama Asatidz / Pengisi *
                 </label>
                 <input
+                  id="tambah-namaUstadz"
                   type="text"
                   name="namaUstadz"
                   required
                   placeholder="Contoh: Ustadz Abu Yahya Badrusalam, Lc."
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-sm text-slate-900 focus:border-[#093c96] focus:bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:bg-slate-900"
+                  className="w-full min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-sm text-slate-900 focus:border-[#093c96] focus:bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:bg-slate-900"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                <label
+                  htmlFor="tambah-kitabBahasan"
+                  className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5"
+                >
                   Kitab yang Dibahas (Opsional)
                 </label>
                 <input
+                  id="tambah-kitabBahasan"
                   type="text"
                   name="kitabBahasan"
                   placeholder="Contoh: Kitabut Tauhid / Riyadhus Shalihin"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-sm text-slate-900 focus:border-[#093c96] focus:bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:bg-slate-900"
+                  className="w-full min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-sm text-slate-900 focus:border-[#093c96] focus:bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:bg-slate-900"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                <label
+                  htmlFor="tambah-jenisKajian"
+                  className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5"
+                >
                   Jenis Kajian
                 </label>
                 <select
+                  id="tambah-jenisKajian"
                   name="jenisKajian"
                   defaultValue="rutin"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  className="w-full min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                 >
                   <option value="rutin">Kajian Rutin (Pekanan/Bulanan)</option>
                   <option value="tematik">Kajian Tematik / Tabligh Akbar</option>
@@ -236,15 +256,19 @@ export function AdminTambahKajianForm({ masjidList }: AdminTambahKajianFormProps
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                <label
+                  htmlFor="tambah-kategoriJamaah"
+                  className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5"
+                >
                   Kategori Jamaah
                 </label>
                 <select
+                  id="tambah-kategoriJamaah"
                   name="kategoriJamaah"
                   defaultValue="umum"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  className="w-full min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                 >
-                  <option value="umum">Umum (Ikhwan & Akhwat)</option>
+                  <option value="umum">Umum (Ikhwan &amp; Akhwat)</option>
                   <option value="khusus_ikhwan">Khusus Ikhwan (Laki-laki)</option>
                   <option value="khusus_akhwat">Khusus Akhwat (Wanita)</option>
                 </select>
@@ -260,56 +284,99 @@ export function AdminTambahKajianForm({ masjidList }: AdminTambahKajianFormProps
             </h4>
 
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+              {/* Hari Kajian — select 7 hari baku */}
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                <label
+                  htmlFor="tambah-hariKajian"
+                  className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5"
+                >
                   Hari Kajian
                 </label>
-                <input
-                  type="text"
+                <select
+                  id="tambah-hariKajian"
                   name="hariKajian"
-                  placeholder="Contoh: Ahad / Setiap Sabtu"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-3.5 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                />
+                  defaultValue=""
+                  className="w-full min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-3.5 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                >
+                  <option value="">-- Pilih Hari --</option>
+                  <option value="Senin">Senin</option>
+                  <option value="Selasa">Selasa</option>
+                  <option value="Rabu">Rabu</option>
+                  <option value="Kamis">Kamis</option>
+                  <option value="Jumat">Jumat</option>
+                  <option value="Sabtu">Sabtu</option>
+                  <option value="Ahad">Ahad</option>
+                </select>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                <label
+                  htmlFor="tambah-tanggalKajian"
+                  className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5"
+                >
                   Tanggal Kajian (Opsional)
                 </label>
                 <input
+                  id="tambah-tanggalKajian"
                   type="date"
                   name="tanggalKajian"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-3.5 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  className="w-full min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-3.5 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                <label
+                  htmlFor="tambah-jamMulai"
+                  className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5"
+                >
                   Jam Mulai *
                 </label>
                 <input
+                  id="tambah-jamMulai"
                   type="time"
                   name="jamMulai"
                   required
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-3.5 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white font-mono"
+                  className="w-full min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-3.5 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white font-mono"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                <label
+                  htmlFor="tambah-jamSelesai"
+                  className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5"
+                >
                   Jam Selesai
                 </label>
                 <input
+                  id="tambah-jamSelesai"
                   type="time"
                   name="jamSelesai"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-3.5 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white font-mono"
+                  className="w-full min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-3.5 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white font-mono"
                 />
               </div>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Format 24 Jam (Contoh: 18.30 untuk Ba&apos;da Maghrib, 20.00 untuk Ba&apos;da Isya)
-            </p>
+
+            {/* Keterangan Waktu (Opsional) */}
+            <div>
+              <label
+                htmlFor="tambah-waktuKeterangan"
+                className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5"
+              >
+                Keterangan Waktu (Opsional)
+              </label>
+              <input
+                id="tambah-waktuKeterangan"
+                type="text"
+                name="waktuKeterangan"
+                placeholder="Contoh: Ba'da Isya pukul 20.00 WIB"
+                className="w-full min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              />
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                Format 24 Jam WIB (Contoh: Ba&apos;da Maghrib 18.30, Ba&apos;da Isya 20.00)
+              </p>
+            </div>
           </div>
+
 
           {/* Section 4: Poster & Media */}
           <div className="space-y-4">
@@ -367,15 +434,19 @@ export function AdminTambahKajianForm({ masjidList }: AdminTambahKajianFormProps
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
+              <label
+                htmlFor="tambah-linkStreaming"
+                className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5"
+              >
                 <Video className="w-3.5 h-3.5 text-red-500" />
                 <span>Link Live Streaming (Opsional)</span>
               </label>
               <input
+                id="tambah-linkStreaming"
                 type="url"
                 name="linkStreaming"
                 placeholder="https://youtube.com/live/... atau https://facebook.com/..."
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                className="w-full min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               />
             </div>
           </div>
@@ -388,13 +459,17 @@ export function AdminTambahKajianForm({ masjidList }: AdminTambahKajianFormProps
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                <label
+                  htmlFor="tambah-postStatus"
+                  className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5"
+                >
                   Status Publikasi Post *
                 </label>
                 <select
+                  id="tambah-postStatus"
                   name="postStatus"
                   defaultValue="publish"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  className="w-full min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                 >
                   <option value="publish">Publish (Langsung Tayang di Web Publik)</option>
                   <option value="pending">Pending (Menunggu Moderasi)</option>
@@ -406,13 +481,17 @@ export function AdminTambahKajianForm({ masjidList }: AdminTambahKajianFormProps
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                <label
+                  htmlFor="tambah-statusKajian"
+                  className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5"
+                >
                   Status Pelaksanaan Kajian
                 </label>
                 <select
+                  id="tambah-statusKajian"
                   name="statusKajian"
                   defaultValue="aktif"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  className="w-full min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                 >
                   <option value="aktif">Aktif (Berjalan Normal)</option>
                   <option value="libur">Libur (Sementara Diliburkan)</option>
@@ -426,7 +505,7 @@ export function AdminTambahKajianForm({ masjidList }: AdminTambahKajianFormProps
           <div className="pt-6 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-end gap-3">
             <Link
               href="/dashboard/admin?tab=kajian"
-              className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-center cursor-pointer"
+              className="w-full sm:w-auto px-5 py-2.5 min-h-[44px] rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-center cursor-pointer flex items-center justify-center"
             >
               Batal
             </Link>
@@ -434,7 +513,7 @@ export function AdminTambahKajianForm({ masjidList }: AdminTambahKajianFormProps
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-[#093c96] hover:bg-blue-800 text-white text-xs font-semibold shadow-md shadow-blue-900/20 transition-all disabled:opacity-50 cursor-pointer"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 min-h-[44px] rounded-xl bg-[#093c96] hover:bg-blue-800 text-white text-xs font-semibold shadow-md shadow-blue-900/20 transition-all disabled:opacity-50 cursor-pointer"
             >
               {isSubmitting ? (
                 <>

@@ -305,7 +305,8 @@ export async function createKajianByAdmin(formData: FormData) {
     return { success: false, error: 'Akses ditolak. Anda bukan Administrator.' };
   }
 
-  const judul = formData.get('judul')?.toString()?.trim();
+  /* Baca title (dari AdminKajianModal) atau judul (dari AdminTambahKajianForm) sebagai fallback */
+  const judul = (formData.get('title') || formData.get('judul'))?.toString()?.trim();
   if (!judul) {
     return { success: false, error: 'Judul / Tema kajian wajib diisi.' };
   }
@@ -510,7 +511,8 @@ export async function updateKajianByAdmin(formData: FormData) {
       featured_media?: number;
       acf: Record<string, unknown>;
     } = {
-      title: formData.get('judul')?.toString(),
+      /* Baca title (dari AdminKajianModal) atau judul (dari sumber lain) sebagai fallback */
+      title: (formData.get('title') || formData.get('judul'))?.toString(),
       ...(rawContent !== null && rawContent !== undefined ? { content: String(rawContent) } : {}),
       status: formData.get('postStatus')?.toString() || 'publish',
       acf: {

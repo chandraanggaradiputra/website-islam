@@ -2161,43 +2161,71 @@ function AdminKajianModal({
             defaultValue={stripHtmlToWhatsAppText(kajian?.content?.rendered || '')}
           />
 
+          {/* Judul / Tema Kajian */}
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+            <label
+              htmlFor="modal-title"
+              className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300"
+            >
               Judul / Tema Kajian *
             </label>
             <input
+              id="modal-title"
               type="text"
-              name="judul"
+              name="title"
               required
-              defaultValue={kajian?.title?.rendered || ''}
+              defaultValue={
+                kajian?.title?.rendered
+                  ? kajian.title.rendered
+                      .replace(/&amp;/g, '&')
+                      .replace(/&quot;/g, '"')
+                      .replace(/&#039;/g, "'")
+                      .replace(/&apos;/g, "'")
+                      .replace(/&#8217;/g, '\u2019')
+                      .replace(/&#8216;/g, '\u2018')
+                      .replace(/&#8220;/g, '\u201c')
+                      .replace(/&#8221;/g, '\u201d')
+                      .replace(/<[^>]+>/g, '')
+                  : ''
+              }
               placeholder="Contoh: Kajian Tafsir Ibnu Katsir"
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 px-3.5 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              className="w-full min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 py-2 px-3.5 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
             />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Nama Asatidz */}
             <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+              <label
+                htmlFor="modal-namaUstadz"
+                className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300"
+              >
                 Nama Asatidz / Pengisi *
               </label>
               <input
+                id="modal-namaUstadz"
                 type="text"
                 name="namaUstadz"
                 required
                 defaultValue={kajian?.acf?.nama_ustadz || ''}
                 placeholder="Ustadz Abu Fulan"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 px-3.5 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                className="w-full min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 py-2 px-3.5 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               />
             </div>
+            {/* Masjid Penyelenggara */}
             <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+              <label
+                htmlFor="modal-masjidTerkait"
+                className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300"
+              >
                 Masjid Penyelenggara *
               </label>
               <select
+                id="modal-masjidTerkait"
                 name="masjidTerkait"
                 required
                 defaultValue={currentMasjidId || ''}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 px-3.5 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                className="w-full min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 py-2 px-3.5 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               >
                 <option value="">-- Pilih Masjid Terkait (se-Banten) --</option>
                 {masjidList.map((m) => (
@@ -2210,116 +2238,190 @@ function AdminKajianModal({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {/* Kitab yang Dibahas */}
             <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+              <label
+                htmlFor="modal-kitabBahasan"
+                className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300"
+              >
                 Kitab yang Dibahas
               </label>
               <input
+                id="modal-kitabBahasan"
                 type="text"
                 name="kitabBahasan"
                 defaultValue={kajian?.acf?.kitab_bahasan || ''}
                 placeholder="Contoh: Kitab Tauhid"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 px-3 text-xs text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                className="w-full min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 py-2 px-3 text-xs text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               />
             </div>
+            {/* Jenis Kajian */}
             <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+              <label
+                htmlFor="modal-jenisKajian"
+                className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300"
+              >
                 Jenis Kajian
               </label>
               <select
+                id="modal-jenisKajian"
                 name="jenisKajian"
                 defaultValue={kajian?.acf?.jenis_kajian || 'rutin'}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 px-3 text-xs text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                className="w-full min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 py-2 px-3 text-xs text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               >
                 <option value="rutin">Kajian Rutin</option>
                 <option value="tematik">Kajian Tematik</option>
               </select>
             </div>
+            {/* Kategori Jamaah */}
             <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+              <label
+                htmlFor="modal-kategoriJamaah"
+                className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300"
+              >
                 Kategori Jamaah
               </label>
               <select
+                id="modal-kategoriJamaah"
                 name="kategoriJamaah"
                 defaultValue={kajian?.acf?.kategori_jamaah || 'umum'}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 px-3 text-xs text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                className="w-full min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 py-2 px-3 text-xs text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               >
-                <option value="umum">Umum (Ikhwan & Akhwat)</option>
+                <option value="umum">Umum (Ikhwan &amp; Akhwat)</option>
                 <option value="khusus_ikhwan">Khusus Ikhwan</option>
                 <option value="khusus_akhwat">Khusus Akhwat</option>
               </select>
             </div>
           </div>
 
+          {/* Waktu Pelaksanaan */}
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+            {/* Hari Kajian — select 7 hari baku */}
             <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+              <label
+                htmlFor="modal-hariKajian"
+                className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300"
+              >
                 Hari Kajian
               </label>
-              <input
-                type="text"
+              <select
+                id="modal-hariKajian"
                 name="hariKajian"
                 defaultValue={kajian?.acf?.hari_kajian || ''}
-                placeholder="Ahad / Sabtu"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 px-3 text-xs text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-              />
+                className="w-full min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 py-2 px-3 text-xs text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              >
+                <option value="">-- Pilih Hari --</option>
+                <option value="Senin">Senin</option>
+                <option value="Selasa">Selasa</option>
+                <option value="Rabu">Rabu</option>
+                <option value="Kamis">Kamis</option>
+                <option value="Jumat">Jumat</option>
+                <option value="Sabtu">Sabtu</option>
+                <option value="Ahad">Ahad</option>
+              </select>
             </div>
+            {/* Tanggal */}
             <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+              <label
+                htmlFor="modal-tanggalKajian"
+                className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300"
+              >
                 Tanggal (Opsional)
               </label>
               <input
+                id="modal-tanggalKajian"
                 type="date"
                 name="tanggalKajian"
                 defaultValue={formattedDate}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 px-3 text-xs text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                className="w-full min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 py-2 px-3 text-xs text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               />
             </div>
+            {/* Jam Mulai */}
             <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+              <label
+                htmlFor="modal-jamMulai"
+                className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300"
+              >
                 Jam Mulai *
               </label>
               <input
+                id="modal-jamMulai"
                 type="time"
                 name="jamMulai"
                 required
                 defaultValue={kajian?.acf?.jam_mulai || ''}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 px-3 text-xs text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                className="w-full min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 py-2 px-3 text-xs text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white font-mono"
               />
             </div>
+            {/* Jam Selesai */}
             <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+              <label
+                htmlFor="modal-jamSelesai"
+                className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300"
+              >
                 Jam Selesai
               </label>
               <input
+                id="modal-jamSelesai"
                 type="time"
                 name="jamSelesai"
                 defaultValue={kajian?.acf?.jam_selesai || ''}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 px-3 text-xs text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                className="w-full min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 py-2 px-3 text-xs text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white font-mono"
               />
             </div>
           </div>
 
+          {/* Keterangan Waktu (Opsional) */}
+          <div>
+            <label
+              htmlFor="modal-waktuKeterangan"
+              className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300"
+            >
+              Keterangan Waktu (Opsional)
+            </label>
+            <input
+              id="modal-waktuKeterangan"
+              type="text"
+              name="waktuKeterangan"
+              defaultValue={kajian?.acf?.waktu_keterangan || ''}
+              placeholder="Contoh: Ba'da Isya pukul 20.00 WIB"
+              className="w-full min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 py-2 px-3.5 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            />
+            <p className="text-[11px] text-slate-400 mt-1">
+              Format 24 Jam WIB (Contoh: Ba&apos;da Maghrib 18.30, Ba&apos;da Isya 20.00)
+            </p>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Status Publikasi */}
             <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+              <label
+                htmlFor="modal-postStatus"
+                className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300"
+              >
                 Status Publikasi Post
               </label>
               <select
+                id="modal-postStatus"
                 name="postStatus"
                 defaultValue={kajian?.status || 'publish'}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 px-3.5 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                className="w-full min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 py-2 px-3.5 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               >
                 <option value="publish">Publish (Tayang di Web)</option>
                 <option value="pending">Pending (Menunggu Moderasi)</option>
                 <option value="draft">Draft (Draf)</option>
               </select>
             </div>
+            {/* Status Kajian */}
             <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+              <label
+                htmlFor="modal-statusKajian"
+                className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300"
+              >
                 Status Pelaksanaan Kajian
               </label>
               <select
+                id="modal-statusKajian"
                 name="statusKajian"
                 defaultValue={kajian?.acf?.status_kajian || 'aktif'}
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 px-3.5 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
