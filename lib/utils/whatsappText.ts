@@ -8,19 +8,27 @@
 export function formatWhatsAppText(text: string): string {
   if (!text) return '';
 
-  // 1. Amankan karakter HTML dasar untuk mencegah XSS
+  // 1. Normalisasi newline sistem operasi & batasi baris kosong berlebih
   let formatted = text
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .replace(/^[ \t]+$/gm, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
+  // 2. Amankan karakter HTML dasar untuk mencegah XSS
+  formatted = formatted
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
 
-  // 2. Ubah *teks* menjadi <strong>teks</strong> (format tebal WhatsApp)
+  // 3. Ubah *teks* menjadi <strong>teks</strong> (format tebal WhatsApp)
   formatted = formatted.replace(/\*([^*\n]+)\*/g, '<strong>$1</strong>');
 
-  // 3. Ubah _teks_ menjadi <em>teks</em> (format miring WhatsApp)
+  // 4. Ubah _teks_ menjadi <em>teks</em> (format miring WhatsApp)
   formatted = formatted.replace(/_([^_\n]+)_/g, '<em>$1</em>');
 
-  // 4. Ubah URL aktif (http/https) menjadi tautan yang bisa diklik
+  // 5. Ubah URL aktif (http/https) menjadi tautan yang bisa diklik
   const urlRegex = /(https?:\/\/[^\s<]+)/g;
   formatted = formatted.replace(
     urlRegex,
@@ -32,36 +40,41 @@ export function formatWhatsAppText(text: string): string {
 
 /**
  * Mengonversi konten HTML (misal dari post_content WordPress atau wpautop)
- * kembali menjadi teks bersih berformat WhatsApp untuk disalin ke clipboard.
+ * kembali menjadi teks bersih berformat WhatsApp untuk disalin ke clipboard
+ * dan ditampilkan di antarmuka web.
  */
 export function stripHtmlToWhatsAppText(html: string): string {
   if (!html) return '';
 
   let text = html;
 
-  // 1. Ganti pemisah baris HTML
-  text = text.replace(/<br\s*[\/]?>/gi, '\n');
-  text = text.replace(/<\/p>\s*<p[^>]*>/gi, '\n\n');
-  text = text.replace(/<\/?p[^>]*>/gi, '\n');
-  text = text.replace(/<\/?div[^>]*>/gi, '\n');
+  // 1. Normalisasi newline sistem operasi (\r\n -> \n, \r -> \n)
+  text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 
-  // 2. Kembalikan tag tebal ke sintaks WhatsApp (*teks*)
-  text = text.replace(/<(?:strong|b)[^>]*>(.*?)<\/(?:strong|b)>/gi, '*$1*');
+  // 2. Bersihkan wrapper paragraf kosong khas wpautop (<p>&nbsp;</p>, <p></p>, <p><br></p>)
+  text = text.replace(/<p[^>]*>\s*(?:&nbsp;|<br\s*[\/]?>|\s)*<\/p>/gi, '');
 
-  // 3. Kembalikan tag miring ke sintaks WhatsApp (_teks_)
-  text = text.replace(/<(?:em|i)[^>]*>(.*?)<\/(?:em|i)>/gi, '_$1_');
-
-  // 4. Konversi tautan <a href="url">label</a>
+  // 3. Konversi tautan <a href="url">label</a> sebelum tag HTML dibersihkan
   text = text.replace(/<a\s+[^>]*href=["']([^"']*)["'][^>]*>(.*?)<\/a>/gi, (match, url, label) => {
     const trimmedLabel = label.trim();
     if (!trimmedLabel || trimmedLabel === url) return url;
     return `${trimmedLabel}: ${url}`;
   });
 
-  // 5. Bersihkan semua sisa tag HTML lainnya
+  // 4. Kembalikan tag tebal (*teks*) dan miring (_teks_) ke format WhatsApp
+  text = text.replace(/<(?:strong|b)[^>]*>(.*?)<\/(?:strong|b)>/gi, '*$1*');
+  text = text.replace(/<(?:em|i)[^>]*>(.*?)<\/(?:em|i)>/gi, '_$1_');
+
+  // 5. Ganti pemisah baris & blok HTML
+  // Catatan: wpautop secara default menyisipkan \n setelah <br /> sehingga <br />\n harus diubah menjadi 1 \n
+  text = text.replace(/<\/(?:p|div)>\s*<(?:p|div)[^>]*>/gi, '\n\n');
+  text = text.replace(/<br\s*[\/]?>[ \t]*\n?/gi, '\n');
+  text = text.replace(/<\/?(?:p|div)[^>]*>/gi, '\n');
+
+  // 6. Bersihkan semua sisa tag HTML lainnya
   text = text.replace(/<[^>]+>/g, '');
 
-  // 6. Decode entitas HTML umum
+  // 7. Decode entitas HTML umum
   const entities: Record<string, string> = {
     '&amp;': '&',
     '&lt;': '<',
@@ -82,7 +95,10 @@ export function stripHtmlToWhatsAppText(html: string): string {
     return entities[match] || match;
   });
 
-  // 7. Bersihkan baris kosong berlebih
+  // 8. Hapus spasi pada baris yang hanya berisi whitespace
+  text = text.replace(/^[ \t]+$/gm, '');
+
+  // 9. Bersihkan baris kosong berlebih (maksimal 2 newline berturut-turut = 1 baris kosong antar-paragraf)
   text = text.replace(/\n{3,}/g, '\n\n').trim();
 
   return text;

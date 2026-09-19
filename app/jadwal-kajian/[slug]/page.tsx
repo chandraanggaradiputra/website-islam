@@ -9,9 +9,8 @@ import Link from 'next/link';
 import { CalendarButton } from '@/components/kajian/CalendarButton';
 import { ShareButton } from '@/components/ui/ShareButton';
 import { CopyWhatsAppButton } from '@/components/kajian/CopyWhatsAppButton';
-import { stripHtmlToWhatsAppText, generateDefaultKajianBroadcast } from '@/lib/utils/whatsappText';
+import { stripHtmlToWhatsAppText, formatWhatsAppText, generateDefaultKajianBroadcast } from '@/lib/utils/whatsappText';
 import { Calendar, MapPin, User, ArrowLeft, Book, AlertCircle, CheckCircle2, Video, MessageSquareShare } from 'lucide-react';
-import htmlParser from 'html-react-parser';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { isKajianExpired } from '@/lib/kajian';
 import { getYouTubeEmbedUrl } from '@/lib/utils/youtube';
@@ -317,13 +316,12 @@ export default async function SingleKajianPage({ params }: { params: Promise<{ s
                 </div>
               )}
 
-              {content.rendered && (
+              {rawContentText.trim() && (
                 <div
                   dir="auto"
-                  className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-950/50 border border-slate-200/80 dark:border-slate-800 text-slate-800 dark:text-slate-200 text-sm leading-relaxed whitespace-pre-wrap font-sans"
-                >
-                  {htmlParser(content.rendered)}
-                </div>
+                  className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-950/50 border border-slate-200/80 dark:border-slate-800 text-slate-800 dark:text-slate-200 text-sm leading-relaxed whitespace-pre-wrap font-sans break-words"
+                  dangerouslySetInnerHTML={{ __html: formatWhatsAppText(rawContentText) }}
+                />
               )}
             </div>
           )}
