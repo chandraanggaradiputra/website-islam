@@ -674,9 +674,12 @@ export function DKMKajianList({ initialKajian }: { initialKajian: WPKajian[] }) 
                     type="url"
                     name="linkStreaming"
                     defaultValue={editingKajian.acf?.link_streaming || ''}
-                    placeholder="https://youtube.com/live/..."
+                    placeholder="https://youtube.com/... atau https://facebook.com/.../videos/..."
                     className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-[#093c96] focus:outline-none"
                   />
+                  <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                    Mendukung tautan siaran YouTube (video/live/shorts) dan Facebook Live.
+                  </p>
                 </div>
               </div>
 

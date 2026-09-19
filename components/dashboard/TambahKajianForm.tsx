@@ -415,9 +415,12 @@ export function TambahKajianForm({ masjidId, masjidName }: TambahKajianFormProps
                   aria-label="Tautan Live Streaming Kajian"
                   {...register('linkStreaming')}
                   className="block w-full min-h-[44px] pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:ring-[#093c96] rounded-xl text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2"
-                  placeholder="https://youtube.com/... atau tautan kajian online lainnya"
+                  placeholder="https://youtube.com/... atau https://facebook.com/.../videos/..."
                 />
               </div>
+              <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
+                Mendukung tautan siaran YouTube (video/live/shorts) dan Facebook Live.
+              </p>
               {errors.linkStreaming && <p className="mt-1.5 text-sm text-red-600 dark:text-red-400 font-medium">{errors.linkStreaming.message}</p>}
             </div>
 

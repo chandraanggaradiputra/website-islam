@@ -2440,9 +2440,12 @@ function AdminKajianModal({
                 type="url"
                 name="linkStreaming"
                 defaultValue={kajian?.acf?.link_streaming || ''}
-                placeholder="https://youtube.com/live/..."
+                placeholder="https://youtube.com/... atau https://facebook.com/.../videos/..."
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 px-3.5 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               />
+              <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                Mendukung tautan siaran YouTube (video/live/shorts) dan Facebook Live.
+              </p>
             </div>
           </div>
 

@@ -445,9 +445,12 @@ export function AdminTambahKajianForm({ masjidList }: AdminTambahKajianFormProps
                 id="tambah-linkStreaming"
                 type="url"
                 name="linkStreaming"
-                placeholder="https://youtube.com/live/... atau https://facebook.com/..."
+                placeholder="https://youtube.com/... atau https://facebook.com/.../videos/..."
                 className="w-full min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-sm text-slate-900 focus:border-[#093c96] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               />
+              <p className="mt-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                Mendukung tautan siaran YouTube (video/live/shorts) dan Facebook Live.
+              </p>
             </div>
           </div>
 

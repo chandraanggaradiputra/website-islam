@@ -13,7 +13,8 @@ import { stripHtmlToWhatsAppText, formatWhatsAppText, generateDefaultKajianBroad
 import { Calendar, MapPin, User, ArrowLeft, Book, AlertCircle, CheckCircle2, Video, MessageSquareShare } from 'lucide-react';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { isKajianExpired } from '@/lib/kajian';
-import { getYouTubeEmbedUrl } from '@/lib/utils/youtube';
+import { parseStreamingUrl } from '@/lib/utils/streamingUrl';
+import { KajianVideoPlayer } from '@/components/kajian/KajianVideoPlayer';
 
 export const revalidate = 60;
 
@@ -96,9 +97,10 @@ export default async function SingleKajianPage({ params }: { params: Promise<{ s
   
   const wktKeterangan = acf?.waktu_keterangan || (acf?.jam_mulai ? `${acf.jam_mulai} - ${acf.jam_selesai || 'Selesai'}` : '');
 
-  // Deteksi status kajian selesai / kedaluwarsa
+  // Deteksi status kajian selesai / kedaluwarsa & ketersediaan siaran streaming
   const isSelesai = acf?.status_kajian === 'selesai' || isKajianExpired(acf?.tanggal_kajian, acf?.jam_selesai, acf?.jam_mulai);
-  const youtubeEmbedUrl = getYouTubeEmbedUrl(acf?.link_streaming);
+  const streamingInfo = parseStreamingUrl(acf?.link_streaming);
+  const hasStreaming = !!streamingInfo;
 
   // Format tanggal untuk banner informasi
   let tanggalKajianDisplay = '';
@@ -151,7 +153,7 @@ export default async function SingleKajianPage({ params }: { params: Promise<{ s
         <div className="p-6 md:p-8">
           <div className="flex flex-wrap gap-2 mb-4">
             {isSelesai ? (
-              youtubeEmbedUrl ? (
+              hasStreaming ? (
                 <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-md bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
                   <Video className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                   <span>Selesai - Rekaman Tersedia</span>
@@ -189,7 +191,7 @@ export default async function SingleKajianPage({ params }: { params: Promise<{ s
                 <h4 className="font-bold text-sm">Kajian Telah Selesai Dilaksanakan</h4>
                 <p className="text-xs mt-0.5 text-slate-600 dark:text-slate-400 leading-relaxed">
                   Kajian ini telah selesai dilaksanakan {isRutin && acf?.hari_kajian ? `(Rutin ${acf.hari_kajian})` : (tanggalKajianDisplay ? `pada ${tanggalKajianDisplay}` : '')}.
-                  {youtubeEmbedUrl ? ' Rekaman video dan dokumentasi kajian dapat disimak di bawah ini.' : ''}
+                  {hasStreaming ? ' Rekaman video dan siaran kajian dapat disimak di bawah ini.' : ''}
                 </p>
               </div>
             </div>
@@ -267,33 +269,27 @@ export default async function SingleKajianPage({ params }: { params: Promise<{ s
             <ShareButton title={decodeHtmlEntities(title.rendered)} text={`Bersama: ${acf?.nama_ustadz ? decodeHtmlEntities(acf.nama_ustadz) : 'Asatidz'}\nLokasi: ${finalMasjidName}\nWaktu: ${isRutin ? 'Setiap ' + (acf?.hari_kajian || '') : (acf?.tanggal_kajian || '')} jam ${acf?.jam_mulai || ''}`} url="" />
           </div>
 
-          {/* Pemutar Video Rekaman YouTube */}
-          {isSelesai && youtubeEmbedUrl && (
+          {/* Pemutar Video Rekaman / Siaran Streaming Multi-Platform (YouTube, Facebook, dsb.) */}
+          {hasStreaming && (
             <div className="mb-8">
               <div className="flex items-center gap-2 mb-2">
                 <Video className="w-5 h-5 text-[#093c96] dark:text-blue-400" />
                 <h3 className="font-bold text-lg text-slate-900 dark:text-white">
-                  Rekaman Video Kajian
+                  {isSelesai ? 'Rekaman Video Kajian' : 'Siaran Live / Streaming Kajian'}
                 </h3>
               </div>
               <p className="text-xs text-slate-600 dark:text-slate-400 mb-4">
-                Mari simak kembali rekaman dokumentasi dan pembahasan faedah ilmu dari kajian ini:
+                {isSelesai
+                  ? 'Mari simak kembali rekaman dokumentasi dan pembahasan faedah ilmu dari kajian ini:'
+                  : 'Saksikan siaran langsung kajian melalui pemutar di bawah ini:'}
               </p>
-              <div className="relative w-full aspect-video rounded-2xl overflow-hidden shadow-md border border-slate-200 dark:border-slate-800 bg-black">
-                <iframe
-                  src={youtubeEmbedUrl}
-                  title={`Rekaman Kajian: ${title.rendered}`}
-                  className="w-full h-full border-0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                />
-              </div>
+              <KajianVideoPlayer url={acf?.link_streaming} title={`Video Kajian: ${decodeHtmlEntities(title.rendered)}`} />
             </div>
           )}
 
           {/* Teks Siaran / Broadcast WhatsApp & Catatan Faedah Kajian */}
           {(content.rendered || acf?.catatan_faedah) && (
-            <div className={isSelesai && youtubeEmbedUrl ? 'mt-8 pt-6 border-t border-slate-200 dark:border-slate-800' : 'mt-8 pt-6 border-t border-slate-200 dark:border-slate-800'}>
+            <div className={hasStreaming ? 'mt-8 pt-6 border-t border-slate-200 dark:border-slate-800' : 'mt-8 pt-6 border-t border-slate-200 dark:border-slate-800'}>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                 <div className="flex items-center gap-2">
                   <div className="p-2 rounded-xl bg-emerald-600 text-white shadow-xs">
