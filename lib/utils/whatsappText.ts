@@ -9,7 +9,7 @@ export function formatWhatsAppText(text: string): string {
   if (!text) return '';
 
   // 1. Normalisasi newline sistem operasi & batasi baris kosong berlebih
-  let formatted = text
+  let clean = text
     .replace(/\r\n/g, '\n')
     .replace(/\r/g, '\n')
     .replace(/^[ \t]+$/gm, '')
@@ -17,25 +17,29 @@ export function formatWhatsAppText(text: string): string {
     .trim();
 
   // 2. Amankan karakter HTML dasar untuk mencegah XSS
-  formatted = formatted
+  clean = clean
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
 
-  // 3. Ubah *teks* menjadi <strong>teks</strong> (format tebal WhatsApp)
-  formatted = formatted.replace(/\*([^*\n]+)\*/g, '<strong>$1</strong>');
+  // 3. Format Tebal WhatsApp: *teks* -> <strong>teks</strong>
+  // Mendukung kata diapit tanda kutip, emoji, dan aksara Arab
+  clean = clean.replace(/(?<!\w)\*([^\s*](?:.*?[^\s*])?)\*(?!\w)/g, '<strong>$1</strong>');
 
-  // 4. Ubah _teks_ menjadi <em>teks</em> (format miring WhatsApp)
-  formatted = formatted.replace(/_([^_\n]+)_/g, '<em>$1</em>');
+  // 4. Format Miring WhatsApp: _teks_ -> <em>teks</em>
+  clean = clean.replace(/(?<!\w)_([^\s_](?:.*?[^\s_])?)_(?!\w)/g, '<em>$1</em>');
 
-  // 5. Ubah URL aktif (http/https) menjadi tautan yang bisa diklik
+  // 5. Format Coret WhatsApp: ~teks~ -> <del>teks</del>
+  clean = clean.replace(/(?<!\w)~([^\s~](?:.*?[^\s~])?)~(?!\w)/g, '<del>$1</del>');
+
+  // 6. Format Tautan URL aktif
   const urlRegex = /(https?:\/\/[^\s<]+)/g;
-  formatted = formatted.replace(
+  clean = clean.replace(
     urlRegex,
-    '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 underline hover:text-blue-800 break-all">$1</a>'
+    '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 underline hover:text-blue-800 break-all font-medium">$1</a>'
   );
 
-  return formatted;
+  return clean;
 }
 
 /**
@@ -56,14 +60,15 @@ export function stripHtmlToWhatsAppText(html: string): string {
 
   // 3. Konversi tautan <a href="url">label</a> sebelum tag HTML dibersihkan
   text = text.replace(/<a\s+[^>]*href=["']([^"']*)["'][^>]*>(.*?)<\/a>/gi, (match, url, label) => {
-    const trimmedLabel = label.trim();
+    const trimmedLabel = label.trim().replace(/<[^>]+>/g, '');
     if (!trimmedLabel || trimmedLabel === url) return url;
     return `${trimmedLabel}: ${url}`;
   });
 
-  // 4. Kembalikan tag tebal (*teks*) dan miring (_teks_) ke format WhatsApp
+  // 4. Kembalikan tag tebal (*teks*), miring (_teks_), dan coret (~teks~) ke format WhatsApp
   text = text.replace(/<(?:strong|b)[^>]*>(.*?)<\/(?:strong|b)>/gi, '*$1*');
   text = text.replace(/<(?:em|i)[^>]*>(.*?)<\/(?:em|i)>/gi, '_$1_');
+  text = text.replace(/<(?:del|s|strike)[^>]*>(.*?)<\/(?:del|s|strike)>/gi, '~$1~');
 
   // 5. Ganti pemisah baris & blok HTML
   // Catatan: wpautop secara default menyisipkan \n setelah <br /> sehingga <br />\n harus diubah menjadi 1 \n

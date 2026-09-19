@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Copy, Check, MessageSquareShare } from 'lucide-react';
+import { stripHtmlToWhatsAppText } from '@/lib/utils/whatsappText';
 
 interface CopyWhatsAppButtonProps {
   textToCopy: string;
@@ -25,13 +26,19 @@ export function CopyWhatsAppButton({
   const handleCopy = async () => {
     if (!textToCopy) return;
 
+    // Pastikan teks yang disalin ke clipboard membawa penanda asli WhatsApp (*teks*, _teks_, ~teks~).
+    // Jika teks masih mengandung tag HTML, konversi kembali menggunakan stripHtmlToWhatsAppText.
+    const cleanText = /<[a-z][\s\S]*>/i.test(textToCopy)
+      ? stripHtmlToWhatsAppText(textToCopy)
+      : textToCopy;
+
     try {
       if (navigator?.clipboard?.writeText) {
-        await navigator.clipboard.writeText(textToCopy);
+        await navigator.clipboard.writeText(cleanText);
       } else {
         // Fallback untuk lingkungan webview atau browser lama
         const textarea = document.createElement('textarea');
-        textarea.value = textToCopy;
+        textarea.value = cleanText;
         textarea.style.position = 'fixed';
         textarea.style.opacity = '0';
         document.body.appendChild(textarea);

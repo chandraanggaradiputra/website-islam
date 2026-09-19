@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { formatWhatsAppText } from '@/lib/utils/whatsappText';
-import { MessageSquareShare, Eye, PenLine, Sparkles, HelpCircle } from 'lucide-react';
+import { MessageSquareShare, Eye, PenLine, Sparkles, HelpCircle, Bold, Italic, Strikethrough } from 'lucide-react';
 
 interface WhatsAppScratchpadProps {
   id?: string;
@@ -31,6 +31,7 @@ export function WhatsAppScratchpad({
   placeholder,
   required = false,
 }: WhatsAppScratchpadProps) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [internalText, setInternalText] = useState(defaultValue);
   const [activeTab, setActiveTab] = useState<'write' | 'preview'>('write');
   const [showTips, setShowTips] = useState(false);
@@ -44,6 +45,41 @@ export function WhatsAppScratchpad({
       setInternalText(val);
     }
     onChange?.(val);
+  };
+
+  const wrapSelection = (wrapper: string) => {
+    const textarea = textareaRef.current || (document.getElementById(id) as HTMLTextAreaElement);
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+    const selected = text.substring(start, end);
+
+    if (!selected) {
+      const replacement = `${wrapper}${wrapper}`;
+      const newText = text.substring(0, start) + replacement + text.substring(end);
+      if (!isControlled) {
+        setInternalText(newText);
+      }
+      onChange?.(newText);
+      setTimeout(() => {
+        textarea.focus();
+        textarea.setSelectionRange(start + wrapper.length, start + wrapper.length);
+      }, 0);
+      return;
+    }
+
+    const replacement = `${wrapper}${selected}${wrapper}`;
+    const newText = text.substring(0, start) + replacement + text.substring(end);
+    if (!isControlled) {
+      setInternalText(newText);
+    }
+    onChange?.(newText);
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + wrapper.length, end + wrapper.length);
+    }, 0);
   };
 
   const defaultPlaceholder =
@@ -132,7 +168,45 @@ export function WhatsAppScratchpad({
       {/* Tab 1: Write Area */}
       {activeTab === 'write' && (
         <div className="relative">
+          {/* Formatting Toolbar */}
+          <div className="flex items-center gap-1.5 mb-2.5">
+            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mr-0.5">
+              Format Cepat:
+            </span>
+            <button
+              type="button"
+              onClick={() => wrapSelection('*')}
+              className="inline-flex items-center justify-center gap-1 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-emerald-50 hover:border-emerald-300 dark:hover:bg-slate-800 dark:hover:border-emerald-700 text-xs font-bold text-slate-800 dark:text-slate-200 transition-colors shadow-2xs cursor-pointer min-h-[32px]"
+              title="Tebalkan teks (*teks*)"
+              aria-label="Tebal"
+            >
+              <Bold className="w-3.5 h-3.5" />
+              <span className="text-[11px] font-bold">B</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => wrapSelection('_')}
+              className="inline-flex items-center justify-center gap-1 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-emerald-50 hover:border-emerald-300 dark:hover:bg-slate-800 dark:hover:border-emerald-700 text-xs italic text-slate-800 dark:text-slate-200 transition-colors shadow-2xs cursor-pointer min-h-[32px]"
+              title="Miringkan teks (_teks_)"
+              aria-label="Miring"
+            >
+              <Italic className="w-3.5 h-3.5" />
+              <span className="text-[11px] italic font-serif">I</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => wrapSelection('~')}
+              className="inline-flex items-center justify-center gap-1 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-emerald-50 hover:border-emerald-300 dark:hover:bg-slate-800 dark:hover:border-emerald-700 text-xs line-through text-slate-800 dark:text-slate-200 transition-colors shadow-2xs cursor-pointer min-h-[32px]"
+              title="Coret teks (~teks~)"
+              aria-label="Coret"
+            >
+              <Strikethrough className="w-3.5 h-3.5" />
+              <span className="text-[11px] line-through">S</span>
+            </button>
+          </div>
+
           <textarea
+            ref={textareaRef}
             id={id}
             name={name}
             dir="auto"
@@ -156,7 +230,7 @@ export function WhatsAppScratchpad({
           {currentText.trim() ? (
             <div
               dir="auto"
-              className="whitespace-pre-wrap break-words space-y-1"
+              className="whitespace-pre-wrap break-words leading-relaxed [&_strong]:font-bold [&_strong]:text-slate-900 dark:[&_strong]:text-white [&_em]:italic [&_del]:line-through"
               dangerouslySetInnerHTML={{ __html: renderedPreview }}
             />
           ) : (

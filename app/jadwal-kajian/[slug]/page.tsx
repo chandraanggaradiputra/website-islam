@@ -319,7 +319,7 @@ export default async function SingleKajianPage({ params }: { params: Promise<{ s
               {rawContentText.trim() && (
                 <div
                   dir="auto"
-                  className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-950/50 border border-slate-200/80 dark:border-slate-800 text-slate-800 dark:text-slate-200 text-sm leading-relaxed whitespace-pre-wrap font-sans break-words"
+                  className="p-4 sm:p-6 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-slate-200/80 dark:border-slate-800 text-sm sm:text-base text-slate-800 dark:text-slate-200 whitespace-pre-wrap leading-relaxed font-sans break-words [&_strong]:font-bold [&_strong]:text-slate-900 dark:[&_strong]:text-white [&_em]:italic [&_del]:line-through"
                   dangerouslySetInnerHTML={{ __html: formatWhatsAppText(rawContentText) }}
                 />
               )}
