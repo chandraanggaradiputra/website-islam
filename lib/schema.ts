@@ -147,6 +147,12 @@ export function getPanduanDkmJsonLd() {
         name: 'Langkah 5: Syiar Otomatis ke Jamaah',
         text: 'Jadwal kajian otomatis terbit di beranda, direktori kajian, serta terindeks oleh mesin pencari AI.',
       },
+      {
+        '@type': 'HowToStep',
+        name: 'Langkah 6: Input Catatan Faedah & Rekaman Video',
+        text: 'Setelah kajian selesai diselenggarakan, pengurus DKM mendokumentasikan intisari faedah ilmu dan tautan rekaman video agar otomatis terbit di direktori publik Faedah Kajian.',
+        url: `${BASE_URL}/artikel`,
+      },
     ],
   };
 }

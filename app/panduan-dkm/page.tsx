@@ -12,7 +12,11 @@ import {
   Share2,
   CheckCircle2,
   Sparkles,
-  PlayCircle
+  PlayCircle,
+  BookOpen,
+  FileText,
+  Lightbulb,
+  ArrowRight,
 } from 'lucide-react';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { getPanduanDkmJsonLd } from '@/lib/schema';
@@ -182,65 +186,125 @@ export default function PanduanDKMPage() {
             </div>
           </div>
 
-          {/* Kartu 2: Panduan Menyematkan Rekaman Kajian (Untuk Pengurus DKM) */}
+          {/* Kartu 2: Panduan Mengisi Catatan Faedah & Rekaman Video Kajian Selesai */}
           <div className="bg-white dark:bg-surface-darkCard shadow-sm rounded-2xl p-6 sm:p-10 border border-slate-200/60 dark:border-slate-800">
             <div className="flex items-start gap-4 mb-6">
-              <div className="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-900/40 text-[#8f702f] dark:text-[#E8C27A] flex items-center justify-center shrink-0">
-                <Video className="w-6 h-6" />
+              <div className="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0">
+                <BookOpen className="w-6 h-6" />
               </div>
               <div>
-                <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-[#C5A059]/15 text-[#8f702f] dark:text-[#E8C27A] border border-[#C5A059]/30">
-                  Untuk Pengurus DKM
-                </span>
+                <div className="flex flex-wrap items-center gap-2 mb-1">
+                  <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                    Untuk Pengurus DKM
+                  </span>
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300">
+                    Amal Jariyah Ilmu
+                  </span>
+                </div>
                 <h2 className="text-2xl font-bold font-slab text-slate-900 dark:text-white mt-1">
-                  Panduan Menyematkan Rekaman Kajian (YouTube)
+                  Panduan Mengisi Catatan Faedah &amp; Rekaman Video Kajian Selesai
                 </h2>
                 <p className="text-sm text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
-                  Jadikan kajian di masjid Anda sebagai arsip ilmu yang terus mengalirkan pahala jariyah dengan menyematkan video rekaman YouTube.
+                  Setelah kajian terselenggara, dokumentasikan intisari pembahasan ilmu dan tautan rekaman siaran agar terus menjadi amal jariyah yang bermanfaat bagi kaum muslimin.
                 </p>
               </div>
             </div>
 
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6 pt-6 border-t border-slate-100 dark:border-slate-800">
+            {/* Grid 6 Langkah Praktis */}
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6 pt-6 border-t border-slate-100 dark:border-slate-800">
+              {/* Langkah 1 */}
               <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800 space-y-2">
                 <div className="w-8 h-8 rounded-lg bg-[#093c96] text-white flex items-center justify-center font-bold text-sm">
                   1
                 </div>
-                <h3 className="font-bold text-sm text-slate-900 dark:text-white">Salin Link Video</h3>
+                <h3 className="font-bold text-sm text-slate-900 dark:text-white">Akses Dasbor DKM</h3>
                 <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                  Salin tautan rekaman atau siaran langsung dari channel YouTube masjid Anda (bisa link biasa, live, atau shorts).
+                  Masuk ke <Link href="/dashboard/dkm" className="text-[#093c96] dark:text-blue-400 font-semibold hover:underline">/dashboard/dkm</Link> lalu gulir ke bagian <strong>Daftar Kajian Masjid</strong> Anda.
                 </p>
               </div>
 
+              {/* Langkah 2 */}
               <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800 space-y-2">
                 <div className="w-8 h-8 rounded-lg bg-[#093c96] text-white flex items-center justify-center font-bold text-sm">
                   2
                 </div>
-                <h3 className="font-bold text-sm text-slate-900 dark:text-white">Buka Dasbor DKM</h3>
+                <h3 className="font-bold text-sm text-slate-900 dark:text-white">Temukan Kajian Selesai</h3>
                 <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                  Masuk ke <Link href="/dashboard/dkm" className="text-[#093c96] dark:text-blue-400 font-semibold hover:underline">/dashboard/dkm</Link>, lalu pilih jadwal kajian yang telah selesai dilaksanakan dan klik tombol Edit.
+                  Pilih kajian yang telah lewat waktu pelaksanaannya (ditandai dengan badge abu-abu <em>Selesai / Kedaluwarsa</em>).
                 </p>
               </div>
 
+              {/* Langkah 3 */}
               <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800 space-y-2">
-                <div className="w-8 h-8 rounded-lg bg-[#093c96] text-white flex items-center justify-center font-bold text-sm">
+                <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-sm">
                   3
                 </div>
-                <h3 className="font-bold text-sm text-slate-900 dark:text-white">Tempel Link & Faedah</h3>
+                <h3 className="font-bold text-sm text-slate-900 dark:text-white">Klik &quot;Isi Catatan Faedah&quot;</h3>
                 <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                  Tempel URL YouTube pada kolom <em>Link Streaming / Rekaman</em>, dan ketik poin-poin mutiara faedah pada kolom Catatan.
+                  Klik tombol hijau <strong>Isi Catatan Faedah</strong> (atau <em>Edit Faedah</em>) dengan ikon <FileText className="w-3.5 h-3.5 inline text-emerald-600 dark:text-emerald-400" /> untuk membuka formulir modal.
                 </p>
               </div>
 
+              {/* Langkah 4 */}
               <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800 space-y-2">
                 <div className="w-8 h-8 rounded-lg bg-[#093c96] text-white flex items-center justify-center font-bold text-sm">
                   4
                 </div>
-                <h3 className="font-bold text-sm text-slate-900 dark:text-white">Otomatis Terarsip</h3>
+                <h3 className="font-bold text-sm text-slate-900 dark:text-white">Tuliskan Poin Mutiara Faedah</h3>
                 <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                  Simpan perubahan. Jadwal otomatis berpindah ke tab <strong>Arsip & Rekaman</strong> dengan badge hijau serta pemutar video aktif.
+                  Ketik intisari materi, dalil ayat &amp; hadits, rujukan kitab, atau kaidah aqidah/fiqih yang dipaparkan asatidz.
                 </p>
               </div>
+
+              {/* Langkah 5 */}
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800 space-y-2">
+                <div className="w-8 h-8 rounded-lg bg-[#093c96] text-white flex items-center justify-center font-bold text-sm">
+                  5
+                </div>
+                <h3 className="font-bold text-sm text-slate-900 dark:text-white">Tempel Link Rekaman (Opsional)</h3>
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                  Tempelkan URL siaran YouTube atau Facebook Video jika kajian didokumentasikan agar pemutar video aktif.
+                </p>
+              </div>
+
+              {/* Langkah 6 */}
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800 space-y-2">
+                <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-sm">
+                  6
+                </div>
+                <h3 className="font-bold text-sm text-slate-900 dark:text-white">Simpan &amp; Terbitkan</h3>
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                  Klik <strong>Simpan Catatan Faedah</strong>. Data langsung terbit di halaman detail kajian dan katalog direktori faedah.
+                </p>
+              </div>
+            </div>
+
+            {/* Kotak Edukasi Amal Jariyah & Syiar Publik */}
+            <div className="mt-6 p-4.5 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/20 border border-emerald-200/80 dark:border-emerald-900/60 text-xs sm:text-sm text-emerald-900 dark:text-emerald-200 space-y-2">
+              <div className="flex items-center gap-2 font-bold text-emerald-950 dark:text-emerald-100">
+                <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span>Otomatis Masuk ke Direktori Publik Faedah Kajian</span>
+              </div>
+              <p className="leading-relaxed text-emerald-800 dark:text-emerald-300 text-xs">
+                Setiap catatan faedah yang disimpan pengurus DKM otomatis dipublikasikan ke halaman detail arsip kajian dan masuk ke katalog direktori{' '}
+                <Link href="/artikel" className="font-bold underline hover:text-emerald-950 dark:hover:text-emerald-100">
+                  Faedah Kajian (/artikel)
+                </Link>
+                . Ini menjadi sarana dakwah berkelanjutan bagi jamaah yang berhalangan hadir agar tetap dapat menimba faedah ilmu syar&apos;i.
+              </p>
+            </div>
+
+            {/* Kotak Tips Penulisan Catatan Faedah */}
+            <div className="mt-4 p-4.5 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300 space-y-2">
+              <div className="flex items-center gap-2 font-bold text-slate-900 dark:text-white">
+                <Lightbulb className="w-4 h-4 text-amber-500 shrink-0" />
+                <span>Tips Menulis Catatan Faedah yang Nyaman Dibaca Jamaah</span>
+              </div>
+              <ul className="list-disc pl-5 space-y-1 text-slate-600 dark:text-slate-400 leading-relaxed">
+                <li><strong>Gunakan Format Berpoin:</strong> Tuliskan poin 1, 2, 3 agar intisari materi mudah dipahami di layar smartphone.</li>
+                <li><strong>Sertakan Rujukan Dalil:</strong> Cantumkan nama kitab, rujukan ayat Al-Qur&apos;an, atau riwayat hadits pokok yang dibahas asatidz.</li>
+                <li><strong>Nasihat Praktis:</strong> Sertakan kesimpulan hukum fiqih atau nasihat amalan sehari-hari yang dapat langsung diamalkan jamaah.</li>
+              </ul>
             </div>
           </div>
         </div>
