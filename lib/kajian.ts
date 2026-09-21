@@ -2,6 +2,8 @@
  * Helper utilitas untuk jadwal kajian
  */
 
+import { decodeHtmlEntities } from '@/lib/utils/text';
+
 function extractTime(timeStr?: string): { hours: number; minutes: number } | null {
   if (!timeStr) return null;
   const match = timeStr.match(/(\d{1,2})[:.](\d{2})/);
@@ -81,38 +83,34 @@ export function getKajianCatatanFaedah(kajian?: {
   if (!kajian) return '';
 
   if (kajian.acf?.catatan_faedah && typeof kajian.acf.catatan_faedah === 'string' && kajian.acf.catatan_faedah.trim()) {
-    return kajian.acf.catatan_faedah.trim();
+    return decodeHtmlEntities(kajian.acf.catatan_faedah.trim());
   }
 
   if (kajian.acf?.ringkasan_faedah && typeof kajian.acf.ringkasan_faedah === 'string' && kajian.acf.ringkasan_faedah.trim()) {
-    return kajian.acf.ringkasan_faedah.trim();
+    return decodeHtmlEntities(kajian.acf.ringkasan_faedah.trim());
   }
 
   const raw = kajian.content?.raw || kajian.content?.rendered || '';
   if (raw.includes('catatan-faedah')) {
     const match = raw.match(/<div class="catatan-faedah">([\s\S]*?)<\/div>/i);
     const contentText = match ? match[1] : raw;
-    return contentText
+    const stripped = contentText
       .replace(/<br\s*[\/]?>/gi, '\n')
       .replace(/<\/p>/gi, '\n')
       .replace(/<[^>]+>/g, '')
-      .replace(/&amp;/g, '&')
-      .replace(/&quot;/g, '"')
-      .replace(/&#039;/g, "'")
       .trim();
+    return decodeHtmlEntities(stripped);
   }
 
   if (raw.includes('<!-- CATATAN_FAEDAH -->')) {
     const parts = raw.split('<!-- CATATAN_FAEDAH -->');
     const afterMarker = parts[1] || '';
-    return afterMarker
+    const stripped = afterMarker
       .replace(/<br\s*[\/]?>/gi, '\n')
       .replace(/<\/p>/gi, '\n')
       .replace(/<[^>]+>/g, '')
-      .replace(/&amp;/g, '&')
-      .replace(/&quot;/g, '"')
-      .replace(/&#039;/g, "'")
       .trim();
+    return decodeHtmlEntities(stripped);
   }
 
   return '';

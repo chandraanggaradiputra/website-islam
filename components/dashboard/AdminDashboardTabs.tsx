@@ -68,7 +68,10 @@ import {
   BellRing,
   Send,
   Smartphone,
+  FileText,
 } from 'lucide-react';
+import { CatatanFaedahModal } from '@/components/dashboard/CatatanFaedahModal';
+import { isKajianExpired } from '@/lib/kajian';
 
 const KECAMATAN_OPTIONS = [
   { id: 2, name: 'Serang' },
@@ -157,6 +160,12 @@ export function AdminDashboardTabs({
   const [editingMasjid, setEditingMasjid] = useState<WPMasjid | null>(null);
   const [isAddKajianOpen, setIsAddKajianOpen] = useState(false);
   const [editingKajian, setEditingKajian] = useState<WPKajian | null>(null);
+  const [kajianList, setKajianList] = useState<WPKajian[]>(allKajian);
+  const [faedahModalKajian, setFaedahModalKajian] = useState<WPKajian | null>(null);
+
+  useEffect(() => {
+    setKajianList(allKajian);
+  }, [allKajian]);
   const [resetTargetUser, setResetTargetUser] = useState<DKMUserItem | null>(null);
 
   // Settings state
@@ -205,7 +214,7 @@ export function AdminDashboardTabs({
     return title.toLowerCase().includes(q) || alamat.toLowerCase().includes(q);
   });
 
-  const filteredKajian = allKajian.filter((k) => {
+  const filteredKajian = kajianList.filter((k) => {
     const q = searchKajian.toLowerCase();
     const title = k.title?.rendered || '';
     const ustadz = k.acf?.nama_ustadz || '';
@@ -798,6 +807,9 @@ export function AdminDashboardTabs({
                       const waktu =
                         kajian.acf?.waktu_keterangan ||
                         (kajian.acf?.jam_mulai ? `${kajian.acf.jam_mulai} WIB` : '-');
+                      const isExpired =
+                        kajian.acf?.status_kajian === 'selesai' ||
+                        isKajianExpired(kajian.acf?.tanggal_kajian, kajian.acf?.jam_selesai, kajian.acf?.jam_mulai);
 
                       return (
                         <tr
@@ -836,7 +848,11 @@ export function AdminDashboardTabs({
                           </td>
 
                           <td className="p-4">
-                            {kajian.status === 'publish' ? (
+                            {isExpired ? (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                                Selesai
+                              </span>
+                            ) : kajian.status === 'publish' ? (
                               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
                                 Published
                               </span>
@@ -853,6 +869,19 @@ export function AdminDashboardTabs({
 
                           <td className="p-4 text-right whitespace-nowrap">
                             <div className="flex items-center justify-end gap-1.5">
+                              {/* Tombol Isi Catatan Faedah untuk Kajian Selesai */}
+                              {isExpired && (
+                                <button
+                                  type="button"
+                                  onClick={() => setFaedahModalKajian(kajian)}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-emerald-300 dark:border-emerald-800 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 text-xs font-semibold transition-colors cursor-pointer shadow-xs"
+                                  title="Isi Catatan & Ringkasan Faedah Kajian Selesai"
+                                >
+                                  <FileText className="w-3.5 h-3.5" />
+                                  <span>Isi Faedah</span>
+                                </button>
+                              )}
+
                               {/* Quick Publish / Pending approval buttons */}
                               {kajian.status === 'pending' && (
                                 <button
@@ -1729,6 +1758,35 @@ export function AdminDashboardTabs({
           onSuccess={() => {
             setIsAddKajianOpen(false);
             setEditingKajian(null);
+            router.refresh();
+          }}
+        />
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: Isi Catatan Faedah Kajian Selesai oleh Admin */}
+      {/* ========================================================================= */}
+      {faedahModalKajian && (
+        <CatatanFaedahModal
+          kajian={faedahModalKajian}
+          isOpen={!!faedahModalKajian}
+          onClose={() => setFaedahModalKajian(null)}
+          onSuccess={(updatedFaedah, updatedStreaming) => {
+            setKajianList((prev) =>
+              prev.map((k) =>
+                k.id === faedahModalKajian.id
+                  ? {
+                      ...k,
+                      acf: {
+                        ...k.acf,
+                        catatan_faedah: updatedFaedah,
+                        ringkasan_faedah: updatedFaedah,
+                        link_streaming: updatedStreaming || k.acf?.link_streaming,
+                      },
+                    }
+                  : k
+              )
+            );
             router.refresh();
           }}
         />

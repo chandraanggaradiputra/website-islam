@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { WPKajian } from '@/types';
 import { updateCatatanFaedahKajian } from '@/lib/actions/kajian';
-import { decodeHtmlEntities } from '@/lib/utils/whatsappText';
+import { decodeHtmlEntities } from '@/lib/utils/text';
 import { getKajianCatatanFaedah } from '@/lib/kajian';
 import { X, Loader2, BookOpen, Video, CheckCircle2, AlertCircle, Sparkles } from 'lucide-react';
 
@@ -20,11 +20,18 @@ export function CatatanFaedahModal({
   onClose,
   onSuccess,
 }: CatatanFaedahModalProps) {
-  const [faedah, setFaedah] = useState(() => getKajianCatatanFaedah(kajian));
+  const [faedah, setFaedah] = useState(() => decodeHtmlEntities(getKajianCatatanFaedah(kajian)));
   const [linkStreaming, setLinkStreaming] = useState(kajian.acf?.link_streaming || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    setFaedah(decodeHtmlEntities(getKajianCatatanFaedah(kajian)));
+    setLinkStreaming(kajian.acf?.link_streaming || '');
+    setErrorMsg(null);
+    setSuccessMsg(null);
+  }, [kajian, isOpen]);
 
   if (!isOpen) return null;
 

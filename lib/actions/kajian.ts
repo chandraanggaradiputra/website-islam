@@ -938,6 +938,14 @@ export async function updateCatatanFaedahKajian(
     const userRole = (session as any).user?.role || session.role;
     const userMasjidId = Number((session as any).user?.masjidId || session.masjidId);
 
+    // Otorisasi: Administrator (Super Admin) berhak mengelola seluruh kajian, DKM hanya untuk masjidnya
+    if (userRole !== 'admin' && userRole !== 'dkm') {
+      return {
+        success: false,
+        error: 'Akses Ditolak: Anda tidak memiliki izin untuk memperbarui kajian ini.',
+      };
+    }
+
     if (userRole === 'dkm') {
       const rawMasjid = currentKajian.acf?.masjid_terkait as unknown;
       let targetMasjidId: number | null = null;
@@ -1012,11 +1020,12 @@ export async function updateCatatanFaedahKajian(
     const updatedData = await resUpdate.json();
     const slug = updatedData.slug || currentKajian.slug;
 
+    revalidatePath('/dashboard/admin');
+    revalidatePath('/dashboard/dkm');
     revalidatePath('/jadwal-kajian');
     if (slug) {
       revalidatePath(`/jadwal-kajian/${slug}`);
     }
-    revalidatePath('/dashboard/dkm');
     revalidatePath('/');
 
     return {

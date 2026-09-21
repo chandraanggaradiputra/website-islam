@@ -102,7 +102,7 @@ export default async function SingleKajianPage({ params }: { params: Promise<{ s
   const isSelesai = acf?.status_kajian === 'selesai' || isKajianExpired(acf?.tanggal_kajian, acf?.jam_selesai, acf?.jam_mulai);
   const streamingInfo = parseStreamingUrl(acf?.link_streaming);
   const hasStreaming = !!streamingInfo;
-  const catatanFaedahText = getKajianCatatanFaedah(kajian);
+  const catatanFaedahText = decodeHtmlEntities(getKajianCatatanFaedah(kajian));
 
   // Format tanggal baku bahasa Indonesia untuk banner informasi & tampilan
   const tanggalKajianDisplay = !isRutin && acf?.tanggal_kajian ? formatTanggalIndo(acf.tanggal_kajian) : '';
