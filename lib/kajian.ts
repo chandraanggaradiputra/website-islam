@@ -3,6 +3,8 @@
  */
 
 import { decodeHtmlEntities } from '@/lib/utils/text';
+import { WPKajian, WPMasjid } from '@/types';
+import { enrichKajianWithMasjid } from '@/lib/wordpress';
 
 function extractTime(timeStr?: string): { hours: number; minutes: number } | null {
   if (!timeStr) return null;
@@ -114,5 +116,47 @@ export function getKajianCatatanFaedah(kajian?: {
   }
 
   return '';
+}
+
+/**
+ * Mengambil daftar kajian yang telah selesai dan memiliki catatan faedah
+ * Diurutkan dari tanggal kajian terbaru ke yang terlama.
+ */
+export async function getKajianFaedahList(): Promise<WPKajian[]> {
+  try {
+    const WP_BASE_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || 'https://salaf.maschandigital.id/wp-json/wp/v2';
+    const [resKajian, resMasjid] = await Promise.all([
+      fetch(`${WP_BASE_URL}/kajian?_embed&per_page=100`, { next: { revalidate: 60 } }),
+      fetch(`${WP_BASE_URL}/masjid?_embed&per_page=100`, { next: { revalidate: 60 } }),
+    ]);
+
+    if (!resKajian.ok) return [];
+
+    const listKajian: WPKajian[] = await resKajian.json();
+    if (!Array.isArray(listKajian)) return [];
+
+    const listMasjid: WPMasjid[] = resMasjid.ok ? await resMasjid.json() : [];
+    const enriched = enrichKajianWithMasjid(listKajian, Array.isArray(listMasjid) ? listMasjid : []);
+
+    // Filter secara ketat: hanya ambil kajian yang memiliki catatan faedah valid
+    const faedahList = enriched.filter((k) => {
+      const faedah = getKajianCatatanFaedah(k);
+      return faedah && faedah.trim().length > 0;
+    });
+
+    // Urutkan berdasarkan tanggal kajian terbaru (descending)
+    faedahList.sort((a, b) => {
+      const dateA = a.acf?.tanggal_kajian ? new Date(a.acf.tanggal_kajian).getTime() : 0;
+      const dateB = b.acf?.tanggal_kajian ? new Date(b.acf.tanggal_kajian).getTime() : 0;
+      return dateB - dateA;
+    });
+
+    return faedahList;
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      console.error('Error fetching Kajian Faedah list:', err.message);
+    }
+    return [];
+  }
 }
 

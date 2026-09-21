@@ -194,7 +194,7 @@ export function BottomNav() {
             }`}
           >
             <BookOpen className="h-5 w-5" />
-            <span>Artikel</span>
+            <span>Faedah</span>
           </Link>
         )}
 
