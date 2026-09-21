@@ -68,3 +68,53 @@ export function isKajianExpired(
 
   return Date.now() > targetTimestamp;
 }
+
+/**
+ * Mengekstrak catatan faedah kajian (jika ada) dari ACF catatan_faedah / ringkasan_faedah
+ * atau dari konten yang ditandai dengan marker CATATAN_FAEDAH.
+ * Mengembalikan string kosong jika belum diisi oleh DKM.
+ */
+export function getKajianCatatanFaedah(kajian?: {
+  content?: { rendered?: string; raw?: string };
+  acf?: { catatan_faedah?: string; ringkasan_faedah?: string };
+} | null): string {
+  if (!kajian) return '';
+
+  if (kajian.acf?.catatan_faedah && typeof kajian.acf.catatan_faedah === 'string' && kajian.acf.catatan_faedah.trim()) {
+    return kajian.acf.catatan_faedah.trim();
+  }
+
+  if (kajian.acf?.ringkasan_faedah && typeof kajian.acf.ringkasan_faedah === 'string' && kajian.acf.ringkasan_faedah.trim()) {
+    return kajian.acf.ringkasan_faedah.trim();
+  }
+
+  const raw = kajian.content?.raw || kajian.content?.rendered || '';
+  if (raw.includes('catatan-faedah')) {
+    const match = raw.match(/<div class="catatan-faedah">([\s\S]*?)<\/div>/i);
+    const contentText = match ? match[1] : raw;
+    return contentText
+      .replace(/<br\s*[\/]?>/gi, '\n')
+      .replace(/<\/p>/gi, '\n')
+      .replace(/<[^>]+>/g, '')
+      .replace(/&amp;/g, '&')
+      .replace(/&quot;/g, '"')
+      .replace(/&#039;/g, "'")
+      .trim();
+  }
+
+  if (raw.includes('<!-- CATATAN_FAEDAH -->')) {
+    const parts = raw.split('<!-- CATATAN_FAEDAH -->');
+    const afterMarker = parts[1] || '';
+    return afterMarker
+      .replace(/<br\s*[\/]?>/gi, '\n')
+      .replace(/<\/p>/gi, '\n')
+      .replace(/<[^>]+>/g, '')
+      .replace(/&amp;/g, '&')
+      .replace(/&quot;/g, '"')
+      .replace(/&#039;/g, "'")
+      .trim();
+  }
+
+  return '';
+}
+

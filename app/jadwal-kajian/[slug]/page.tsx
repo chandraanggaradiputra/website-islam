@@ -12,9 +12,10 @@ import { CopyWhatsAppButton } from '@/components/kajian/CopyWhatsAppButton';
 import { stripHtmlToWhatsAppText, formatWhatsAppText, generateDefaultKajianBroadcast, decodeHtmlEntities } from '@/lib/utils/whatsappText';
 import { Calendar, MapPin, User, ArrowLeft, Book, AlertCircle, CheckCircle2, Video, MessageSquareShare } from 'lucide-react';
 import { JsonLd } from '@/components/seo/JsonLd';
-import { isKajianExpired } from '@/lib/kajian';
+import { isKajianExpired, getKajianCatatanFaedah } from '@/lib/kajian';
 import { parseStreamingUrl } from '@/lib/utils/streamingUrl';
 import { KajianVideoPlayer } from '@/components/kajian/KajianVideoPlayer';
+import { formatTanggalIndo } from '@/lib/utils/date';
 
 export const revalidate = 60;
 
@@ -39,7 +40,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   }
 
   const isRutin = acf?.jenis_kajian === 'rutin';
-  const waktu = isRutin ? `Setiap ${acf?.hari_kajian || ''}` : (acf?.tanggal_kajian || '');
+  const waktu = isRutin ? `Setiap ${acf?.hari_kajian || ''}` : (acf?.tanggal_kajian ? formatTanggalIndo(acf.tanggal_kajian) : '');
   
   const plainTitle = title.rendered.replace(/<[^>]+>/g, '');
   const description = `Kajian bersama ${acf?.nama_ustadz || 'Asatidz'} di ${masjidName} pada ${waktu} jam ${acf?.jam_mulai || ''}.`;
@@ -101,19 +102,10 @@ export default async function SingleKajianPage({ params }: { params: Promise<{ s
   const isSelesai = acf?.status_kajian === 'selesai' || isKajianExpired(acf?.tanggal_kajian, acf?.jam_selesai, acf?.jam_mulai);
   const streamingInfo = parseStreamingUrl(acf?.link_streaming);
   const hasStreaming = !!streamingInfo;
+  const catatanFaedahText = getKajianCatatanFaedah(kajian);
 
-  // Format tanggal untuk banner informasi
-  let tanggalKajianDisplay = '';
-  if (acf?.tanggal_kajian) {
-    const [year, month, day] = acf.tanggal_kajian.split('-');
-    if (year && month && day) {
-      const monthNames = [
-        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-      ];
-      tanggalKajianDisplay = `${parseInt(day, 10)} ${monthNames[parseInt(month, 10) - 1]} ${year}`;
-    }
-  }
+  // Format tanggal baku bahasa Indonesia untuk banner informasi & tampilan
+  const tanggalKajianDisplay = !isRutin && acf?.tanggal_kajian ? formatTanggalIndo(acf.tanggal_kajian) : '';
 
   // Siapkan teks format siaran WhatsApp untuk salin clipboard
   const rawContentText = stripHtmlToWhatsAppText(content?.rendered || '');
@@ -123,7 +115,7 @@ export default async function SingleKajianPage({ params }: { params: Promise<{ s
         judul: decodeHtmlEntities(title.rendered.replace(/<[^>]+>/g, '')),
         ustadz: acf?.nama_ustadz,
         kitab: acf?.kitab_bahasan,
-        waktu: isRutin ? `Setiap ${acf?.hari_kajian || ''}` : (tanggalKajianDisplay || acf?.tanggal_kajian || ''),
+        waktu: isRutin ? `Setiap ${acf?.hari_kajian || ''}` : (tanggalKajianDisplay || '-'),
         waktuKeterangan: wktKeterangan,
         namaMasjid: finalMasjidName,
         alamatMasjid: finalMasjidAlamat || undefined,
@@ -237,7 +229,7 @@ export default async function SingleKajianPage({ params }: { params: Promise<{ s
                 <div>
                   <p className="text-sm text-slate-500">Waktu</p>
                   <p className="font-medium text-slate-900 dark:text-white">
-                    {isRutin ? `Setiap ${acf?.hari_kajian || ''}` : (acf?.tanggal_kajian || '')}
+                    {isRutin ? `Setiap ${acf?.hari_kajian || ''}` : (tanggalKajianDisplay || formatTanggalIndo(acf?.tanggal_kajian))}
                   </p>
                   <p className="text-sm text-slate-600 dark:text-slate-400">
                     {wktKeterangan}
@@ -265,8 +257,12 @@ export default async function SingleKajianPage({ params }: { params: Promise<{ s
 
           <div className="flex flex-wrap items-center gap-3 mb-8 pb-8 border-b border-slate-200 dark:border-slate-800">
             {!isSelesai && <CalendarButton kajian={kajian} masjid={finalMasjid} />}
-            <CopyWhatsAppButton textToCopy={finalWhatsAppText} title={decodeHtmlEntities(title.rendered)} />
-            <ShareButton title={decodeHtmlEntities(title.rendered)} text={`Bersama: ${acf?.nama_ustadz ? decodeHtmlEntities(acf.nama_ustadz) : 'Asatidz'}\nLokasi: ${finalMasjidName}\nWaktu: ${isRutin ? 'Setiap ' + (acf?.hari_kajian || '') : (acf?.tanggal_kajian || '')} jam ${acf?.jam_mulai || ''}`} url="" />
+            {!isSelesai && <CopyWhatsAppButton textToCopy={finalWhatsAppText} title={decodeHtmlEntities(title.rendered)} />}
+            <ShareButton
+              title={decodeHtmlEntities(title.rendered)}
+              text={`Bersama: ${acf?.nama_ustadz ? decodeHtmlEntities(acf.nama_ustadz) : 'Asatidz'}\nLokasi: ${finalMasjidName}\nWaktu: ${isRutin ? 'Setiap ' + (acf?.hari_kajian || '') : (tanggalKajianDisplay || formatTanggalIndo(acf?.tanggal_kajian))} jam ${acf?.jam_mulai || ''}`}
+              url=""
+            />
           </div>
 
           {/* Pemutar Video Rekaman / Siaran Streaming Multi-Platform (YouTube, Facebook, dsb.) */}
@@ -287,39 +283,60 @@ export default async function SingleKajianPage({ params }: { params: Promise<{ s
             </div>
           )}
 
-          {/* Teks Siaran / Broadcast WhatsApp & Catatan Faedah Kajian */}
-          {(content.rendered || acf?.catatan_faedah) && (
-            <div className={hasStreaming ? 'mt-8 pt-6 border-t border-slate-200 dark:border-slate-800' : 'mt-8 pt-6 border-t border-slate-200 dark:border-slate-800'}>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-                <div className="flex items-center gap-2">
+          {/* Seksi Konten: Catatan & Ringkasan Faedah Kajian (Kajian Selesai) ATAU Informasi & Teks Siaran WhatsApp (Kajian Berjalan) */}
+          {isSelesai ? (
+            // Untuk kajian selesai: HANYA tampilkan jika ada catatan faedah dari DKM (tanpa teks jadwal lama dan tanpa tombol salin WA)
+            catatanFaedahText ? (
+              <div className={hasStreaming ? 'mt-8 pt-6 border-t border-slate-200 dark:border-slate-800' : 'mt-8 pt-6 border-t border-slate-200 dark:border-slate-800'}>
+                <div className="flex items-center gap-2 mb-4">
                   <div className="p-2 rounded-xl bg-emerald-600 text-white shadow-xs">
-                    <MessageSquareShare className="w-4 h-4" />
+                    <Book className="w-4 h-4" />
                   </div>
                   <h3 className="font-bold text-lg text-slate-900 dark:text-white">
-                    {isSelesai ? 'Catatan & Ringkasan Faedah Kajian' : 'Informasi & Teks Siaran WhatsApp'}
+                    Catatan &amp; Ringkasan Faedah Kajian
                   </h3>
                 </div>
-                <CopyWhatsAppButton
-                  textToCopy={finalWhatsAppText}
-                  title={decodeHtmlEntities(title.rendered)}
-                  variant="compact"
-                />
-              </div>
 
-              {acf?.catatan_faedah && (
-                <div className="mb-4 p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/50 text-slate-800 dark:text-slate-200 text-sm leading-relaxed whitespace-pre-line">
-                  {acf.catatan_faedah}
+                <div className="p-5 sm:p-6 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-slate-200/80 dark:border-slate-800 text-sm sm:text-base text-slate-800 dark:text-slate-200 whitespace-pre-line leading-relaxed font-sans">
+                  {catatanFaedahText}
                 </div>
-              )}
+              </div>
+            ) : null
+          ) : (
+            // Untuk kajian aktif/mendatang: Tampilkan teks informasi siaran WhatsApp
+            (content.rendered || acf?.catatan_faedah) ? (
+              <div className={hasStreaming ? 'mt-8 pt-6 border-t border-slate-200 dark:border-slate-800' : 'mt-8 pt-6 border-t border-slate-200 dark:border-slate-800'}>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 rounded-xl bg-emerald-600 text-white shadow-xs">
+                      <MessageSquareShare className="w-4 h-4" />
+                    </div>
+                    <h3 className="font-bold text-lg text-slate-900 dark:text-white">
+                      Informasi &amp; Teks Siaran WhatsApp
+                    </h3>
+                  </div>
+                  <CopyWhatsAppButton
+                    textToCopy={finalWhatsAppText}
+                    title={decodeHtmlEntities(title.rendered)}
+                    variant="compact"
+                  />
+                </div>
 
-              {rawContentText.trim() && (
-                <div
-                  dir="auto"
-                  className="p-4 sm:p-6 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-slate-200/80 dark:border-slate-800 text-sm sm:text-base text-slate-800 dark:text-slate-200 whitespace-pre-wrap leading-relaxed font-sans break-words [&_strong]:font-bold [&_strong]:text-slate-900 dark:[&_strong]:text-white [&_em]:italic [&_del]:line-through"
-                  dangerouslySetInnerHTML={{ __html: formatWhatsAppText(rawContentText) }}
-                />
-              )}
-            </div>
+                {acf?.catatan_faedah && (
+                  <div className="mb-4 p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/50 text-slate-800 dark:text-slate-200 text-sm leading-relaxed whitespace-pre-line">
+                    {acf.catatan_faedah}
+                  </div>
+                )}
+
+                {rawContentText.trim() && (
+                  <div
+                    dir="auto"
+                    className="p-4 sm:p-6 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-slate-200/80 dark:border-slate-800 text-sm sm:text-base text-slate-800 dark:text-slate-200 whitespace-pre-wrap leading-relaxed font-sans break-words [&_strong]:font-bold [&_strong]:text-slate-900 dark:[&_strong]:text-white [&_em]:italic [&_del]:line-through"
+                    dangerouslySetInnerHTML={{ __html: formatWhatsAppText(rawContentText) }}
+                  />
+                )}
+              </div>
+            ) : null
           )}
         </div>
       </div>

@@ -21,7 +21,7 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/dashboard/dkm', request.url));
       }
       
-      if (pathname.startsWith('/dashboard/dkm') && payload.role !== 'dkm') {
+      if (pathname.startsWith('/dashboard/dkm') && payload.role !== 'dkm' && payload.role !== 'admin') {
         return NextResponse.redirect(new URL('/dashboard/admin', request.url));
       }
       

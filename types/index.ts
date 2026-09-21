@@ -137,6 +137,7 @@ export interface KajianACF {
   status_kajian: StatusKajian;
   link_streaming?: string;
   catatan_faedah?: string;
+  ringkasan_faedah?: string;
 }
 
 export interface WPKajian {

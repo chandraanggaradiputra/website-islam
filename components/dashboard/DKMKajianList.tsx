@@ -19,36 +19,18 @@ import {
   CalendarOff,
   AlertTriangle,
   Upload,
+  FileText,
 } from 'lucide-react';
 import { WhatsAppScratchpad } from '@/components/dashboard/WhatsAppScratchpad';
 import { stripHtmlToWhatsAppText, decodeHtmlEntities } from '@/lib/utils/whatsappText';
-
-function formatDateDisplay(dateStr?: string): string {
-  if (!dateStr) return '';
-  let clean = dateStr.trim();
-  if (/^\d{8}$/.test(clean)) {
-    clean = `${clean.slice(0, 4)}-${clean.slice(4, 6)}-${clean.slice(6, 8)}`;
-  }
-  const parts = clean.split('-');
-  if (parts.length === 3) {
-    const months = [
-      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
-    ];
-    const day = parseInt(parts[2], 10);
-    const month = parseInt(parts[1], 10) - 1;
-    const year = parts[0];
-    if (!isNaN(day) && month >= 0 && month < 12) {
-      return `${day} ${months[month]} ${year}`;
-    }
-  }
-  return dateStr;
-}
+import { formatTanggalIndo } from '@/lib/utils/date';
+import { CatatanFaedahModal } from '@/components/dashboard/CatatanFaedahModal';
 
 export function DKMKajianList({ initialKajian }: { initialKajian: WPKajian[] }) {
   const router = useRouter();
   const [kajianList, setKajianList] = useState<WPKajian[]>(initialKajian);
   const [editingKajian, setEditingKajian] = useState<WPKajian | null>(null);
+  const [faedahModalKajian, setFaedahModalKajian] = useState<WPKajian | null>(null);
 
   // State Modal Edit
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -222,7 +204,7 @@ export function DKMKajianList({ initialKajian }: { initialKajian: WPKajian[] }) 
               kajian.acf?.status_kajian === 'selesai' ||
               isKajianExpired(kajian.acf?.tanggal_kajian, kajian.acf?.jam_selesai, kajian.acf?.jam_mulai);
             const isLibur = kajian.acf?.status_kajian === 'libur';
-            const formattedDate = formatDateDisplay(kajian.acf?.tanggal_kajian);
+            const formattedDate = kajian.acf?.tanggal_kajian ? formatTanggalIndo(kajian.acf.tanggal_kajian) : '';
 
             return (
               <li
@@ -293,17 +275,27 @@ export function DKMKajianList({ initialKajian }: { initialKajian: WPKajian[] }) 
                   </div>
 
                   <div className="flex items-center gap-2 self-end sm:self-center">
-                    {/* Tombol Edit Kajian */}
+                    {/* Tombol Edit Kajian / Catatan Faedah */}
                     {isExpired ? (
                       <div className="flex flex-col items-end">
-                        <button
-                          type="button"
-                          disabled
-                          title="Kajian telah lewat waktu"
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500 rounded-lg text-xs font-medium cursor-not-allowed opacity-75 border border-slate-200 dark:border-slate-700"
-                        >
-                          <Pencil className="w-3.5 h-3.5" /> Edit Kajian
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            disabled
+                            title="Kajian telah lewat waktu"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500 rounded-lg text-xs font-medium cursor-not-allowed opacity-75 border border-slate-200 dark:border-slate-700"
+                          >
+                            <Pencil className="w-3.5 h-3.5" /> Edit Kajian
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setFaedahModalKajian(kajian)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-medium transition-colors cursor-pointer shadow-sm"
+                            title="Isi Catatan & Ringkasan Faedah Kajian"
+                          >
+                            <FileText className="w-3.5 h-3.5" /> Isi Catatan Faedah
+                          </button>
+                        </div>
                         <span className="text-[10px] text-slate-400 mt-1 italic">
                           Kajian telah lewat waktu
                         </span>
@@ -758,6 +750,33 @@ export function DKMKajianList({ initialKajian }: { initialKajian: WPKajian[] }) 
           </div>
         </div>
       )}
+
+      {/* Modal Input Catatan Faedah untuk Kajian Selesai */}
+      {faedahModalKajian && (
+        <CatatanFaedahModal
+          kajian={faedahModalKajian}
+          isOpen={!!faedahModalKajian}
+          onClose={() => setFaedahModalKajian(null)}
+          onSuccess={(updatedFaedah, updatedStreaming) => {
+            setKajianList((prev) =>
+              prev.map((k) =>
+                k.id === faedahModalKajian.id
+                  ? {
+                      ...k,
+                      acf: {
+                        ...k.acf,
+                        catatan_faedah: updatedFaedah,
+                        ringkasan_faedah: updatedFaedah,
+                        link_streaming: updatedStreaming,
+                      } as any,
+                    }
+                  : k
+              )
+            );
+          }}
+        />
+      )}
     </div>
   );
 }
+

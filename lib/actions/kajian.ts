@@ -900,5 +900,140 @@ export async function archiveExpiredKajian(kajianList: WPKajian[]): Promise<void
   }
 }
 
+/**
+ * Server Action: DKM / Admin mengisi atau memperbarui catatan faedah dan link rekaman kajian selesai
+ */
+export async function updateCatatanFaedahKajian(
+  kajianId: number,
+  ringkasanFaedah: string,
+  linkRekaman?: string
+) {
+  const session = await getSession();
+  if (!session || !session.token) {
+    return { success: false, error: 'Sesi Anda telah berakhir. Silakan login kembali.' };
+  }
+
+  if (!kajianId) {
+    return { success: false, error: 'ID Kajian tidak valid.' };
+  }
+
+  const authHeader = getWPAdminAuthHeader() || (session.token ? `Bearer ${session.token}` : null);
+  if (!authHeader) {
+    return { success: false, error: 'Kredensial server tidak tersedia.' };
+  }
+
+  try {
+    // 1. Ambil data kajian untuk memverifikasi hak akses masjid (jika DKM)
+    const resCurrent = await fetch(`${WP_API_URL}/kajian/${kajianId}?_embed`, {
+      headers: { Authorization: authHeader },
+      next: { revalidate: 0 },
+    });
+
+    if (!resCurrent.ok) {
+      return { success: false, error: 'Data kajian tidak ditemukan.' };
+    }
+
+    const currentKajian: WPKajian = await resCurrent.json();
+
+    const userRole = (session as any).user?.role || session.role;
+    const userMasjidId = Number((session as any).user?.masjidId || session.masjidId);
+
+    if (userRole === 'dkm') {
+      const rawMasjid = currentKajian.acf?.masjid_terkait as unknown;
+      let targetMasjidId: number | null = null;
+      if (Array.isArray(rawMasjid) && rawMasjid.length > 0) {
+        const first = rawMasjid[0];
+        targetMasjidId = typeof first === 'object' && first !== null
+          ? Number((first as { ID?: number; id?: number }).ID || (first as { ID?: number; id?: number }).id)
+          : Number(first);
+      } else if (typeof rawMasjid === 'object' && rawMasjid !== null) {
+        targetMasjidId = Number((rawMasjid as { ID?: number; id?: number }).ID || (rawMasjid as { ID?: number; id?: number }).id);
+      } else if (rawMasjid) {
+        targetMasjidId = Number(rawMasjid);
+      }
+
+      if (!userMasjidId || (targetMasjidId && targetMasjidId !== userMasjidId)) {
+        return {
+          success: false,
+          error: 'Akses Ditolak: Anda hanya berhak mengelola kajian untuk masjid resmi akun DKM Anda.',
+        };
+      }
+    }
+
+    // 2. Siapkan payload update
+    const cleanFaedah = ringkasanFaedah ? ringkasanFaedah.trim() : '';
+    const cleanStreaming = linkRekaman !== undefined ? linkRekaman.trim() : (currentKajian.acf?.link_streaming || '');
+
+    const payload: {
+      content: string;
+      acf: Record<string, unknown>;
+    } = {
+      content: cleanFaedah ? `<div class="catatan-faedah">\n${cleanFaedah}\n</div>` : '',
+      acf: {
+        catatan_faedah: cleanFaedah,
+        ringkasan_faedah: cleanFaedah,
+        link_streaming: cleanStreaming,
+      },
+    };
+
+    // 3. Kirim ke WordPress REST API
+    let resUpdate = await fetch(`${WP_API_URL}/kajian/${kajianId}`, {
+      method: 'POST',
+      headers: {
+        Authorization: authHeader,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (resUpdate.status === 403) {
+      const adminAuth = getWPAdminAuthHeader();
+      if (adminAuth) {
+        resUpdate = await fetch(`${WP_API_URL}/kajian/${kajianId}`, {
+          method: 'POST',
+          headers: {
+            Authorization: adminAuth,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        });
+      }
+    }
+
+    if (!resUpdate.ok) {
+      const errText = await resUpdate.text();
+      console.error('[updateCatatanFaedahKajian] WP Error:', resUpdate.status, errText);
+      return {
+        success: false,
+        error: 'Gagal menyimpan catatan faedah kajian. Silakan coba lagi.',
+      };
+    }
+
+    const updatedData = await resUpdate.json();
+    const slug = updatedData.slug || currentKajian.slug;
+
+    revalidatePath('/jadwal-kajian');
+    if (slug) {
+      revalidatePath(`/jadwal-kajian/${slug}`);
+    }
+    revalidatePath('/dashboard/dkm');
+    revalidatePath('/');
+
+    return {
+      success: true,
+      message: 'Alhamdulillah, catatan faedah dan tautan rekaman kajian berhasil disimpan!',
+    };
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      console.error('[updateCatatanFaedahKajian] Exception:', err.message);
+    }
+    return {
+      success: false,
+      error: 'Terjadi kesalahan saat menyimpan catatan faedah kajian.',
+    };
+  }
+}
+
 // Alias resmi untuk kompatibilitas pemanggilan createKajian
 export const createKajian = submitKajian;
+
