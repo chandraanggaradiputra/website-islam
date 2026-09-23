@@ -109,6 +109,15 @@ Setiap pengerjaan tugas oleh AI Agent di Antigravity wajib mengikuti 5 fase:
    - Fast-forward merge ke main: `git checkout main && git merge staging-website-islam --ff-only`
    - Push remote: `git push origin main staging-website-islam` (memicu auto-deploy Vercel).
 
+## Subagents Orchestration Protocol
+- Default: Gunakan 1 Agent tunggal untuk perbaikan UI/UX harian, bugfix kecil, dan styling.
+- Pemicu Subagents:
+  1. Cross-Layer: Modifikasi PHP/WordPress backend sekaligus Next.js frontend (Subagent Backend vs Subagent Frontend).
+  2. Parallel Inspection: Audit WCAG 2.2 / SEO di multi-rute dinamis secara konkuren.
+  3. Red Team vs Blue Team: Fitur billing/kuota/keamanan (Subagent Builder vs Subagent QA Tester).
+  4. Context Isolation: Membaca log server raksasa atau dokumentasi API eksternal tebal.
+- Dokumentasi: Wajib mencatat pembagian subagents di `implementation-plan.md` dan merangkum hasil pengujiannya di `walkthrough.md`.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know
