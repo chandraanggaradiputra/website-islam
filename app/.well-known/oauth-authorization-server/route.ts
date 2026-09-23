@@ -1,6 +1,6 @@
 /**
- * OAuth 2.0 Protected Resource Metadata (RFC 9728) — Path-based Discovery
- * Endpoint Discovery untuk Google Gemini Connected Apps (Target: /api/mcp)
+ * OAuth 2.0 Authorization Server Metadata (RFC 8414)
+ * Endpoint Discovery untuk Remote MCP Server & Google Gemini Connected Apps
  */
 
 import { NextResponse } from "next/server";
@@ -21,10 +21,15 @@ function nocacheHeaders(): HeadersInit {
 
 export async function GET(): Promise<NextResponse> {
   const metadata = {
-    resource: "https://banten-mengaji.vercel.app/api/mcp",
-    authorization_servers: ["https://banten-mengaji.vercel.app"],
-    scopes_supported: ["mcp"],
-    bearer_methods_supported: ["header"],
+    issuer: "https://banten-mengaji.vercel.app",
+    authorization_endpoint: "https://banten-mengaji.vercel.app/api/mcp/oauth/authorize",
+    token_endpoint: "https://banten-mengaji.vercel.app/api/mcp/oauth/token",
+    response_types_supported: ["code"],
+    grant_types_supported: ["authorization_code", "client_credentials"],
+    token_endpoint_auth_methods_supported: [
+      "client_secret_post",
+      "client_secret_basic",
+    ],
   };
 
   return NextResponse.json(metadata, {
