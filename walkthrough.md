@@ -1,76 +1,127 @@
-# Walkthrough: Implementasi Kolom Teks Broadcast WhatsApp (Smart Scratchpad & Live Preview) & Tombol Salin Format WA
+# Walkthrough Resmi: Route Handler Cross-Posting Artikel Dakwah ke Media Sosial (TASK-2026-ISLAM-002)
 
-**Branch Kerja:** `staging-website-islam` → `main`
-**Tanggal:** 19 September 2026
-**Mode Pengujian:** MODE CEPAT (Terminal Only: `npx tsc --noEmit` & `npm run build`)
-
----
-
-## Ringkasan Pekerjaan
-
-Fitur ini menjawab kebutuhan pengurus DKM dan Super Admin yang terbiasa mengelola informasi kajian dari teks siaran (*broadcast*) WhatsApp. Sebelumnya, pengurus harus bolak-balik menyalin materi dari WhatsApp ke form satu per satu tanpa ada tempat menampung teks broadcast utuh.
-
-Melalui pendekatan **Opsi A (Smart Scratchpad)**:
-1. Formulir input/edit kajian (DKM dan Admin) kini memiliki penampung teks siaran WhatsApp di **posisi paling atas**.
-2. Smart Scratchpad ramah format WhatsApp: mendukung teks Arab dengan `dir="auto"`, emoji, baris baru, serta tab `[Tulis / Tempel Teks]` dan `[Pratinjau Web]` yang otomatis merender `*bold*`, `_italic_`, dan tautan aktif.
-3. Teks broadcast disimpan ke WordPress REST API pada field standar `content` (`post_content`).
-4. Halaman detail kajian publik (`/jadwal-kajian/[slug]`) kini menampilkan blok khusus informasi siaran WhatsApp lengkap dengan tombol interaktif **"📋 Salin Format WhatsApp"** (berstandar WCAG 2.2 touch target 44px dan umpan balik visual instan).
+Platform: **Banten Mengaji (`banten-mengaji.vercel.app`)**  
+Repositori: `https://github.com/chandraanggaradiputra/website-islam`  
+Branch: `staging-website-islam` -> `main`  
+Status: **SELESAI (100% Lulus Uji)**  
 
 ---
 
-## Berkas yang Dibuat & Dimodifikasi
+## 1. Ringkasan Perubahan
 
-### 1. Berkas Baru
+Telah diimplementasikan fitur otomatisasi cross-posting artikel dakwah dari WordPress backend `https://salaf.maschandigital.id` ke media sosial (Facebook, Instagram, Threads) menggunakan integrasi Gemini API (`gemini-1.5-flash`), Meta Graph API, dan Threads API dengan mode **Defensive Dry-Run**.
 
-| Berkas | Keterangan |
-|---|---|
-| [`lib/utils/whatsappText.ts`](file:///C:/website-islam/lib/utils/whatsappText.ts) | Utilitas pemformatan teks WhatsApp: `formatWhatsAppText()` (konversi `*bold*`, `_italic_`, URL ke HTML aman), `stripHtmlToWhatsAppText()` (konversi HTML kembali ke format teks WA siap salin), dan `generateDefaultKajianBroadcast()` (generator fallback teks siaran untuk kajian lama). |
-| [`components/dashboard/WhatsAppScratchpad.tsx`](file:///C:/website-islam/components/dashboard/WhatsAppScratchpad.tsx) | Komponen client Smart Scratchpad dengan 2 tab: `[Tulis / Tempel Teks]` (textarea dengan `dir="auto"`, jumlah karakter, panduan format) dan `[Pratinjau Web]` (pratinjau pesan bergaya bubble). |
-| [`components/kajian/CopyWhatsAppButton.tsx`](file:///C:/website-islam/components/kajian/CopyWhatsAppButton.tsx) | Komponen tombol salin format WhatsApp interaktif dengan umpan balik visual ("✓ Format WhatsApp Tersalin!"), fallback clipboard API, dan kepatuhan WCAG 2.2. |
-
-### 2. Berkas yang Dimodifikasi
-
-| Berkas | Keterangan Perubahan |
-|---|---|
-| [`components/dashboard/TambahKajianForm.tsx`](file:///C:/website-islam/components/dashboard/TambahKajianForm.tsx) | Menambahkan field `content` pada schema zod, menempatkan `WhatsAppScratchpad` di **posisi paling atas formulir** (di bawah kartu masjid DKM), dan menyertakan `content` saat submit. |
-| [`components/dashboard/AdminTambahKajianForm.tsx`](file:///C:/website-islam/components/dashboard/AdminTambahKajianForm.tsx) | Menempatkan `WhatsAppScratchpad` di posisi paling atas formulir admin (`name="content"`). |
-| [`components/dashboard/AdminDashboardTabs.tsx`](file:///C:/website-islam/components/dashboard/AdminDashboardTabs.tsx) | Menempatkan `WhatsAppScratchpad` pada modal edit/tambah kajian admin (`AdminKajianModal`) dengan nilai default dari `stripHtmlToWhatsAppText(kajian?.content?.rendered)`. |
-| [`lib/actions/kajian.ts`](file:///C:/website-islam/lib/actions/kajian.ts) | Menambahkan penanganan field `content` pada `submitKajian`, `createKajianByAdmin`, dan `updateKajianByAdmin` menuju WordPress REST API. |
-| [`app/jadwal-kajian/[slug]/page.tsx`](file:///C:/website-islam/app/jadwal-kajian/%5Bslug%5D/page.tsx) | Menambahkan `CopyWhatsAppButton` pada bilah aksi cepat di samping tombol Kalender & Bagikan, serta menyajikan blok informasi siaran WhatsApp dengan tombol salin. |
-
----
-
-## Hasil Verifikasi Terminal (Mode Cepat)
-
-### 1. Uji Tipe TypeScript (`npx tsc --noEmit`)
-```text
-Exit code: 0
-Error count: 0 (Lolos tanpa kesalahan tipe data)
+### Struktur Berkas Baru & Modifikasi
+```
+C:/website-islam/
+├── lib/
+│   └── socialShare.ts                         # [NEW] Logika Gemini AI Captioning & Meta/Threads Publishing
+├── app/
+│   └── api/
+│       └── webhooks/
+│           └── social-share/
+│               └── route.ts                   # [NEW] Webhook Route Handler (POST, GET, OPTIONS)
+├── .env.example                               # [MODIFY] Variabel env webhook & token sosial media
+├── .env.local                                 # [MODIFY] Konfigurasi lokal & kunci API Gemini
+├── implementation-plan.md                     # [MODIFY] Rencana kerja sebelum eksekusi
+└── walkthrough.md                             # [NEW/MODIFY] Laporan resmi pengujian pasca eksekusi
 ```
 
-### 2. Uji Kompilasi Produksi Next.js (`npm run build`)
-```text
-▲ Next.js 16.3.3 (Turbopack)
-✓ Compiled successfully in 58s
-  Running TypeScript ...
-  Finished TypeScript in 22.5s ...
-✓ Generating static pages using 3 workers (22/22) in 33.5s
-  Finalizing page optimization ...
-Route (app)                         Revalidate  Expire
-...
-├ ƒ /dashboard/admin/tambah-kajian
-├ ƒ /dashboard/dkm/tambah-kajian
-├ ƒ /jadwal-kajian/[slug]
-...
-Exit code: 0
-```
-Seluruh 22+ rute berhasil dikompilasi tanpa kegagalan atau hambatan.
+---
+
+## 2. Rincian Implementasi Fitur
+
+### A. Helper Logika Media Sosial (`lib/socialShare.ts`)
+- **`generateSocialCaptions({ title, excerpt, content, url, imageUrl })`**:
+  - Membersihkan HTML tag dan meng-decode entitas HTML menggunakan `decodeHtmlEntities`.
+  - Memanggil endpoint REST Gemini 1.5 Flash (`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`) dengan API key yang dikonfigurasikan.
+  - Memberikan instruksi sistem syar'i untuk menghasilkan 3 variasi copywriting dakwah:
+    1. **Facebook**: Tulisan faedah ilmiah mendalam, kutipan dalil shahih, santun, dan tautan baca artikel di `https://banten-mengaji.vercel.app/artikel/[slug]`.
+    2. **Instagram**: Caption visual padat hikmah mutiara Salaf, jeda baris rapi, dilengkapi tagar dakwah resmi: `#BantenMengaji #KajianSunnahBanten #SerangMengaji #CilegonMengaji #FaedahSalaf`.
+    3. **Threads**: Gaya percakapan nasihat ringkas yang mengalir (*thread-friendly*).
+  - Dilengkapi *defensive fallback caption generator* jika API key tidak tersedia atau API mengalami kendala jaringan.
+- **`publishToSocialPlatforms({ captions, url, imageUrl })`**:
+  - Mengirim postingan ke Meta Graph API (Facebook Page feed & Instagram media container) serta Threads API (thread container & publish).
+  - **Defensive Mode / Dry-Run**: Jika `META_PAGE_ID`, `META_ACCESS_TOKEN`, `INSTAGRAM_ACCOUNT_ID`, `THREADS_USER_ID`, atau `THREADS_ACCESS_TOKEN` belum disetel di environment produksi, fungsi menandai status platform sebagai `simulated` dengan pesan informatif dan menetapkan `dry_run: true` tanpa melempar crash.
+
+### B. Webhook Route Handler (`app/api/webhooks/social-share/route.ts`)
+- **Autentikasi Aman (*Zero Silent Fallback*)**:
+  - Memvalidasi token `WEBHOOK_SECRET` dari header `x-webhook-secret` atau query param `?secret=`.
+  - Menolak request tanpa secret valid dengan respons **HTTP 401 Unauthorized**:
+    `{ "success": false, "error": "Unauthorized: Webhook secret tidak valid atau tidak disertakan." }`
+- **Ekstraksi Payload WordPress**:
+  - Menerima payload standar WordPress REST API maupun format kustom (`id`, `title`, `slug`, `content`, `excerpt`, `featured_media_url`).
+  - Membangun URL publik: `https://banten-mengaji.vercel.app/artikel/${slug}`.
+- **Respons HTTP 200 Terstruktur**:
+  ```json
+  {
+    "success": true,
+    "article_id": 101,
+    "article_url": "https://banten-mengaji.vercel.app/artikel/adab-menuntut-ilmu-menurut-salaf-bagian-1",
+    "captions": {
+      "facebook": "...",
+      "instagram": "...",
+      "threads": "..."
+    },
+    "status": "dry_run",
+    "details": {
+      "dry_run": true,
+      "platforms": {
+        "facebook": { "status": "simulated", "message": "..." },
+        "instagram": { "status": "simulated", "message": "..." },
+        "threads": { "status": "simulated", "message": "..." }
+      }
+    }
+  }
+  ```
 
 ---
 
-## Standar Aksesibilitas (WCAG 2.2)
+## 3. Hasil Verifikasi & Uji Integrasi (100% Lulus)
 
-- **Target Sentuh**: Tombol `CopyWhatsAppButton` dan tab switcher pada `WhatsAppScratchpad` memiliki tinggi sentuh minimal 44px (`min-h-[44px]`).
-- **Arah Teks (RTL/LTR)**: Menggunakan atribut `dir="auto"` sehingga teks bahasa Arab (misal: basmalah, hadits, ayat Al-Qur'an) otomatis rata kanan tanpa merusak teks Latin/Indonesia.
-- **Label Aksesibilitas**: Tersedia atribut `aria-label`, `title`, dan status `aria-pressed` pada tab switcher.
-- **Kontras Warna**: Menggunakan warna emerald-600/700 dengan teks putih pada tombol aktif untuk kontras yang memenuhi rasio WCAG Level AA.
+### A. TypeScript Type Check
+```bash
+npm exec tsc -- --noEmit
+# Output: Exit code 0 (0 error)
+```
+
+### B. Next.js 16 Production Build (Turbopack)
+```bash
+npm run build
+# Output: Compiled successfully in 115s
+# Route ƒ /api/webhooks/social-share terdaftar sebagai dynamic route
+```
+
+### C. Automated Test Suite (19 Skenario Uji Lulus)
+```
+--- TEST 1: GET Health Check ---
+[PASS] GET /api/webhooks/social-share returns 200
+[PASS] Service status is online
+
+--- TEST 2: Security & Secret Authorization (Zero Silent Fallback) ---
+[PASS] POST without secret returns 401 Unauthorized
+[PASS] POST with wrong secret returns 401 Unauthorized
+
+--- TEST 3: Webhook Execution via Header Auth (Dry-Run Mode) ---
+[PASS] POST with valid header secret returns 200 OK
+[PASS] Response success is true
+[PASS] Article ID matches payload
+[PASS] Status is dry_run when platform tokens are unconfigured
+[PASS] Facebook caption is generated
+[PASS] Instagram caption is generated
+[PASS] Threads caption is generated
+[PASS] Instagram caption contains #BantenMengaji hashtag
+[PASS] Facebook caption includes clean article URL
+[PASS] Facebook distribution is simulated cleanly
+[PASS] Instagram distribution is simulated cleanly
+[PASS] Threads distribution is simulated cleanly
+
+--- TEST 4: Webhook Execution via Query Param Auth ---
+[PASS] POST with query param ?secret= returns 200 OK
+[PASS] Query param auth success is true
+[PASS] Article ID matches second payload
+
+========================================
+TOTAL PASSED: 19, FAILED: 0
+========================================
+```

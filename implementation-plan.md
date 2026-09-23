@@ -1,157 +1,157 @@
-# Implementation Plan - Tahap 2: Penyelarasan Menyeluruh CRUD Jadwal Kajian Sisi DKM
+# Rencana Implementasi: Route Handler Cross-Posting Artikel Dakwah ke Media Sosial (TASK-2026-ISLAM-002)
 
-Menyelaraskan pengalaman pengurus DKM saat menambah dan mengedit jadwal kajian di area DKM (`/dashboard/dkm` dan `/dashboard/dkm/tambah-kajian`) agar 100% identik dengan standar yang telah diterapkan di sisi Super Admin pada Tahap 1.
+Proyek: **Banten Mengaji (`website-islam`)**  
+Direktori: `C:/website-islam`  
+Branch Target: `staging-website-islam` (lalu merge ke `main`)  
+Dokumentasi Alur:
+1. Sebelum eksekusi: Buat `implementation-plan.md` untuk peninjauan
+2. Setelah eksekusi: Verifikasi via terminal & buat `walkthrough.md` sebagai laporan resmi
 
 ---
 
-## User Review Required
+## 1. Konteks & Tujuan Fitur
+
+Membangun route handler otomatisasi native di Next.js App Router (`app/api/webhooks/social-share/route.ts`) yang menerima sinyal webhook saat artikel dakwah atau faedah baru diterbitkan di WordPress backend `https://salaf.maschandigital.id`.
+
+Endpoint ini bertugas:
+1. Memvalidasi token otorisasi webhook (`WEBHOOK_SECRET` dari header `x-webhook-secret` atau query param `?secret=`).
+2. Menghubungkan teks artikel ke Gemini API (`gemini-1.5-flash`) untuk menghasilkan 3 variasi copywriting dakwah yang beradab dan berlandaskan manhaj Salaf:
+   - **Facebook**: Tulisan faedah ilmiah mendalam, menyertakan dalil shahih, santun, dan menyematkan tautan baca artikel di `https://banten-mengaji.vercel.app/artikel/[slug]`.
+   - **Instagram**: Caption visual padat hikmah mutiara Salaf, tidak bertele-tele, dilengkapi tagar dakwah lokal (`#BantenMengaji #KajianSunnahBanten #SerangMengaji #CilegonMengaji`).
+   - **Threads**: Gaya percakapan nasihat ringkas yang mengalir (*thread-friendly*).
+3. Mendistribusikan postingan ke Meta Graph API (Facebook Page & Instagram) serta Threads API resmi, lengkap dengan mode **dry-run** (simulasi defensif) saat token produksi belum disetel tanpa melempar crash.
+
+---
+
+## 2. User Review Required
 
 > [!IMPORTANT]
-> - Di modal edit kajian DKM (`DKMKajianList.tsx`), `WhatsAppScratchpad` akan ditambahkan di posisi paling atas dengan `defaultValue` yang didekode dari `editingKajian?.content?.rendered`.
-> - Input Hari Kajian diubah dari teks bebas menjadi `<select>` dengan 7 hari baku: *Senin, Selasa, Rabu, Kamis, Jumat, Sabtu, Ahad*.
-> - Kolom `waktuKeterangan` ditambahkan secara seragam di `DKMKajianList.tsx` dan `TambahKajianForm.tsx`.
-> - Server action `updateKajianByDkm` di `lib/actions/kajian.ts` diperbarui untuk menerima field `content` (teks broadcast WhatsApp), mendukung fallback `title || judul`, dan `namaUstadz || penceramah`, serta mempertahankan status langsung tayang (`publish`).
-> - Seluruh elemen interaktif dan tombol diberi `min-h-[44px]` dan label diberi asosiasi `htmlFor` - `id` (WCAG 2.2 AA).
+> - **Zero Silent Fallback**: Jika `x-webhook-secret` / `secret` tidak valid atau kosong, server wajib mengembalikan HTTP 401 Unauthorized secara eksplisit.
+> - **Defensive Mode / Dry-Run**: Jika `process.env.META_ACCESS_TOKEN` atau `process.env.THREADS_ACCESS_TOKEN` belum tersedia di environment, endpoint tetap sukses mengembalikan HTTP 200 dengan status `dry_run: true` dan menyajikan 3 hasil copywriting AI tanpa crash.
+> - **Standar Syariat Islam**: Prompting Gemini diarahkan secara tegas mematuhi adab dakwah Islam, terminologi syar'i baku, dan manhaj Salafus Shalih tanpa kata-kata bombastis/clickbait.
 
 ---
 
-## Proposed Changes
+## 3. Arsitektur & Berkas yang Dimodifikasi
 
-### 1. Komponen Modal Edit Kajian DKM
-
-#### [MODIFY] [DKMKajianList.tsx](file:///C:/website-islam/components/dashboard/DKMKajianList.tsx)
-
-1. **Import `WhatsAppScratchpad` dan helper `stripHtmlToWhatsAppText`**:
-   - Impor komponen `WhatsAppScratchpad` dan utility `stripHtmlToWhatsAppText` dari `@/lib/utils/whatsappText`.
-2. **Pasang `WhatsAppScratchpad` di Paling Atas Form Modal**:
-   - Tempatkan sebelum pilihan status pelaksanaan kajian:
-     ```tsx
-     <WhatsAppScratchpad
-       id="edit-dkm-content"
-       name="content"
-       defaultValue={stripHtmlToWhatsAppText(editingKajian.content?.rendered || '')}
-     />
-     ```
-3. **Penyelarasan Input Judul / Tema Kajian**:
-   - Ganti `name="judul"` menjadi `name="title"` (dengan fallback `judul` di server action).
-   - Pasang `id="edit-dkm-title"` dan `<label htmlFor="edit-dkm-title">`.
-   - Nilai awal menggunakan `defaultValue={decodeHtmlEntities(editingKajian.title.rendered)}`.
-   - Tambahkan kelas `min-h-[44px]`.
-4. **Penyelarasan Hari & Tanggal Kajian (Baku 7 Hari)**:
-   - Ubah `hariKajian` dari `<input type="text">` menjadi `<select id="edit-dkm-hariKajian" name="hariKajian">` dengan 7 hari baku:
-     `-- Pilih Hari --`, `Senin`, `Selasa`, `Rabu`, `Kamis`, `Jumat`, `Sabtu`, `Ahad`.
-   - Tanggal Kajian: `<input type="date" id="edit-dkm-tanggalKajian" name="tanggalKajian">`.
-   - Tambahkan label dinamis: `* (Wajib untuk Rutin)` pada Hari dan `* (Wajib untuk Tematik)` pada Tanggal tergantung pada `selectedJenisKajian`.
-5. **Penyelarasan Kolom Waktu**:
-   - `jamMulai` dan `jamSelesai`: gunakan `font-mono`, `min-h-[44px]`, label `htmlFor`, dan helper text format 24 jam WIB.
-   - Tambahkan kolom `waktuKeterangan` dengan `id="edit-dkm-waktuKeterangan"`, `name="waktuKeterangan"`, `min-h-[44px]`.
-6. **Penyelarasan Jenis Kajian & Kategori Jamaah**:
-   - Jenis Kajian: `rutin` vs `tematik`.
-   - Kategori Jamaah: `umum`, `khusus_ikhwan`, `khusus_akhwat`.
-   - Berikan `id`, `htmlFor`, dan `min-h-[44px]`.
-7. **Masjid Penyelenggara Terkunci**:
-   - Tambahkan penanda visual masjid terkunci & `<input type="hidden" name="masjid_terkait" value={userMasjidId} />`.
-8. **Poster Flyer & Live Streaming**:
-   - Tampilkan thumbnail poster saat ini di modal dari `editingKajian.featured_media_url` atau `editingKajian._embedded['wp:featuredmedia'][0].source_url`.
-   - Sediakan tombol ganti/unggah poster dengan `min-h-[44px]`.
-   - Input `linkStreaming` dengan label `htmlFor`, `id`, dan `min-h-[44px]`.
-9. **Aksesibilitas & Target Sentuh WCAG 2.2**:
-   - Seluruh `<label>` diberi `htmlFor` yang cocok dengan `id` input/select.
-   - Seluruh elemen input, tombol status (`Aktif` / `Diliburkan`), tombol batal, dan tombol simpan diberi `min-h-[44px]`.
+```
+C:/website-islam/
+├── lib/
+│   └── socialShare.ts                         # [NEW] Logika Gemini AI Captioning & Meta/Threads Publishing
+├── app/
+│   └── api/
+│       └── webhooks/
+│           └── social-share/
+│               └── route.ts                   # [NEW] Webhook Route Handler (POST, GET, OPTIONS)
+├── .env.example                               # [MODIFY] Menambahkan variabel env webhook & sosial media
+├── implementation-plan.md                     # [MODIFY] Rencana kerja sebelum eksekusi
+└── walkthrough.md                             # [MODIFY] Laporan resmi pasca eksekusi
+```
 
 ---
 
-### 2. Formulir Tambah Kajian DKM
+## 4. Proposed Changes
 
-#### [MODIFY] [TambahKajianForm.tsx](file:///C:/website-islam/components/dashboard/TambahKajianForm.tsx)
+### A. Helper Logika Sosial Media (`lib/socialShare.ts`)
 
-1. **Skema Zod & Form Values**:
-   - Tambahkan `waktuKeterangan: z.string().optional()` ke `kajianSchema`.
-   - Tambahkan default value `waktuKeterangan: ''`.
-2. **Input `waktuKeterangan`**:
-   - Tambahkan input `waktuKeterangan` di bawah baris Jam Mulai / Selesai dengan label `htmlFor="waktuKeterangan"`, `id="waktuKeterangan"`, `placeholder="Contoh: Ba'da Isya pukul 20.00 WIB"`, serta `min-h-[44px]`.
-3. **Penyelarasan Nama Ustadz**:
-   - Tambahkan `formData.append('namaUstadz', data.penceramah)` agar backend menerima kedua nama key (`namaUstadz` dan `penceramah`).
-4. **Aksesibilitas WCAG 2.2**:
-   - Pastikan seluruh input/select/button memiliki target sentuh `min-h-[44px]`.
-
----
-
-### 3. Server Actions Kajian
-
-#### [MODIFY] [lib/actions/kajian.ts](file:///C:/website-islam/lib/actions/kajian.ts)
-
-1. **Perbaikan `updateKajianByDkm`**:
-   - Baca teks broadcast WhatsApp:
-     ```typescript
-     const content = (formData.get('content') || formData.get('deskripsi'))?.toString()?.trim() || '';
-     ```
-   - Baca judul kajian dengan fallback ganda:
-     ```typescript
-     const judul = (formData.get('title') || formData.get('judul'))?.toString()?.trim();
-     ```
-   - Baca nama ustadz dengan fallback:
-     ```typescript
-     const namaUstadz = formData.get('namaUstadz')?.toString() || formData.get('penceramah')?.toString() || currentKajian.acf?.nama_ustadz || '';
-     ```
-   - Sertakan `content` dalam payload ke WordPress REST API:
-     ```typescript
-     const payload: {
-       title?: string;
-       content?: string;
-       status?: string;
-       featured_media?: number;
-       acf: Record<string, unknown>;
-     } = {
-       status: 'publish',
-       ...(content ? { content } : {}),
-       acf: {
-         nama_ustadz: namaUstadz,
-         jenis_kajian: formData.get('jenisKajian')?.toString() || currentKajian.acf?.jenis_kajian || 'rutin',
-         kategori_jamaah: cleanKategori,
-         kitab_bahasan: formData.get('kitabBahasan')?.toString() || '',
-         hari_kajian: formData.get('hariKajian')?.toString() || '',
-         tanggal_kajian: tanggalKajian || currentKajian.acf?.tanggal_kajian || '',
-         jam_mulai: formData.get('jamMulai')?.toString() || '',
-         jam_selesai: formData.get('jamSelesai')?.toString() || '',
-         waktu_keterangan: formData.get('waktuKeterangan')?.toString() || (formData.get('jamMulai') ? `${formData.get('jamMulai')} WIB` : ''),
-         status_kajian: statusKajian,
-         link_streaming: formData.get('linkStreaming')?.toString() || '',
-       }
-     };
-     ```
-   - Pastikan jika ada poster baru yang diunggah, `mediaId` disimpan ke `payload.featured_media`.
-   - Revalidasi rute:
-     ```typescript
-     revalidatePath('/sitemap.xml');
-     revalidatePath('/jadwal-kajian');
-     if (slug) revalidatePath(`/jadwal-kajian/${slug}`);
-     revalidatePath('/');
-     revalidatePath('/dashboard/dkm');
-     ```
-   - Auto-ping IndexNow jika slug kajian tersedia dan status kajian 'publish'.
-2. **Pengecekan `submitKajian`**:
-   - Pastikan fallback `formData.get('title') || formData.get('judul')`.
-   - Pastikan fallback `formData.get('namaUstadz') || formData.get('penceramah')`.
-   - Pastikan `waktu_keterangan` menerima nilai dari `formData.get('waktuKeterangan')`.
+#### [NEW] [socialShare.ts](file:///C:/website-islam/lib/socialShare.ts)
+- **Fungsi `generateSocialCaptions({ title, excerpt, content, url, imageUrl })`**:
+  - Membersihkan HTML tag dan meng-decode entitas HTML dari artikel menggunakan `decodeHtmlEntities`.
+  - Memanggil endpoint REST Gemini API (`gemini-1.5-flash`):
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`
+  - Mengirimkan system instruction terarah untuk menghasilkan format JSON terstruktur:
+    ```json
+    {
+      "facebook": "...",
+      "instagram": "...",
+      "threads": "..."
+    }
+    ```
+  - Menyediakan fallback template yang bersih dan elegan jika `GEMINI_API_KEY` tidak tersedia atau API mengalami kendala jaringan.
+- **Fungsi `publishToSocialPlatforms({ captions, url, imageUrl })`**:
+  - Mengecek ketersediaan `META_PAGE_ID`, `META_ACCESS_TOKEN`, `INSTAGRAM_ACCOUNT_ID`, `THREADS_USER_ID`, dan `THREADS_ACCESS_TOKEN`.
+  - Jika token belum lengkap: Menjalankan mode `dry_run: true` dan menandai status platform sebagai `simulated` dengan keterangan ramah.
+  - Jika token lengkap:
+    - **Facebook**: `POST https://graph.facebook.com/v21.0/${META_PAGE_ID}/feed` (atau photo).
+    - **Instagram**: `POST https://graph.facebook.com/v21.0/${INSTAGRAM_ACCOUNT_ID}/media` lalu `media_publish`.
+    - **Threads**: `POST https://graph.threads.net/v1.0/${THREADS_USER_ID}/threads` lalu `threads_publish`.
 
 ---
 
-## Verification Plan
+### B. Webhook Route Handler (`app/api/webhooks/social-share/route.ts`)
 
-### Automated Tests
-1. **TypeScript Typecheck**:
-   ```bash
-   npx tsc --noEmit
+#### [NEW] [route.ts](file:///C:/website-islam/app/api/webhooks/social-share/route.ts)
+- **`POST` Handler**:
+  1. Validasi secret:
+     - Membaca header `x-webhook-secret` atau query param `?secret=`.
+     - Validasi terhadap `process.env.WEBHOOK_SECRET || 'banten_mengaji_secret_2026'`.
+     - Jika salah $\rightarrow$ return HTTP 401: `{ success: false, error: 'Unauthorized: Webhook secret tidak valid atau tidak disertakan.' }`.
+  2. Ekstraksi payload artikel WordPress:
+     - Mendukung format standar WordPress REST API maupun flat payload (`id`, `title`, `slug`, `content`, `excerpt`, `featured_media_url`).
+     - Membangun URL publik: `https://banten-mengaji.vercel.app/artikel/${slug}`.
+  3. Memanggil `generateSocialCaptions` dan `publishToSocialPlatforms`.
+  4. Mengembalikan respons JSON HTTP 200:
+     ```json
+     {
+       "success": true,
+       "article_id": 123,
+       "captions": {
+         "facebook": "...",
+         "instagram": "...",
+         "threads": "..."
+       },
+       "status": "published" // atau "dry_run",
+       "details": { ... }
+     }
+     ```
+- **`GET` Handler**: Health check endpoint info.
+- **`OPTIONS` Handler**: Preflight CORS.
+
+---
+
+### C. Pembaruan Variabel Lingkungan (`.env.example`)
+
+#### [MODIFY] [.env.example](file:///C:/website-islam/.env.example)
+- Menambahkan baris konfigurasi:
+  ```env
+  # Webhook Cross-Posting Dakwah ke Media Sosial
+  WEBHOOK_SECRET=banten_mengaji_secret_2026
+  GEMINI_API_KEY=
+  META_PAGE_ID=
+  META_ACCESS_TOKEN=
+  INSTAGRAM_ACCOUNT_ID=
+  THREADS_USER_ID=
+  THREADS_ACCESS_TOKEN=
+  ```
+
+---
+
+## 5. Verification Plan
+
+### Automated Tests & Type Checking
+1. **Pengecekan Tipe TypeScript**:
+   ```powershell
+   cd C:\website-islam
+   npm exec tsc -- --noEmit
    ```
-   *Ekspektasi: 0 error.*
-2. **Next.js Production Build**:
-   ```bash
-   npm run build
-   ```
-   *Ekspektasi: Seluruh 22 rute berhasil terkompilasi.*
+   (Wajib lulus 0 error pada seluruh berkas baru).
+2. **Kompilasi Rute Next.js**:
+   Memastikan route baru `ƒ /api/webhooks/social-share` terdaftar dalam manifes Next.js.
 
-### Manual / Git Verification
-1. Periksa `git diff` untuk memastikan keselarasan field antara DKM dan Admin.
-2. Lakukan commit di `staging-website-islam`, merge fast-forward ke `main`, dan push ke remote repository `origin`.
-3. Buat dokumentasi resmi `walkthrough.md`.
+### Manual / Integration Verification via Terminal
+1. **Uji Validasi Otorisasi Webhook (401 Unauthorized)**:
+   - Kirim `POST /api/webhooks/social-share` tanpa secret $\rightarrow$ Verifikasi HTTP 401.
+   - Kirim `POST /api/webhooks/social-share` dengan secret salah $\rightarrow$ Verifikasi HTTP 401.
+2. **Uji Eksekusi Webhook dengan Secret Valid (Dry-Run Mode)**:
+   - Kirim payload artikel uji coba (misal: faedah "Adab Menuntut Ilmu Menurut Salaf") dengan secret valid.
+   - Verifikasi respons HTTP 200, return 3 variasi caption (Facebook, Instagram, Threads), dan status `dry_run: true`.
+3. **Uji Parsing & Formatting Syar'i**:
+   - Memastikan caption Facebook memiliki tautan baca lengkap.
+   - Memastikan caption Instagram memuat tagar `#BantenMengaji #KajianSunnahBanten #SerangMengaji #CilegonMengaji`.
+   - Memastikan caption Threads ringkas dan mengalir.
+
+### Git & Deployment Flow
+1. Bekerja di branch `staging-website-islam`.
+2. Commit dengan pesan terstruktur: `feat(webhook): implementasi cross-posting artikel dakwah ke medsos [TASK-2026-ISLAM-002]`.
+3. Fast-forward merge ke `main` dan push remote (`git push origin main staging-website-islam`).
+4. Menyusun laporan resmi di `walkthrough.md`.
