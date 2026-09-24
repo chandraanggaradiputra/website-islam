@@ -1,7 +1,8 @@
 /**
  * Remote MCP Server Endpoint — Banten Mengaji
  * Protokol: JSON-RPC 2.0 over Streamable HTTP (RFC 9728 & RFC 8414)
- * Tools: get_upcoming_kajian, get_masjid_directory
+ * Tools Dakwah: get_upcoming_kajian, get_masjid_directory
+ * Tools DevOps GitHub: dispatch_agent_task, create_github_issue, list_github_issues, read_repo_file
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -10,6 +11,12 @@ import { isKajianExpired } from "@/lib/kajian";
 import { decodeHtmlEntities } from "@/lib/utils/text";
 import { formatKategoriJamaah } from "@/types";
 import type { WPKajian, WPMasjid } from "@/types";
+import {
+  dispatchAgentTask,
+  createGithubIssue,
+  listGithubIssues,
+  readRepoFile,
+} from "@/lib/mcp/github-relay";
 
 export const dynamic = "force-dynamic";
 
@@ -52,10 +59,11 @@ type JsonRpcResponse = JsonRpcSuccessResponse | JsonRpcErrorResponse;
 
 const MCP_SERVER_INFO = {
   name: "banten-mengaji-mcp",
-  version: "1.0.0",
+  version: "1.1.0",
 } as const;
 
 const MCP_TOOLS: McpTool[] = [
+  // ─── Tools Dakwah ───────────────────────────────────────────────────────────
   {
     name: "get_upcoming_kajian",
     description:
@@ -120,6 +128,103 @@ const MCP_TOOLS: McpTool[] = [
       },
     },
   },
+
+  // ─── Tools DevOps GitHub Relay ──────────────────────────────────────────────
+  {
+    name: "dispatch_agent_task",
+    description:
+      "Dispatch tugas teknis baru ke branch staging repositori GitHub Banten Mengaji via Contents API (menulis atau memperbarui .agent/tasks/current_task.md)",
+    inputSchema: {
+      type: "object",
+      properties: {
+        task_id: {
+          type: "string",
+          description: "Kode unik tugas teknis, contoh: 'TASK-BM-001'",
+        },
+        title: {
+          type: "string",
+          description: "Judul instruksi tugas yang jelas dan spesifik",
+        },
+        instructions: {
+          type: "string",
+          description:
+            "Konten lengkap instruksi tugas teknis dalam format Markdown",
+        },
+        branch: {
+          type: "string",
+          description:
+            "Nama branch target di repositori (default: 'staging-website-islam')",
+        },
+        target_path: {
+          type: "string",
+          description:
+            "Path berkas target di repositori (default: '.agent/tasks/current_task.md')",
+        },
+      },
+      required: ["task_id", "title", "instructions"],
+    },
+  },
+  {
+    name: "create_github_issue",
+    description:
+      "Buat issue tiket baru di repositori GitHub Banten Mengaji (chandraanggaradiputra/website-islam)",
+    inputSchema: {
+      type: "object",
+      properties: {
+        title: {
+          type: "string",
+          description: "Judul issue GitHub yang akan dibuat",
+        },
+        body: {
+          type: "string",
+          description: "Deskripsi lengkap rincian issue dalam format Markdown",
+        },
+      },
+      required: ["title", "body"],
+    },
+  },
+  {
+    name: "list_github_issues",
+    description:
+      "Ambil daftar issue di repositori GitHub Banten Mengaji (chandraanggaradiputra/website-islam)",
+    inputSchema: {
+      type: "object",
+      properties: {
+        state: {
+          type: "string",
+          enum: ["open", "closed", "all"],
+          description:
+            "Filter status issue: 'open', 'closed', atau 'all' (default: 'open')",
+        },
+        limit: {
+          type: "number",
+          description:
+            "Jumlah maksimal issue yang dikembalikan (default: 10, max: 100)",
+        },
+      },
+    },
+  },
+  {
+    name: "read_repo_file",
+    description:
+      "Membaca isi berkas repositori chandraanggaradiputra/website-islam secara aman (decode Base64 ke UTF-8) untuk kebutuhan audit otomatis dan pembacaan berkas laporan",
+    inputSchema: {
+      type: "object",
+      properties: {
+        path: {
+          type: "string",
+          description:
+            "Path berkas di repositori (contoh: 'package.json' atau '.agent/tasks/walkthrough.md')",
+        },
+        branch: {
+          type: "string",
+          description:
+            "Nama branch target di repositori (default: 'staging-website-islam')",
+        },
+      },
+      required: ["path"],
+    },
+  },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -174,7 +279,7 @@ function isAuthorized(request: NextRequest): boolean {
   return false;
 }
 
-// ─── Tool Executors ───────────────────────────────────────────────────────────
+// ─── Tool Executors Dakwah ────────────────────────────────────────────────────
 
 async function executeGetUpcomingKajian(
   params: Record<string, unknown>
@@ -490,6 +595,22 @@ async function handleMethod(
           result = await executeGetUpcomingKajian(toolArgs);
         } else if (toolName === "get_masjid_directory") {
           result = await executeGetMasjidDirectory(toolArgs);
+        } else if (toolName === "dispatch_agent_task") {
+          result = await dispatchAgentTask(
+            toolArgs as unknown as Parameters<typeof dispatchAgentTask>[0]
+          );
+        } else if (toolName === "create_github_issue") {
+          result = await createGithubIssue(
+            toolArgs as unknown as Parameters<typeof createGithubIssue>[0]
+          );
+        } else if (toolName === "list_github_issues") {
+          result = await listGithubIssues(
+            toolArgs as unknown as Parameters<typeof listGithubIssues>[0]
+          );
+        } else if (toolName === "read_repo_file") {
+          result = await readRepoFile(
+            toolArgs as unknown as Parameters<typeof readRepoFile>[0]
+          );
         } else {
           return rpcError(id, -32601, `Tool tidak ditemukan: ${toolName}`);
         }
