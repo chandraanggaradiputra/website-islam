@@ -1,11 +1,13 @@
 /**
  * Remote MCP Server Endpoint — Banten Mengaji
  * Protokol: JSON-RPC 2.0 over Streamable HTTP (RFC 9728 & RFC 8414)
+ * Keamanan: Otentikasi timingSafeEqual, pembatasan ukuran payload, validasi path-guard
  * Tools Dakwah: get_upcoming_kajian, get_masjid_directory
  * Tools DevOps GitHub: dispatch_agent_task, create_github_issue, list_github_issues, read_repo_file
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { createHash, timingSafeEqual } from "node:crypto";
 import { getKajianList, getMasjidList } from "@/lib/wordpress";
 import { isKajianExpired } from "@/lib/kajian";
 import { decodeHtmlEntities } from "@/lib/utils/text";
@@ -17,8 +19,11 @@ import {
   listGithubIssues,
   readRepoFile,
 } from "@/lib/mcp/github-relay";
+import { McpToolError, RPC } from "@/lib/mcp/errors";
 
 export const dynamic = "force-dynamic";
+
+const MAX_BODY_BYTES = 64 * 1024; // 64 KB
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -59,7 +64,7 @@ type JsonRpcResponse = JsonRpcSuccessResponse | JsonRpcErrorResponse;
 
 const MCP_SERVER_INFO = {
   name: "banten-mengaji-mcp",
-  version: "1.1.0",
+  version: "1.2.0",
 } as const;
 
 const MCP_TOOLS: McpTool[] = [
@@ -133,13 +138,14 @@ const MCP_TOOLS: McpTool[] = [
   {
     name: "dispatch_agent_task",
     description:
-      "Dispatch tugas teknis baru ke branch staging repositori GitHub Banten Mengaji via Contents API (menulis atau memperbarui .agent/tasks/current_task.md)",
+      "Dispatch tugas teknis baru ke branch staging repositori GitHub Banten Mengaji via Contents API (hanya menulis ke .agent/tasks/*.md pada branch staging-website-islam)",
     inputSchema: {
       type: "object",
       properties: {
         task_id: {
           type: "string",
-          description: "Kode unik tugas teknis, contoh: 'TASK-BM-001'",
+          description:
+            "Kode unik tugas teknis berformat TASK-BM-XXX, contoh: 'TASK-BM-002'",
         },
         title: {
           type: "string",
@@ -153,12 +159,12 @@ const MCP_TOOLS: McpTool[] = [
         branch: {
           type: "string",
           description:
-            "Nama branch target di repositori (default: 'staging-website-islam')",
+            "Nama branch target di repositori (hanya diizinkan: 'staging-website-islam')",
         },
         target_path: {
           type: "string",
           description:
-            "Path berkas target di repositori (default: '.agent/tasks/current_task.md')",
+            "Path berkas target di repositori (hanya diizinkan di .agent/tasks/*.md, default: '.agent/tasks/current_task.md')",
         },
       },
       required: ["task_id", "title", "instructions"],
@@ -186,7 +192,7 @@ const MCP_TOOLS: McpTool[] = [
   {
     name: "list_github_issues",
     description:
-      "Ambil daftar issue di repositori GitHub Banten Mengaji (chandraanggaradiputra/website-islam)",
+      "Ambil daftar issue di repositori GitHub Banten Mengaji (hanya issue murni, pull request disaring keluar)",
     inputSchema: {
       type: "object",
       properties: {
@@ -207,7 +213,7 @@ const MCP_TOOLS: McpTool[] = [
   {
     name: "read_repo_file",
     description:
-      "Membaca isi berkas repositori chandraanggaradiputra/website-islam secara aman (decode Base64 ke UTF-8) untuk kebutuhan audit otomatis dan pembacaan berkas laporan",
+      "Membaca isi berkas repositori chandraanggaradiputra/website-islam secara aman dengan perlindungan path-guard (allowlist root dirs/files, tolak file sensitif & URL bypass)",
     inputSchema: {
       type: "object",
       properties: {
@@ -219,7 +225,7 @@ const MCP_TOOLS: McpTool[] = [
         branch: {
           type: "string",
           description:
-            "Nama branch target di repositori (default: 'staging-website-islam')",
+            "Nama branch target di repositori ('staging-website-islam' atau 'main', default: 'staging-website-islam')",
         },
       },
       required: ["path"],
@@ -237,7 +243,8 @@ function nocacheHeaders(): HeadersInit {
     Expires: "0",
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Authorization, Content-Type, x-agent-secret",
+    "Access-Control-Allow-Headers":
+      "Authorization, Content-Type, x-agent-secret",
   };
 }
 
@@ -260,23 +267,44 @@ function isErrorResponse(r: JsonRpcResponse): r is JsonRpcErrorResponse {
   return "error" in r;
 }
 
-const ACTIVE_OAUTH_TOKEN = "bm_oauth_token_active_2026";
+/**
+ * Perbandingan timingSafeEqual berbasis SHA-256 untuk mencegah timing attack
+ */
+function safeEqual(a: string, b: string): boolean {
+  if (typeof a !== "string" || typeof b !== "string") return false;
+  const hashA = createHash("sha256").update(a).digest();
+  const hashB = createHash("sha256").update(b).digest();
+  return timingSafeEqual(hashA, hashB);
+}
 
+/**
+ * Validasi otentikasi murni menggunakan AGENT_SECRET_KEY
+ */
 function isAuthorized(request: NextRequest): boolean {
+  const secret = process.env.AGENT_SECRET_KEY;
+  if (!secret) return false;
+
+  // 1. Authorization: Bearer <secret>
   const authHeader = request.headers.get("authorization") ?? "";
+  if (authHeader.startsWith("Bearer ")) {
+    const token = authHeader.slice(7).trim();
+    if (safeEqual(token, secret)) return true;
+  }
 
-  // 1. Dukung OAuth Bearer Token
-  if (authHeader === `Bearer ${ACTIVE_OAUTH_TOKEN}`) return true;
-
-  // 2. Dukung AGENT_SECRET_KEY via Bearer Token
-  const agentSecret = process.env.AGENT_SECRET_KEY;
-  if (agentSecret && authHeader === `Bearer ${agentSecret}`) return true;
-
-  // 3. Dukung x-agent-secret header
+  // 2. x-agent-secret header
   const secretHeader = request.headers.get("x-agent-secret") ?? "";
-  if (agentSecret && secretHeader === agentSecret) return true;
+  if (secretHeader && safeEqual(secretHeader, secret)) return true;
 
   return false;
+}
+
+/**
+ * Helper pencocokan wilayah (kota/kabupaten atau kecamatan) yang tangguh
+ */
+function matchesRegion(value: string, query: string): boolean {
+  const clean = query.trim().toLowerCase();
+  if (!clean || clean === "semua" || clean === "semua kecamatan") return true;
+  return value.toLowerCase().includes(clean);
 }
 
 // ─── Tool Executors Dakwah ────────────────────────────────────────────────────
@@ -315,38 +343,37 @@ async function executeGetUpcomingKajian(
 
   // 1. Filter: Hanya ambil kajian aktif dan belum kedaluwarsa
   let filtered = rawKajian.filter((k: WPKajian) => {
-    // Saring kajian yang telah selesai secara eksplisit
     if (k.acf?.status_kajian === "selesai") return false;
-
-    // Saring kajian tematik yang telah lewat waktu pelaksanaannya (WIB)
-    if (isKajianExpired(k.acf?.tanggal_kajian, k.acf?.jam_selesai, k.acf?.jam_mulai)) {
+    if (
+      isKajianExpired(
+        k.acf?.tanggal_kajian,
+        k.acf?.jam_selesai,
+        k.acf?.jam_mulai
+      )
+    ) {
       return false;
     }
-
     return true;
   });
 
-  // 2. Filter: Kota / Kabupaten
+  // 2. Filter: Kota / Kabupaten (via matchesRegion)
   if (city && city !== "Semua") {
-    const cleanCity = city.toLowerCase().replace(/^(kota|kabupaten|kab\.)\s+/i, "").trim();
     filtered = filtered.filter((k: WPKajian) => {
-      const kCity = (
+      const kCity =
         k.acf?.kota_kabupaten ||
         k.acf?.kota__kabupaten ||
         k.masjid_detail?.acf?.kota_kabupaten ||
-        ""
-      ).toLowerCase();
-      return kCity.includes(cleanCity) || cleanCity.includes(kCity);
+        "";
+      return matchesRegion(kCity, city);
     });
   }
 
-  // 3. Filter: Kecamatan
+  // 3. Filter: Kecamatan (via matchesRegion)
   if (district && district !== "Semua") {
-    const cleanDist = district.toLowerCase().replace(/^kec(\.|\s+)?/i, "").trim();
     filtered = filtered.filter((k: WPKajian) => {
-      const kDist = String(k.masjid_detail?.acf?.kecamatan || "").toLowerCase();
-      const kAddr = (k.masjid_detail?.acf?.alamat_lengkap || "").toLowerCase();
-      return kDist.includes(cleanDist) || kAddr.includes(cleanDist);
+      const kDist = String(k.masjid_detail?.acf?.kecamatan || "");
+      const kAddr = k.masjid_detail?.acf?.alamat_lengkap || "";
+      return matchesRegion(kDist, district) || matchesRegion(kAddr, district);
     });
   }
 
@@ -386,20 +413,24 @@ async function executeGetUpcomingKajian(
         ustadz: ustadz || "Semua",
         jamaah: jamaah || "Semua",
       },
-      message: "Tidak ada jadwal kajian sunnah aktif yang cocok dengan kriteria pencarian.",
+      message:
+        "Tidak ada jadwal kajian sunnah aktif yang cocok dengan kriteria pencarian.",
       kajian: [],
     };
   }
 
-  // Format respons ramah AI/Gemini
   const formatted = filtered.slice(0, limit).map((k: WPKajian) => {
     const judul = decodeHtmlEntities(k.title?.rendered || "");
-    const namaUstadz = decodeHtmlEntities(k.acf?.nama_ustadz || "Asatidz Pembina");
+    const namaUstadz = decodeHtmlEntities(
+      k.acf?.nama_ustadz || "Asatidz Pembina"
+    );
     const kitab = decodeHtmlEntities(k.acf?.kitab_bahasan || "-");
     const namaMasjid = decodeHtmlEntities(
       k.masjid_name || k.acf?.nama_masjid_manual || "Masjid Terkait"
     );
-    const alamat = decodeHtmlEntities(k.masjid_detail?.acf?.alamat_lengkap || "-");
+    const alamat = decodeHtmlEntities(
+      k.masjid_detail?.acf?.alamat_lengkap || "-"
+    );
     const kotaKab =
       k.acf?.kota_kabupaten ||
       k.acf?.kota__kabupaten ||
@@ -411,7 +442,9 @@ async function executeGetUpcomingKajian(
 
     const jamMulai = k.acf?.jam_mulai || "";
     const jamSelesai = k.acf?.jam_selesai || "Selesai";
-    const waktu = jamMulai ? `${jamMulai} - ${jamSelesai} WIB` : (k.acf?.waktu_keterangan || "-");
+    const waktu = jamMulai
+      ? `${jamMulai} - ${jamSelesai} WIB`
+      : k.acf?.waktu_keterangan || "-";
 
     return {
       id: k.id,
@@ -478,22 +511,20 @@ async function executeGetMasjidDirectory(
 
   let filtered = rawMasjid;
 
-  // 1. Filter: Kota / Kabupaten
+  // 1. Filter: Kota / Kabupaten (via matchesRegion)
   if (city && city !== "Semua") {
-    const cleanCity = city.toLowerCase().replace(/^(kota|kabupaten|kab\.)\s+/i, "").trim();
     filtered = filtered.filter((m: WPMasjid) => {
-      const mCity = (m.acf?.kota_kabupaten || "").toLowerCase();
-      return mCity.includes(cleanCity) || cleanCity.includes(mCity);
+      const mCity = m.acf?.kota_kabupaten || "";
+      return matchesRegion(mCity, city);
     });
   }
 
-  // 2. Filter: Kecamatan
+  // 2. Filter: Kecamatan (via matchesRegion)
   if (district && district !== "Semua") {
-    const cleanDist = district.toLowerCase().replace(/^kec(\.|\s+)?/i, "").trim();
     filtered = filtered.filter((m: WPMasjid) => {
-      const mDist = String(m.acf?.kecamatan || "").toLowerCase();
-      const mAddr = (m.acf?.alamat_lengkap || "").toLowerCase();
-      return mDist.includes(cleanDist) || mAddr.includes(cleanDist);
+      const mDist = String(m.acf?.kecamatan || "");
+      const mAddr = m.acf?.alamat_lengkap || "";
+      return matchesRegion(mDist, district) || matchesRegion(mAddr, district);
     });
   }
 
@@ -523,7 +554,6 @@ async function executeGetMasjidDirectory(
     };
   }
 
-  // Format respons
   const formatted = filtered.slice(0, limit).map((m: WPMasjid) => {
     const namaMasjid = decodeHtmlEntities(m.title?.rendered || "");
     const alamat = decodeHtmlEntities(m.acf?.alamat_lengkap || "");
@@ -612,20 +642,23 @@ async function handleMethod(
             toolArgs as unknown as Parameters<typeof readRepoFile>[0]
           );
         } else {
-          return rpcError(id, -32601, `Tool tidak ditemukan: ${toolName}`);
+          return rpcError(id, RPC.METHOD_NOT_FOUND, `Tool tidak ditemukan: ${toolName}`);
         }
 
         return rpcSuccess(id, {
           content: [{ type: "text", text: JSON.stringify(result) }],
         });
       } catch (err: unknown) {
+        if (err instanceof McpToolError) {
+          return rpcError(id, err.code, err.message);
+        }
         const message = err instanceof Error ? err.message : "Internal error";
-        return rpcError(id, -32603, message);
+        return rpcError(id, RPC.INTERNAL, message);
       }
     }
 
     default:
-      return rpcError(id, -32601, `Method tidak ditemukan: ${method}`);
+      return rpcError(id, RPC.METHOD_NOT_FOUND, `Method tidak ditemukan: ${method}`);
   }
 }
 
@@ -649,7 +682,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   // Auth guard
   if (!isAuthorized(request)) {
     return NextResponse.json(
-      rpcError(null, -32000, "Unauthorized"),
+      rpcError(null, RPC.UNAUTHORIZED, "Unauthorized"),
       {
         status: 401,
         headers: {
@@ -661,13 +694,22 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     );
   }
 
+  // Batasi ukuran body maksimal 64KB
+  const contentLength = Number(request.headers.get("content-length") || 0);
+  if (contentLength > MAX_BODY_BYTES) {
+    return NextResponse.json(
+      rpcError(null, RPC.INVALID_REQUEST, "Payload terlalu besar (maksimal 64KB)"),
+      { status: 400, headers: nocacheHeaders() }
+    );
+  }
+
   // Parse JSON body
   let body: JsonRpcRequest;
   try {
     body = (await request.json()) as JsonRpcRequest;
   } catch {
     return NextResponse.json(
-      rpcError(null, -32700, "Parse error: request body bukan JSON valid"),
+      rpcError(null, RPC.PARSE, "Parse error: request body bukan JSON valid"),
       { status: 400, headers: nocacheHeaders() }
     );
   }
@@ -675,7 +717,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   // Validate JSON-RPC 2.0 structure
   if (body.jsonrpc !== "2.0" || typeof body.method !== "string") {
     return NextResponse.json(
-      rpcError(body.id ?? null, -32600, "Invalid Request"),
+      rpcError(body.id ?? null, RPC.INVALID_REQUEST, "Invalid Request"),
       { status: 400, headers: nocacheHeaders() }
     );
   }
@@ -683,12 +725,19 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const params = body.params ?? {};
   const response = await handleMethod(body.method, params, body.id ?? null);
 
+  // Mapping status HTTP yang presisi
   const httpStatus = isErrorResponse(response)
-    ? response.error.code === -32000
+    ? response.error.code === RPC.UNAUTHORIZED
       ? 401
-      : response.error.code === -32601
-        ? 404
-        : 400
+      : response.error.code === RPC.FORBIDDEN
+        ? 403
+        : response.error.code === RPC.INVALID_REQUEST ||
+            response.error.code === RPC.INVALID_PARAMS ||
+            response.error.code === RPC.PARSE
+          ? 400
+          : response.error.code === RPC.METHOD_NOT_FOUND
+            ? 404
+            : 500
     : 200;
 
   return NextResponse.json(response, {

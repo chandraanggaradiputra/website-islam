@@ -1,6 +1,7 @@
 /**
  * Helper GitHub API Relay untuk Remote MCP Server Banten Mengaji
  * Berinteraksi dengan REST API GitHub untuk operasi DevOps otonom
+ * Dilengkapi pengamanan jalur path-guard dan pembatasan timeout
  */
 
 import type {
@@ -14,9 +15,19 @@ import type {
   McpReadRepoFileArgs,
   McpReadRepoFileResult,
 } from "@/types/mcp-devops";
+import {
+  validateReadPath,
+  validateWritePath,
+  validateReadBranch,
+  validateWriteBranch,
+  validateTaskId,
+  buildContentsUrl,
+} from "@/lib/mcp/path-guard";
+import { McpToolError, RPC } from "@/lib/mcp/errors";
 
 const DEFAULT_REPO = "chandraanggaradiputra/website-islam";
 const GITHUB_API_BASE = "https://api.github.com";
+const FETCH_TIMEOUT_MS = 10_000;
 
 function getGithubToken(): string {
   const token =
@@ -26,8 +37,9 @@ function getGithubToken(): string {
     process.env.MCP_GITHUB_TOKEN;
 
   if (!token) {
-    throw new Error(
-      "GitHub token tidak dikonfigurasi (GITHUB_TOKEN, GITHUB_PAT, GITHUB_ACCESS_TOKEN, atau MCP_GITHUB_TOKEN)"
+    throw new McpToolError(
+      "GitHub token tidak dikonfigurasi pada environment server",
+      RPC.INTERNAL
     );
   }
   return token.trim();
@@ -43,63 +55,7 @@ function getGithubHeaders(token: string): Record<string, string> {
 }
 
 /**
- * Validasi dan proteksi keamanan untuk membaca berkas repositori
- */
-function validateSafeFilePath(filePath: string): string {
-  if (!filePath || typeof filePath !== "string") {
-    throw new Error("Parameter 'path' wajib diisi");
-  }
-
-  const clean = filePath.trim().replace(/^[/\\]+/, "");
-
-  // Deteksi path traversal
-  if (clean.includes("..") || clean.includes("~")) {
-    throw new Error(
-      "Akses ditolak: format path tidak diizinkan demi keamanan (path traversal terdeteksi)"
-    );
-  }
-
-  const lower = clean.toLowerCase();
-  const segments = lower.split(/[/\\]/);
-
-  // Periksa segmen terlarang
-  for (const seg of segments) {
-    if (seg.startsWith(".env")) {
-      throw new Error(
-        "Akses ditolak: berkas lingkungan (.env) dilarang dibaca demi keamanan"
-      );
-    }
-    if (seg === ".git") {
-      throw new Error(
-        "Akses ditolak: direktori .git dilarang dibaca demi keamanan"
-      );
-    }
-  }
-
-  // Periksa ekstensi atau nama file rahasia
-  const forbiddenPatterns = [
-    /\.pem$/i,
-    /\.key$/i,
-    /\.pfx$/i,
-    /\.p12$/i,
-    /^id_rsa/i,
-    /\.secret$/i,
-    /credentials\.json$/i,
-  ];
-
-  for (const pattern of forbiddenPatterns) {
-    if (pattern.test(lower)) {
-      throw new Error(
-        "Akses ditolak: berkas kunci atau kredensial rahasia dilarang dibaca"
-      );
-    }
-  }
-
-  return clean;
-}
-
-/**
- * Menulis / memperbarui instruksi tugas otonom di .agent/tasks/current_task.md
+ * Menulis / memperbarui instruksi tugas otonom di .agent/tasks/*.md
  */
 export async function dispatchAgentTask(
   args: McpDispatchTaskArgs
@@ -107,27 +63,30 @@ export async function dispatchAgentTask(
   const token = getGithubToken();
   const repo = process.env.GITHUB_REPO || DEFAULT_REPO;
 
-  const taskId = args.task_id?.trim();
+  const taskId = validateTaskId(args.task_id);
   const title = args.title?.trim();
   const instructions = args.instructions;
-  const branch = args.branch?.trim() || "staging-website-islam";
-  const targetPath = args.target_path?.trim() || ".agent/tasks/current_task.md";
 
-  if (!taskId || !title || !instructions) {
-    throw new Error(
-      "Parameter 'task_id', 'title', dan 'instructions' wajib diisi"
+  if (!title || !instructions) {
+    throw new McpToolError(
+      "Parameter 'title' dan 'instructions' wajib diisi",
+      RPC.INVALID_PARAMS
     );
   }
 
-  const fileUrl = `${GITHUB_API_BASE}/repos/${repo}/contents/${targetPath}`;
+  const safePath = validateWritePath(
+    args.target_path || ".agent/tasks/current_task.md"
+  );
+  const safeBranch = validateWriteBranch(args.branch);
 
   // 1. Ambil SHA berkas jika sudah ada di branch target
   let existingSha: string | undefined;
-  const getUrl = `${fileUrl}?ref=${encodeURIComponent(branch)}`;
+  const getUrl = buildContentsUrl(repo, safePath, safeBranch);
 
   const getRes = await fetch(getUrl, {
     method: "GET",
     headers: getGithubHeaders(token),
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
 
   if (getRes.ok) {
@@ -137,8 +96,9 @@ export async function dispatchAgentTask(
     existingSha = undefined;
   } else {
     const errorText = await getRes.text();
-    throw new Error(
-      `Gagal memeriksa keberadaan berkas ${targetPath} di branch ${branch} (HTTP ${getRes.status}): ${errorText}`
+    throw new McpToolError(
+      `Gagal memeriksa keberadaan berkas ${safePath} di branch ${safeBranch} (HTTP ${getRes.status}): ${errorText}`,
+      RPC.INTERNAL
     );
   }
 
@@ -153,7 +113,7 @@ export async function dispatchAgentTask(
   } = {
     message: `agent: dispatch [${taskId}] ${title}`,
     content: base64Content,
-    branch,
+    branch: safeBranch,
   };
 
   if (existingSha) {
@@ -161,19 +121,22 @@ export async function dispatchAgentTask(
   }
 
   // 3. Simpan berkas via GitHub Contents API
-  const putRes = await fetch(fileUrl, {
+  const putUrl = buildContentsUrl(repo, safePath);
+  const putRes = await fetch(putUrl, {
     method: "PUT",
     headers: {
       ...getGithubHeaders(token),
       "Content-Type": "application/json",
     },
     body: JSON.stringify(commitPayload),
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
 
   if (!putRes.ok) {
     const errorText = await putRes.text();
-    throw new Error(
-      `GitHub API error saat dispatch tugas ${taskId} (HTTP ${putRes.status}): ${errorText}`
+    throw new McpToolError(
+      `GitHub API error saat dispatch tugas ${taskId} (HTTP ${putRes.status}): ${errorText}`,
+      RPC.INTERNAL
     );
   }
 
@@ -186,12 +149,12 @@ export async function dispatchAgentTask(
     success: true,
     task_id: taskId,
     title,
-    branch,
-    target_path: targetPath,
+    branch: safeBranch,
+    target_path: safePath,
     commit_sha: resultData.commit?.sha || "",
     commit_url: resultData.commit?.html_url || "",
     content_sha: resultData.content?.sha || "",
-    message: `Tugas [${taskId}] berhasil di-dispatch ke branch ${branch}`,
+    message: `Tugas [${taskId}] berhasil di-dispatch ke branch ${safeBranch}`,
   };
 }
 
@@ -208,7 +171,10 @@ export async function createGithubIssue(
   const body = args.body?.trim();
 
   if (!title || !body) {
-    throw new Error("Parameter 'title' dan 'body' wajib diisi");
+    throw new McpToolError(
+      "Parameter 'title' dan 'body' wajib diisi",
+      RPC.INVALID_PARAMS
+    );
   }
 
   const issueUrl = `${GITHUB_API_BASE}/repos/${repo}/issues`;
@@ -220,12 +186,14 @@ export async function createGithubIssue(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ title, body }),
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(
-      `GitHub API error saat membuat issue (HTTP ${response.status}): ${errorText}`
+    throw new McpToolError(
+      `GitHub API error saat membuat issue (HTTP ${response.status}): ${errorText}`,
+      RPC.INTERNAL
     );
   }
 
@@ -246,7 +214,7 @@ export async function createGithubIssue(
 }
 
 /**
- * Mengambil daftar issue di repositori GitHub
+ * Mengambil daftar issue di repositori GitHub (pull request disaring keluar)
  */
 export async function listGithubIssues(
   args: McpListIssuesArgs
@@ -264,25 +232,31 @@ export async function listGithubIssues(
   const response = await fetch(url, {
     method: "GET",
     headers: getGithubHeaders(token),
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(
-      `GitHub API error saat membaca issues (HTTP ${response.status}): ${errorText}`
+    throw new McpToolError(
+      `GitHub API error saat membaca issues (HTTP ${response.status}): ${errorText}`,
+      RPC.INTERNAL
     );
   }
 
-  const issues = (await response.json()) as Array<{
+  const rawItems = (await response.json()) as Array<{
     number: number;
     title: string;
     html_url: string;
     state: string;
     created_at: string;
     user?: { login: string };
+    pull_request?: unknown;
   }>;
 
-  const formatted: McpIssueItem[] = issues.map((item) => ({
+  // Saring pull request agar murni hanya issue yang dikembalikan
+  const issuesOnly = rawItems.filter((item) => !item.pull_request);
+
+  const formatted: McpIssueItem[] = issuesOnly.map((item) => ({
     number: item.number,
     title: item.title,
     url: item.html_url,
@@ -307,28 +281,29 @@ export async function readRepoFile(
   const token = getGithubToken();
   const repo = process.env.GITHUB_REPO || DEFAULT_REPO;
 
-  const cleanPath = validateSafeFilePath(args.path);
-  const branch = args.branch?.trim() || "staging-website-islam";
+  const safePath = validateReadPath(args.path);
+  const safeBranch = validateReadBranch(args.branch);
 
-  const url = `${GITHUB_API_BASE}/repos/${repo}/contents/${cleanPath}?ref=${encodeURIComponent(
-    branch
-  )}`;
+  const url = buildContentsUrl(repo, safePath, safeBranch);
 
   const response = await fetch(url, {
     method: "GET",
     headers: getGithubHeaders(token),
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
 
   if (response.status === 404) {
-    throw new Error(
-      `Berkas '${cleanPath}' tidak ditemukan pada branch '${branch}' di repositori ${repo}`
+    throw new McpToolError(
+      `Berkas '${safePath}' tidak ditemukan pada branch '${safeBranch}' di repositori ${repo}`,
+      RPC.METHOD_NOT_FOUND
     );
   }
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(
-      `GitHub API error saat membaca berkas '${cleanPath}' (HTTP ${response.status}): ${errorText}`
+    throw new McpToolError(
+      `GitHub API error saat membaca berkas '${safePath}' (HTTP ${response.status}): ${errorText}`,
+      RPC.INTERNAL
     );
   }
 
@@ -342,19 +317,20 @@ export async function readRepoFile(
   };
 
   if (data.type !== "file" || !data.content) {
-    throw new Error(
-      `Path '${cleanPath}' adalah direktori atau bukan berkas teks biasa`
+    throw new McpToolError(
+      `Path '${safePath}' adalah direktori atau bukan berkas teks biasa`,
+      RPC.INVALID_PARAMS
     );
   }
 
-  // Bersihkan newline dari base64 string dan decode ke UTF-8
+  // Bersihkan whitespace dari base64 string dan decode ke UTF-8
   const base64Clean = data.content.replace(/\s+/g, "");
   const decodedContent = Buffer.from(base64Clean, "base64").toString("utf-8");
 
   return {
     success: true,
-    path: data.path || cleanPath,
-    branch,
+    path: data.path || safePath,
+    branch: safeBranch,
     size: data.size || 0,
     sha: data.sha || "",
     content: decodedContent,
