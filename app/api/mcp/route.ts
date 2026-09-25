@@ -9,7 +9,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHash, timingSafeEqual } from "node:crypto";
 import { getKajianList, getMasjidList } from "@/lib/wordpress";
-import { isKajianExpired } from "@/lib/kajian";
+import { isKajianExpired, isKajianJustFinished } from "@/lib/kajian";
 import { decodeHtmlEntities } from "@/lib/utils/text";
 import { formatKategoriJamaah } from "@/types";
 import type { WPKajian, WPMasjid } from "@/types";
@@ -448,6 +448,12 @@ async function executeGetUpcomingKajian(
       ? `${jamMulai} - ${jamSelesai} WIB`
       : k.acf?.waktu_keterangan || "-";
 
+    const isJustFinished = isKajianJustFinished(
+      k.acf?.tanggal_kajian,
+      k.acf?.jam_selesai,
+      k.acf?.jam_mulai
+    );
+
     return {
       id: k.id,
       judul,
@@ -455,6 +461,8 @@ async function executeGetUpcomingKajian(
       kitab_bahasan: kitab,
       jenis_kajian: k.acf?.jenis_kajian || "tematik",
       kategori_jamaah: formatKategoriJamaah(k.acf?.kategori_jamaah),
+      status_pelaksanaan: isJustFinished ? "selesai_berlangsung" : "mendatang",
+      is_just_finished: isJustFinished,
       masjid: namaMasjid,
       alamat_masjid: alamat,
       kota_kabupaten: kotaKab,

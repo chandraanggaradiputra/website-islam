@@ -1,65 +1,119 @@
-# Walkthrough: [TASK-BM-006] Implementasi Endpoint OAuth 2.0 & Dynamic Registration untuk Gemini MCP
+# Walkthrough: [TASK-BM-007] Grace Period 24 Jam Jadwal Kajian & Badge "Selesai Berlangsung"
 
-Dokumen ini merupakan laporan resmi implementasi dan verifikasi teknis 5 endpoint OAuth 2.0 standar (RFC 6749, RFC 8414, RFC 7591, RFC 9728) untuk integrasi resmi Google Gemini Spark Connected Apps pada portal dakwah Banten Mengaji.
-
----
-
-## 1. Konteks Masalah & Sasaran
-Google Gemini Connected Apps mewajibkan alur OAuth 2.0 resmi agar integrasi MCP Server dapat didaftarkan dan diotorisasi tanpa hambatan ("Penautan akun diperlukan"). Klien Gemini dapat melakukan penemuan konfigurasi server via RFC 8414/RFC 9728, registrasi klien otomatis (Dynamic Client Registration RFC 7591), persetujuan otorisasi via redirect code, dan penukaran Access Token Bearer.
+Dokumen ini merupakan laporan resmi implementasi dan verifikasi teknis untuk penambahan batas tenggang waktu (grace period) 24 jam serta badge status netral `"Selesai Berlangsung"` pada jadwal kajian portal dakwah Banten Mengaji.
 
 ---
 
-## 2. Rincian Pembuatan & Modifikasi Berkas
+## 1. Konteks Kebutuhan & Masalah
 
-### A. Endpoint Discovery Server Metadata (`app/.well-known/oauth-authorization-server/route.ts`)
-- **Protokol**: RFC 8414 OAuth 2.0 Authorization Server Metadata.
-- **Method**: `GET` & `OPTIONS` dengan CORS wildcard (`*`).
-- **Respon**: Mengembalikan URL endpoint `authorization_endpoint`, `token_endpoint`, `registration_endpoint`, serta kapabilitas `code`, `authorization_code`, `refresh_token`, dan scopes `["mcp:tools"]`.
-
-### B. Endpoint Discovery Protected Resource (`app/.well-known/oauth-protected-resource/route.ts` & `api/mcp`)
-- **Protokol**: RFC 9728 OAuth 2.0 Protected Resource Metadata.
-- **Method**: `GET` & `OPTIONS` dengan CORS wildcard (`*`).
-- **Respon**: Menghubungkan resource `/api/mcp` dengan authorization server `https://banten-mengaji.vercel.app` dan scope `["mcp:tools"]`.
-
-### C. Endpoint Dynamic Client Registration (`app/api/oauth/register/route.ts`)
-- **Protokol**: RFC 7591 OAuth 2.0 Dynamic Client Registration.
-- **Method**: `POST` & `OPTIONS` dengan status `201 Created`.
-- **Respon**: Menerima request dari Google Gemini dan secara otomatis mengembalikan `client_id` (format `gemini-spark-<timestamp>`), `client_secret` (dari `AGENT_SECRET_KEY`), grant types, dan redirect uris.
-
-### D. Endpoint Otorisasi Auto-Redirect (`app/api/oauth/authorize/route.ts`)
-- **Protokol**: RFC 6749 Authorization Endpoint.
-- **Method**: `GET` & `OPTIONS`.
-- **Respon**: Secara otomatis mengalihkan (HTTP 302) kembali ke `redirect_uri` dengan membawa parameter `code` (`bm_auth_<base64url>`) dan `state` persis seperti yang dikirimkan klien.
-
-### E. Endpoint Token Exchange (`app/api/oauth/token/route.ts`)
-- **Protokol**: RFC 6749 Token Endpoint.
-- **Method**: `POST` & `OPTIONS` dengan status `200 OK`.
-- **Respon**: Menukarkan kode otorisasi menjadi Bearer `access_token` yang nilainya identik dengan `AGENT_SECRET_KEY` portal dakwah Banten Mengaji, sehingga klien Google Gemini otomatis memiliki izin penuh untuk mengeksekusi tool sensitif DevOps maupun tool dakwah publik.
+Sebelum penyesuaian ini:
+1. Fungsi `isKajianExpired()` langsung mengembalikan status `true` tepat saat jam kajian berakhir (`Date.now() > endTimestamp`).
+2. Hal ini menyebabkan kajian yang baru saja selesai langsung diarsipkan oleh auto-archive (`archiveExpiredKajian`) dan disembunyikan/diberi tanda kedaluwarsa secara mendadak.
+3. Jamaah yang ingin mengecek informasi ustadz, lokasi masjid, atau materi/faedah kajian yang baru usai beberapa jam sebelumnya tidak lagi dapat melihat kartu kajian dalam kondisi aktif wajar.
+4. Gemini MCP Server juga langsung menolak atau tidak mengelompokkan kajian tersebut ke dalam status yang jelas pasca-pelaksanaan.
 
 ---
 
-## 3. Hasil Pengujian Verifikasi Runtime (7 Skenario OAuth)
+## 2. Rincian Modifikasi Berkas
 
-Pengujian otomatis dijalankan melalui skrip `scripts/test-oauth-endpoints.mjs` terhadap server Next.js lokal:
+### A. Core Helper Logika Kajian (`lib/kajian.ts`)
+- **Konstanta Grace Period**: Menambahkan konstanta terstandarisasi:
+  ```typescript
+  export const GRACE_PERIOD_MS = 24 * 60 * 60 * 1000; // 24 jam dalam milidetik
+  ```
+- **Helper `getKajianEndTimestamp`**: Mengekstraksi logika parsing tanggal dan jam selesai/mulai menjadi helper terpusat:
+  ```typescript
+  export function getKajianEndTimestamp(tanggalKajian?: string, jamSelesai?: string, jamMulai?: string): number | null
+  ```
+- **Pembaruan `isKajianExpired`**: Memperhitungkan grace period 24 jam:
+  ```typescript
+  export function isKajianExpired(tanggalKajian?: string, jamSelesai?: string, jamMulai?: string): boolean {
+    const endTimestamp = getKajianEndTimestamp(tanggalKajian, jamSelesai, jamMulai);
+    if (!endTimestamp) return false;
+    return Date.now() > endTimestamp + GRACE_PERIOD_MS;
+  }
+  ```
+- **Helper Baru `isKajianJustFinished`**: Mendeteksi apakah kajian berada dalam jendela waktu pasca-selesai namun masih dalam batas tenggang 24 jam:
+  ```typescript
+  export function isKajianJustFinished(tanggalKajian?: string, jamSelesai?: string, jamMulai?: string): boolean {
+    const endTimestamp = getKajianEndTimestamp(tanggalKajian, jamSelesai, jamMulai);
+    if (!endTimestamp) return false;
+    const now = Date.now();
+    return now > endTimestamp && now <= endTimestamp + GRACE_PERIOD_MS;
+  }
+  ```
 
-| No | Skenario Pengujian | Endpoint | Method | Ekspektasi | Hasil | Status |
-|:---|:---|:---|:---:|:---|:---|:---:|
-| 1 | Server Metadata RFC 8414 | `/.well-known/oauth-authorization-server` | `GET` | Status 200, issuer & endpoint URLs lengkap | Sesuai spesifikasi | **PASS** |
-| 2 | Protected Resource RFC 9728 | `/.well-known/oauth-protected-resource` | `GET` | Status 200, resource & auth servers | Sesuai spesifikasi | **PASS** |
-| 3 | Dynamic Registration RFC 7591 | `/api/oauth/register` | `POST` | Status 201, client_id & client_secret | Client terdaftar dinamis | **PASS** |
-| 4 | Auto-Redirect Authorize | `/api/oauth/authorize` | `GET` | Status 302, redirect berisi `code` & `state` | Redirect target valid | **PASS** |
-| 5 | Validasi Authorize (No URI) | `/api/oauth/authorize` | `GET` | Status 400 `missing_redirect_uri` | Ditolak aman | **PASS** |
-| 6 | Token Exchange RFC 6749 | `/api/oauth/token` | `POST` | Status 200, Bearer token aktif | Token valid 10 tahun | **PASS** |
-| 7 | CORS Preflight Wildcard | Seluruh 5 Endpoint | `OPTIONS` | Status 204, `Access-Control-Allow-Origin: *` | Preflight lolos | **PASS** |
+### B. Komponen Kartu Jadwal Kajian (`components/kajian/KajianCard.tsx`)
+- Mengimpor `isKajianJustFinished` dari `@/lib/kajian`.
+- Mengevaluasi status masa tenggang:
+  ```typescript
+  const isJustFinished = !isSelesai && isKajianJustFinished(acf?.tanggal_kajian, acf?.jam_selesai, acf?.jam_mulai);
+  ```
+- Merender badge netral bertuliskan `"Selesai Berlangsung"` dengan palet slate yang elegan dan ramah dark mode:
+  ```tsx
+  {isJustFinished && (
+    <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-xs font-medium text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700">
+      <Clock className="w-3 h-3 text-slate-500 dark:text-slate-400" />
+      Selesai Berlangsung
+    </span>
+  )}
+  ```
 
-**Tingkat Kelulusan: 100% (7 dari 7 pengujian OAuth lolos sempurna)**.
+### C. Halaman Detail Kajian (`app/jadwal-kajian/[slug]/page.tsx`)
+- Mengimpor `isKajianJustFinished` dari `@/lib/kajian`.
+- Menampilkan badge netral `"Selesai Berlangsung"` pada header kartu detail jadwal jika kajian baru saja usai dalam batas 24 jam.
+- Melakukan pembersihan tipe TypeScript yang aman (`{ ID?: number; id?: number }`) guna menggantikan assertion `as any` pada relasi masjid ACF.
 
-Pengujian regresi MCP handshake (`scripts/test-mcp-handshake.mjs`) juga dijalankan dan **100% lulus (12/12 PASS)**.
+### D. Endpoint Gemini MCP Dakwah (`app/api/mcp/route.ts`)
+- Mengimpor `isKajianJustFinished` dari `@/lib/kajian`.
+- Pada tool dakwah publik `executeGetUpcomingKajian`:
+  - Menyertakan properti `status_pelaksanaan: isJustFinished ? "selesai_berlangsung" : "mendatang"`.
+  - Menyertakan flag boolean `is_just_finished: isJustFinished`.
+  - Memberikan konteks akurat kepada agen AI Gemini mengenai kajian yang baru usai.
 
 ---
 
-## 4. Hasil Kompilasi & Build Produksi
+## 3. Hasil Pengujian & Verifikasi
 
-- **TypeScript Checking**: `npx tsc --noEmit` lolos **0 error**.
-- **ESLint Code Quality**: `npx eslint app/.well-known/ app/api/oauth/ app/api/mcp/oauth/` lolos **0 error, 0 warning**.
-- **Production Build**: `npm run build` sukses 100% mengompilasi dan mengoptimasi seluruh rute Next.js 16 App Router termasuk 5 rute OAuth baru.
+### A. Pengujian Unit Logika Grace Period (`scripts/test-kajian-grace-period.ts`)
+Pengujian unit dijalankan menggunakan `npx tsx scripts/test-kajian-grace-period.ts`:
+
+| No | Skenario Pengujian | Input/Kondisi | Ekspektasi | Hasil | Status |
+|:---|:---|:---|:---|:---|:---:|
+| 1 | Nilai Konstanta `GRACE_PERIOD_MS` | `GRACE_PERIOD_MS` | Tepat 86.400.000 ms (24 jam) | 86.400.000 ms | **PASS** |
+| 2 | Kajian Masa Depan (Besok) | Besok 09:00 - 11:00 | `expired = false`, `justFinished = false` | Sesuai | **PASS** |
+| 3 | Kajian Rutin (Tanpa Tanggal) | `jenis_kajian: rutin` | `expired = false`, `justFinished = false` | Sesuai | **PASS** |
+| 4 | Kajian Selesai 2 Jam Lalu (Expired Check) | Selesai 2 jam lalu | `isKajianExpired() === false` (tertahan grace period) | `false` | **PASS** |
+| 5 | Kajian Selesai 2 Jam Lalu (Grace Check) | Selesai 2 jam lalu | `isKajianJustFinished() === true` | `true` | **PASS** |
+| 6 | Kajian Selesai 30 Jam Lalu (Expired Check) | Selesai 30 jam lalu | `isKajianExpired() === true` (melewati 24 jam) | `true` | **PASS** |
+| 7 | Kajian Selesai 30 Jam Lalu (Grace Check) | Selesai 30 jam lalu | `isKajianJustFinished() === false` (kedaluwarsa penuh) | `false` | **PASS** |
+| 8 | Format Tanggal ACF Numeric YYYYMMDD | Format `20260920` (30 jam lalu) | Terdeteksi expired penuh | `true` | **PASS** |
+
+**Tingkat Kelulusan Unit Test: 100% (8 dari 8 tes lolos)**.
+
+### B. Validasi Kode & Kompilasi
+- **ESLint**:
+  ```bash
+  npx eslint lib/kajian.ts components/kajian/KajianCard.tsx "app/jadwal-kajian/[slug]/page.tsx" app/api/mcp/route.ts
+  ```
+  $\rightarrow$ **0 Error, 0 Warning (Exit code: 0)**.
+- **TypeScript Typecheck**:
+  ```bash
+  npx tsc --noEmit
+  ```
+  $\rightarrow$ **0 Error (Exit code: 0)**.
+- **Production Build (Next.js 16 Turbopack)**:
+  ```bash
+  npm run build
+  ```
+  $\rightarrow$ **Compiled successfully in 89s, 19/19 static pages generated (Exit code: 0)**.
+
+---
+
+## 4. Kesimpulan
+Semua kriteria penerimaan untuk TASK-BM-007 telah terpenuhi secara sempurna:
+1. `isKajianExpired()` kini memiliki masa tenggang 24 jam terhitung dari jam selesai kajian.
+2. Helper `isKajianJustFinished()` mendeteksi kajian dalam jendela 24 jam pasca selesai.
+3. Badge netral `"Selesai Berlangsung"` tampil pada kartu kajian dan halaman detail.
+4. Response tool Gemini MCP `get_upcoming_kajian` menyajikan status pelaksanaan yang kaya konteks.
+5. Seluruh tes lolos 100% dan kode siap digabungkan (merge) ke branch utama.

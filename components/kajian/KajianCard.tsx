@@ -2,7 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { WPKajian, formatKategoriJamaah } from '@/types';
 import { MapPin, Clock, Calendar, User, Video } from 'lucide-react';
-import { isKajianExpired } from '@/lib/kajian';
+import { isKajianExpired, isKajianJustFinished } from '@/lib/kajian';
 import htmlParser from 'html-react-parser';
 
 const FOCUS_RING =
@@ -65,6 +65,9 @@ export function KajianCard({ kajian }: { kajian: WPKajian }) {
   const isSelesai =
     acf?.status_kajian === 'selesai' ||
     isKajianExpired(acf?.tanggal_kajian, acf?.jam_selesai, acf?.jam_mulai);
+  const isJustFinished =
+    !isSelesai &&
+    isKajianJustFinished(acf?.tanggal_kajian, acf?.jam_selesai, acf?.jam_mulai);
   const hasRecording = Boolean(acf?.link_streaming && acf.link_streaming.trim() !== '');
 
   const tanggalDisplay = formatTanggal(acf?.tanggal_kajian);
@@ -87,7 +90,7 @@ export function KajianCard({ kajian }: { kajian: WPKajian }) {
       )}
       <div className="p-5 flex-grow">
         <div className="flex flex-wrap items-center gap-2 mb-3">
-          {/* Badge Status Kajian Mendatang vs Arsip Selesai */}
+          {/* Badge Status Kajian Mendatang vs Arsip Selesai vs Selesai Berlangsung */}
           {isSelesai ? (
             hasRecording ? (
               <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-md bg-emerald-100 text-emerald-950 dark:bg-emerald-950/70 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-800">
@@ -100,6 +103,10 @@ export function KajianCard({ kajian }: { kajian: WPKajian }) {
                 {tanggalDisplay && <span className="opacity-90">({tanggalDisplay})</span>}
               </span>
             )
+          ) : isJustFinished ? (
+            <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-300 dark:border-slate-700">
+              <span>Selesai Berlangsung</span>
+            </span>
           ) : (
             <span
               className={`text-xs font-semibold px-2.5 py-1 rounded-md border ${
