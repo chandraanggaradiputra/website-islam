@@ -19,18 +19,19 @@ function extractTime(timeStr?: string): { hours: number; minutes: number } | nul
   return null;
 }
 
+export const GRACE_PERIOD_MS = 24 * 60 * 60 * 1000; // 24 jam
+
 /**
- * Memvalidasi apakah kajian tematik telah melewati tanggal & jam pelaksanaannya.
- * Berdasarkan zona waktu Indonesia Barat (WIB / +07:00).
- * Kajian Rutin tanpa tanggal_kajian spesifik tidak pernah kedaluwarsa secara otomatis (return false).
+ * Mengambil timestamp milidetik akhir pelaksanaan kajian di zona waktu WIB (+07:00).
+ * Mengembalikan null jika tanggal tidak valid atau tidak disediakan (misal kajian rutin).
  */
-export function isKajianExpired(
+export function getKajianEndTimestamp(
   tanggalKajian?: string,
   jamSelesai?: string,
   jamMulai?: string
-): boolean {
+): number | null {
   if (!tanggalKajian || typeof tanggalKajian !== 'string' || !tanggalKajian.trim()) {
-    return false;
+    return null;
   }
 
   const rawDate = tanggalKajian.trim();
@@ -54,7 +55,7 @@ export function isKajianExpired(
 
   // Validasi format tanggal YYYY-MM-DD
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateFormatted)) {
-    return false;
+    return null;
   }
 
   // Dapatkan waktu (prioritas jam_selesai, lalu jam_mulai, fallback akhir hari 23:59)
@@ -67,10 +68,47 @@ export function isKajianExpired(
   const targetTimestamp = new Date(targetIso).getTime();
 
   if (isNaN(targetTimestamp)) {
+    return null;
+  }
+
+  return targetTimestamp;
+}
+
+/**
+ * Memvalidasi apakah kajian tematik telah melewati tanggal & jam pelaksanaannya
+ * ditambah masa tenggang (grace period) 24 jam.
+ * Berdasarkan zona waktu Indonesia Barat (WIB / +07:00).
+ * Kajian Rutin tanpa tanggal_kajian spesifik tidak pernah kedaluwarsa secara otomatis (return false).
+ */
+export function isKajianExpired(
+  tanggalKajian?: string,
+  jamSelesai?: string,
+  jamMulai?: string
+): boolean {
+  const endTimestamp = getKajianEndTimestamp(tanggalKajian, jamSelesai, jamMulai);
+  if (endTimestamp === null) {
     return false;
   }
 
-  return Date.now() > targetTimestamp;
+  return Date.now() > endTimestamp + GRACE_PERIOD_MS;
+}
+
+/**
+ * Mendeteksi apakah kajian tematik telah melewati jam selesainya
+ * tetapi masih berada dalam batas masa tenggang (grace period) 24 jam.
+ */
+export function isKajianJustFinished(
+  tanggalKajian?: string,
+  jamSelesai?: string,
+  jamMulai?: string
+): boolean {
+  const endTimestamp = getKajianEndTimestamp(tanggalKajian, jamSelesai, jamMulai);
+  if (endTimestamp === null) {
+    return false;
+  }
+
+  const now = Date.now();
+  return now > endTimestamp && now <= endTimestamp + GRACE_PERIOD_MS;
 }
 
 /**
