@@ -64,8 +64,15 @@ type JsonRpcResponse = JsonRpcSuccessResponse | JsonRpcErrorResponse;
 
 const MCP_SERVER_INFO = {
   name: "banten-mengaji-mcp",
-  version: "1.2.0",
+  version: "1.3.0",
 } as const;
+
+const SENSITIVE_TOOLS = new Set([
+  "dispatch_agent_task",
+  "create_github_issue",
+  "list_github_issues",
+  "read_repo_file",
+]);
 
 const MCP_TOOLS: McpTool[] = [
   // ─── Tools Dakwah ───────────────────────────────────────────────────────────
@@ -592,7 +599,8 @@ async function executeGetMasjidDirectory(
 async function handleMethod(
   method: string,
   params: Record<string, unknown>,
-  id: string | number | null
+  id: string | number | null,
+  isAuth: boolean
 ): Promise<JsonRpcResponse> {
   switch (method) {
     case "initialize":
@@ -617,6 +625,15 @@ async function handleMethod(
         !Array.isArray(params.arguments)
           ? (params.arguments as Record<string, unknown>)
           : {};
+
+      // Proteksi tool sensitif DevOps: Hanya dapat dipanggil jika isAuth bernilai true
+      if (SENSITIVE_TOOLS.has(toolName) && !isAuth) {
+        return rpcError(
+          id,
+          RPC.UNAUTHORIZED,
+          `Akses ditolak: Tool '${toolName}' memerlukan otorisasi AGENT_SECRET_KEY.`
+        );
+      }
 
       try {
         let result: unknown;
@@ -679,21 +696,6 @@ export async function GET(): Promise<NextResponse> {
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  // Auth guard
-  if (!isAuthorized(request)) {
-    return NextResponse.json(
-      rpcError(null, RPC.UNAUTHORIZED, "Unauthorized"),
-      {
-        status: 401,
-        headers: {
-          ...nocacheHeaders(),
-          "WWW-Authenticate":
-            'Bearer resource_metadata="https://banten-mengaji.vercel.app/.well-known/oauth-protected-resource"',
-        },
-      }
-    );
-  }
-
   // Batasi ukuran body maksimal 64KB
   const contentLength = Number(request.headers.get("content-length") || 0);
   if (contentLength > MAX_BODY_BYTES) {
@@ -722,8 +724,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     );
   }
 
+  const isAuth = isAuthorized(request);
   const params = body.params ?? {};
-  const response = await handleMethod(body.method, params, body.id ?? null);
+  const response = await handleMethod(body.method, params, body.id ?? null, isAuth);
 
   // Mapping status HTTP yang presisi
   const httpStatus = isErrorResponse(response)
@@ -740,9 +743,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             : 500
     : 200;
 
+  const headers: Record<string, string> = {
+    ...(nocacheHeaders() as Record<string, string>),
+  };
+  if (httpStatus === 401) {
+    headers["WWW-Authenticate"] = 'Bearer error="unauthorized"';
+  }
+
   return NextResponse.json(response, {
     status: httpStatus,
-    headers: nocacheHeaders(),
+    headers,
   });
 }
 

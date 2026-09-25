@@ -1,65 +1,63 @@
-# Walkthrough: [TASK-BM-003] Peningkatan Aksesibilitas WCAG 2.2 AA, Responsivitas Mobile, dan Zero Silent Fallback (page.tsx & KajianCard.tsx)
+# Walkthrough: [TASK-BM-004] Penyesuaian Handshake MCP Gemini pada app/api/mcp/route.ts
 
-Dokumen ini merupakan laporan resmi pelaksanaan dan verifikasi teknis perbaikan antarmuka publik beranda (`app/page.tsx`) dan kartu kajian (`components/kajian/KajianCard.tsx`) sesuai standar audit frontend modern WCAG 2.2 Level AA.
-
----
-
-## 1. Ringkasan Perbaikan Arsitektur & Aksesibilitas
-
-### A. Komponen Kartu Kajian (`components/kajian/KajianCard.tsx`)
-1. **Focus State Standar WCAG 2.2 AA (`FOCUS_RING`)**:
-   - Menerapkan ring fokus berstandar `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#093c96] dark:focus-visible:ring-blue-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900` pada seluruh tautan aksi.
-2. **Pembersihan & Sanitasi Tanggal/Hari**:
-   - Fungsi `formatTanggal(rawDate?: string): string | null` menangani format standar ISO (`YYYY-MM-DD`) dan format numerik ACF (`YYYYMMDD`), serta mengembalikan `null` bila data tidak valid sehingga tidak ada lagi teks `"undefined"` yang bocor ke layar pengguna.
-   - Variabel `jadwalHari` divalidasi ketat (`Setiap ${acf.hari_kajian.trim()}`) hanya jika field tersedia.
-3. **Rasio Kontras Warna (Contrast Ratio >= 4.5:1)**:
-   - Warna teks sekunder/muted ditingkatkan dari `text-slate-600`/`text-slate-400` menjadi `text-slate-700 dark:text-slate-300 font-medium`.
-   - Judul ustadz dan masjid menggunakan kontras tinggi `text-slate-900 dark:text-slate-100`.
-   - Seluruh ikon Lucide diberi `aria-hidden="true"` untuk menjaga pengalaman pembaca layar (screen reader) tetap bersih.
-4. **Responsivitas Layar Sempit (Mobile 375px)**:
-   - Baris nama masjid diubah dari `line-clamp-1` menjadi `line-clamp-2` dengan `items-start` agar nama masjid yang panjang tetap terbaca utuh di layar HP tanpa terpotong.
-5. **Aksesibilitas Tombol & Touch Target (WCAG 2.5.5 / 2.5.8)**:
-   - Tombol link detail menerapkan touch target minimum `min-h-[44px]`.
-   - Ditambahkan label konteks screen reader `<span className="sr-only">: {htmlParser(title.rendered)}</span>` sehingga pengguna tuna netra dapat membedakan tujuan navigasi antar kartu kajian.
+Dokumen ini merupakan laporan resmi implementasi dan verifikasi teknis penyesuaian handshake protokol Model Context Protocol (MCP) untuk integrasi Google Gemini Connected Apps pada portal dakwah Banten Mengaji (`/api/mcp`).
 
 ---
 
-### B. Beranda Utama (`app/page.tsx`)
-1. **Hierarki Heading H1-H3 Semantik**:
-   - Ditambahkan heading tingkat halaman tunggal `<h1 className="sr-only">Banten Mengaji, Portal Dakwah Sunnah Banten</h1>`.
-   - Judul seksi ("Waktu Sholat", "Kajian Terdekat", "Direktori Masjid", "Artikel Terbaru") distandarisasi sebagai `<h2>` dengan atribut `aria-labelledby`.
-   - Kartu kajian dan artikel menggunakan `<h3>` untuk menjaga hierarki dokumen HTML tetap valid dan terstruktur.
-2. **Zero Silent Fallback & Ketahanan Runtime (`Promise.allSettled`)**:
-   - Pemanggilan data diubah menggunakan `Promise.allSettled([getKajianList(), getMasjidList(), getArtikelList()])`.
-   - Kegagalan pengambilan data (fetch error) dipisahkan secara tegas dari kondisi data kosong:
-     * **Kondisi Fetch Gagal (`null`)**: Merender `StateBox error` dengan `role="alert"` dan pesan informatif kepada pengguna untuk memuat ulang halaman, serta mencatat error ke konsol server.
-     * **Kondisi Data Kosong (`[]`)**: Merender `StateBox` informatif dengan `role="status"` ("Belum ada jadwal...", "Belum ada artikel...").
-3. **Helper Komponen Bersih**:
-   - `SectionHeader`: Menjamin seluruh tombol "Lihat Semua" memiliki touch target `min-h-[44px]`, styling `FOCUS_RING`, dan konteks screen reader yang eksplisit (`<span className="sr-only">: {srContext}</span>`).
-   - `StateBox`: Kotak pesan status seragam dengan varian normal dan error untuk kontras visual yang jelas.
-4. **Peningkatan Kartu Artikel**:
-   - Menambahkan `FOCUS_RING` pada tautan kartu artikel.
-   - Meningkatkan rasio kontras teks tanggal dan excerpt ke `text-slate-700 dark:text-slate-300 font-medium`.
+## 1. Konteks & Akar Masalah
+Sebelumnya, fungsi `POST` pada `app/api/mcp/route.ts` memblokir setiap request yang masuk di baris pertama dengan `!isAuthorized(request)`, mengembalikan status `401 Unauthorized` dengan header `WWW-Authenticate: Bearer resource_metadata="..."`.
+
+Ketika Google Gemini Connected Apps mencoba menginisialisasi sambungan MCP, klien Gemini mengirimkan metode handshake `initialize` dan `tools/list` tanpa header otorisasi pengguna. Respons 401 ini menyebabkan Google Gemini keliru menganggap bahwa server memerlukan penautan akun OAuth pengguna (*"Penautan akun diperlukan"*) dan membatalkan inisialisasi koneksi dakwah publik.
 
 ---
 
-## 2. Hasil Verifikasi Kualitas & Kompilasi
+## 2. Solusi yang Diterapkan
 
-| No | Pengujian | Perintah / Alat | Status | Catatan |
-|:---|:---|:---|:---:|:---|
-| 1 | TypeScript Typecheck | `npx tsc --noEmit` | **PASS** | 0 error, semua tipe data dan props valid |
-| 2 | Code Linting | `npx eslint app/page.tsx components/kajian/KajianCard.tsx` | **PASS** | 0 error, 0 warning |
-| 3 | Production Build | `npm run build` | **PASS** | 23/23 halaman statis berhasil dioptimasi, zero build break |
+### A. Metode MCP & Tools Dakwah Publik (Tanpa Otorisasi)
+Mengizinkan panggilan tanpa header otorisasi untuk:
+- `initialize`: Mengembalikan metadata versi protokol `2024-11-05`, kapabilitas, dan info server (`banten-mengaji-mcp` v1.3.0).
+- `notifications/initialized`: Menerima konfirmasi inisialisasi dari klien.
+- `ping`: Uji heartbeat konektivitas klien.
+- `tools/list`: Menampilkan seluruh daftar perkakas (tools) yang didukung server.
+- `get_upcoming_kajian`: Tool dakwah publik jadwal kajian sunnah se-Banten.
+- `get_masjid_directory`: Tool dakwah publik direktori masjid sunnah se-Banten.
+
+### B. Isolasi Otorisasi Tool Sensitif DevOps (Wajib `AGENT_SECRET_KEY`)
+Pemeriksaan otorisasi via `timingSafeEqual` (`isAuthorized(request)`) dikunci khusus pada eksekusi 4 tool DevOps:
+- `dispatch_agent_task`
+- `create_github_issue`
+- `list_github_issues`
+- `read_repo_file`
+
+Jika tool-tool di atas dipanggil tanpa header `Authorization: Bearer <AGENT_SECRET_KEY>` atau `x-agent-secret` yang valid, server mengembalikan error standar JSON-RPC 2.0:
+- **Code**: `-32000` (`RPC.UNAUTHORIZED`)
+- **HTTP Status**: `401 Unauthorized`
+- **Header**: `WWW-Authenticate: Bearer error="unauthorized"`
 
 ---
 
-## 3. Matriks Kepatuhan Aksesibilitas WCAG 2.2
+## 3. Hasil Pengujian Verifikasi Runtime (9 Skenario Uji)
 
-| Kriteria WCAG | Level | Keterangan Implementasi | Hasil |
-|:---|:---:|:---|:---:|
-| **1.3.1 Info and Relationships** | A | Hierarki dokumen rapi: `<h1>` unik, `<h2>` pada tiap section, `<h3>` pada judul kartu | **Lolos** |
-| **1.4.3 Contrast (Minimum)** | AA | Rasio kontras teks sekunder `text-slate-700 dark:text-slate-300` >= 4.5:1 | **Lolos** |
-| **2.4.4 Link Purpose (In Context)** | A | Tautan "Lihat Semua" dan kartu memiliki label `sr-only` spesifik konteks | **Lolos** |
-| **2.4.7 Focus Visible** | AA | Ring fokus kontras tinggi `FOCUS_RING` 2px dengan offset pada keyboard navigation | **Lolos** |
-| **2.5.8 Target Size (Minimum)** | AA | Target klik/sentuh tombol navigasi berukuran minimal `44px x 44px` | **Lolos** |
-| **4.1.3 Status Messages** | AA | Pesan error/status menggunakan `role="alert"` dan `role="status"` | **Lolos** |
+Pengujian otomatis dijalankan melalui skrip `scripts/test-mcp-handshake.mjs` terhadap server Next.js lokal:
+
+| No | Skenario Pengujian | Metode / Tool | Otorisasi | Ekspektasi | Status HTTP | Hasil | Status |
+|:---|:---|:---|:---:|:---:|:---:|:---|:---:|
+| 1 | Handshake `initialize` | `initialize` | Tanpa Auth | Status 200, metadata serverInfo | 200 | Server info valid, protocolVersion 2024-11-05 | **PASS** |
+| 2 | Handshake notifikasi | `notifications/initialized` | Tanpa Auth | Status 200, JSON-RPC 2.0 | 200 | Respons sukses diterima | **PASS** |
+| 3 | Handshake ping | `ping` | Tanpa Auth | Status 200 | 200 | Respons ping berhasil | **PASS** |
+| 4 | Katalog tools discovery | `tools/list` | Tanpa Auth | Status 200, daftar 6 tools | 200 | Array 6 tools lengkap dikembalikan | **PASS** |
+| 5 | Tool dakwah kajian | `get_upcoming_kajian` | Tanpa Auth | Status 200, data jadwal kajian | 200 | Jadwal kajian berhasil diambil | **PASS** |
+| 6 | Tool dakwah masjid | `get_masjid_directory` | Tanpa Auth | Status 200, direktori masjid | 200 | Direktori masjid berhasil diambil | **PASS** |
+| 7 | Tool sensitif repo file | `read_repo_file` | Tanpa Auth | Ditolak 401, code -32000 | 401 | Akses ditolak (UNAUTHORIZED) | **PASS** |
+| 8 | Tool sensitif dispatch task | `dispatch_agent_task` | Tanpa Auth | Ditolak 401, code -32000 | 401 | Akses ditolak (UNAUTHORIZED) | **PASS** |
+| 9 | Tool sensitif repo file | `read_repo_file` | Valid Secret | Status 200, baca `package.json` | 200 | Berkas legal berhasil dibaca | **PASS** |
+
+**Tingkat Kelulusan: 100% (9 dari 9 pengujian lulus sempurna)**.
+
+---
+
+## 4. Hasil Kompilasi & Build Produksi
+
+- **TypeScript Checking**: `npx tsc --noEmit` lolos **0 error**.
+- **ESLint Code Quality**: `npx eslint app/api/mcp/route.ts` lolos **0 error, 0 warning**.
+- **Production Build**: `npm run build` sukses mengompilasi dan mengoptimasi seluruh 23 halaman aplikasi Next.js 16 App Router tanpa kendala.
