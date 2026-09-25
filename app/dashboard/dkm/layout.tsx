@@ -1,6 +1,8 @@
 import { ReactNode } from 'react';
 import { DkmSubNav } from '@/components/dashboard/DkmSubNav';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * ============================================================================
  * Layout Khusus Area Dasbor Pengurus DKM

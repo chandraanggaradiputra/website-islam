@@ -1,9 +1,11 @@
 import { getSession } from '@/lib/auth';
-import { Calendar, ArrowUpRight, Clock, CheckCircle2, AlertCircle, Building2 } from 'lucide-react';
+import { Calendar, Clock, CheckCircle2, Building2 } from 'lucide-react';
 import Link from 'next/link';
 import { WPKajian } from '@/types';
 import { getMasjidList, enrichKajianWithMasjid } from '@/lib/wordpress';
 import { DKMKajianList } from '@/components/dashboard/DKMKajianList';
+
+export const dynamic = 'force-dynamic';
 
 async function getDKMKajian(token: string, masjidId?: number) {
   try {
