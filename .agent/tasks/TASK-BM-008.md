@@ -1,10 +1,11 @@
 # TASK: [TASK-BM-008] Fix Bidirectional Text Alignment (LTR/RTL) & Left Alignment pada Pesan Kajian
 Branch Target: staging-website-islam (lalu merge ke main)
-Dokumentasi Alur:
-1. Sebelum eksekusi: Buat implementation-plan.md untuk peninjauan bersama
-2. Setelah eksekusi: Verifikasi via Chrome DevTools MCP (Brave) & buat walkthrough.md sebagai laporan resmi
-
 GitHub Issue: https://github.com/chandraanggaradiputra/website-islam/issues/3
+
+Dokumentasi Alur & SOP Baru:
+1. Sebelum eksekusi: Wajib membuat implementation-plan.md dan mem-push / memposting isinya ke komentar GitHub Issue terkait (Issue #3) agar Admin Chan dapat meninjau implementasi secara mandiri.
+2. Review & Proceed: Tunggu lampu hijau (*Proceed*) dari Admin Chan atau Mas Chan di komentar GitHub / chat. *(Catatan: Untuk TASK-BM-008 saat ini, Mas Chan sudah memberikan izin PROCEED, silakan langsung eksekusi kode)*.
+3. Setelah eksekusi: Verifikasi via Chrome DevTools MCP (Brave) & posting ringkasan laporan walkthrough.md ke komentar GitHub Issue #3.
 
 ---
 
@@ -35,4 +36,4 @@ Identifikasi dan sesuaikan komponen yang merender format pesan kajian / card pre
 2. Validasi kualitas: Jalankan `npx tsc --noEmit` (harus 0 error) dan `npm run build` (sukses).
 3. Verifikasi browser via Chrome DevTools MCP (Brave): Pastikan kepatuhan aksesibilitas WCAG 2.2 AA (skor Lighthouse ≥ 95).
 4. Fast-forward merge dari branch `staging-website-islam` ke `main`, lalu push origin ke GitHub untuk memicu auto-deploy di Vercel.
-5. Dokumentasikan seluruh hasil pengujian dan screenshot verifikasi di `walkthrough.md`.
+5. Dokumentasikan seluruh hasil pengujian dan tangkapan layar di `walkthrough.md`, lalu post ringkasannya ke komentar GitHub Issue #3.
