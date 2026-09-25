@@ -63,7 +63,7 @@ type JsonRpcResponse = JsonRpcSuccessResponse | JsonRpcErrorResponse;
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const MCP_SERVER_INFO = {
-  name: "banten-mengaji-mcp",
+  name: "Banten Mengaji MCP",
   version: "1.3.0",
 } as const;
 
@@ -249,9 +249,8 @@ function nocacheHeaders(): HeadersInit {
     Pragma: "no-cache",
     Expires: "0",
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers":
-      "Authorization, Content-Type, x-agent-secret",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS, HEAD",
+    "Access-Control-Allow-Headers": "*",
   };
 }
 
@@ -268,10 +267,6 @@ function rpcError(
   message: string
 ): JsonRpcErrorResponse {
   return { jsonrpc: "2.0", error: { code, message }, id };
-}
-
-function isErrorResponse(r: JsonRpcResponse): r is JsonRpcErrorResponse {
-  return "error" in r;
 }
 
 /**
@@ -617,6 +612,15 @@ async function handleMethod(
     case "tools/list":
       return rpcSuccess(id, { tools: MCP_TOOLS });
 
+    case "resources/list":
+      return rpcSuccess(id, { resources: [] });
+
+    case "resources/templates/list":
+      return rpcSuccess(id, { resourceTemplates: [] });
+
+    case "prompts/list":
+      return rpcSuccess(id, { prompts: [] });
+
     case "tools/call": {
       const toolName = typeof params.name === "string" ? params.name : "";
       const toolArgs =
@@ -728,31 +732,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const params = body.params ?? {};
   const response = await handleMethod(body.method, params, body.id ?? null, isAuth);
 
-  // Mapping status HTTP yang presisi
-  const httpStatus = isErrorResponse(response)
-    ? response.error.code === RPC.UNAUTHORIZED
-      ? 401
-      : response.error.code === RPC.FORBIDDEN
-        ? 403
-        : response.error.code === RPC.INVALID_REQUEST ||
-            response.error.code === RPC.INVALID_PARAMS ||
-            response.error.code === RPC.PARSE
-          ? 400
-          : response.error.code === RPC.METHOD_NOT_FOUND
-            ? 404
-            : 500
-    : 200;
-
-  const headers: Record<string, string> = {
-    ...(nocacheHeaders() as Record<string, string>),
-  };
-  if (httpStatus === 401) {
-    headers["WWW-Authenticate"] = 'Bearer error="unauthorized"';
-  }
-
+  // Seluruh respon JSON-RPC (baik sukses maupun error internal) WAJIB mengembalikan HTTP 200
+  // agar layer HTTP Gemini tidak memicu proteksi OAuth (401) atau deteksi URL rusak (404/500).
   return NextResponse.json(response, {
-    status: httpStatus,
-    headers,
+    status: 200,
+    headers: nocacheHeaders(),
   });
 }
 
