@@ -3,31 +3,75 @@ import Image from 'next/image';
 import { WPKajian, formatKategoriJamaah } from '@/types';
 import { MapPin, Clock, Calendar, User, Video } from 'lucide-react';
 import { isKajianExpired } from '@/lib/kajian';
+import htmlParser from 'html-react-parser';
+
+const FOCUS_RING =
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#093c96] dark:focus-visible:ring-blue-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900';
+
+function formatTanggal(rawDate?: string): string | null {
+  if (!rawDate || typeof rawDate !== 'string') return null;
+  const clean = rawDate.trim();
+  let year = '';
+  let month = '';
+  let day = '';
+
+  if (clean.includes('-')) {
+    const parts = clean.split('-');
+    year = parts[0] || '';
+    month = parts[1] || '';
+    day = parts[2] || '';
+  } else if (/^\d{8}$/.test(clean)) {
+    year = clean.slice(0, 4);
+    month = clean.slice(4, 6);
+    day = clean.slice(6, 8);
+  }
+
+  const monthNum = parseInt(month, 10);
+  const dayNum = parseInt(day, 10);
+
+  if (!year || isNaN(monthNum) || isNaN(dayNum) || monthNum < 1 || monthNum > 12) {
+    return null;
+  }
+
+  const monthNames = [
+    'Januari',
+    'Februari',
+    'Maret',
+    'April',
+    'Mei',
+    'Juni',
+    'Juli',
+    'Agustus',
+    'September',
+    'Oktober',
+    'November',
+    'Desember',
+  ];
+
+  return `${dayNum} ${monthNames[monthNum - 1]} ${year}`;
+}
 
 export function KajianCard({ kajian }: { kajian: WPKajian }) {
   const { title, acf, slug, masjid_detail, masjid_name } = kajian;
-  const masjidName = masjid_name 
-    || (masjid_detail ? masjid_detail.title.rendered : (acf?.nama_masjid_manual || 'Masjid tidak diketahui'));
+  const masjidName =
+    masjid_name ||
+    (masjid_detail
+      ? masjid_detail.title.rendered
+      : acf?.nama_masjid_manual || 'Masjid tidak diketahui');
 
   const isRutin = acf?.jenis_kajian === 'rutin';
-  
+
   // Deteksi status selesai / lampau untuk penandaan kartu arsip
-  const isSelesai = acf?.status_kajian === 'selesai' || isKajianExpired(acf?.tanggal_kajian, acf?.jam_selesai, acf?.jam_mulai);
+  const isSelesai =
+    acf?.status_kajian === 'selesai' ||
+    isKajianExpired(acf?.tanggal_kajian, acf?.jam_selesai, acf?.jam_mulai);
   const hasRecording = Boolean(acf?.link_streaming && acf.link_streaming.trim() !== '');
 
-  // Format tanggal jika ada tanpa menyebabkan hydration mismatch (hindari toLocaleDateString bawaan)
-  let tanggalDisplay = '';
-  if (acf?.tanggal_kajian) {
-    const [year, month, day] = acf.tanggal_kajian.split('-');
-    if (year && month && day) {
-      const monthNames = [
-        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-      ];
-      tanggalDisplay = `${parseInt(day, 10)} ${monthNames[parseInt(month, 10) - 1]} ${year}`;
-    }
-  }
-  
+  const tanggalDisplay = formatTanggal(acf?.tanggal_kajian);
+  const jadwalHari = acf?.hari_kajian && acf.hari_kajian.trim()
+    ? `Setiap ${acf.hari_kajian.trim()}`
+    : null;
+
   return (
     <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden hover:shadow-md transition-shadow flex flex-col h-full">
       {kajian.featured_media_url && (
@@ -47,7 +91,7 @@ export function KajianCard({ kajian }: { kajian: WPKajian }) {
           {isSelesai ? (
             hasRecording ? (
               <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-md bg-emerald-100 text-emerald-950 dark:bg-emerald-950/70 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-800">
-                <Video className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-300" />
+                <Video className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-300" aria-hidden="true" />
                 <span>Selesai - Rekaman Tersedia</span>
               </span>
             ) : (
@@ -86,45 +130,53 @@ export function KajianCard({ kajian }: { kajian: WPKajian }) {
             Kajian pekan ini diliburkan (misal karena pemateri udzur).
           </div>
         )}
-        
+
         <h3 className="font-bold text-lg leading-tight mb-2 text-slate-900 dark:text-slate-100 line-clamp-2">
-          {title.rendered}
+          {htmlParser(title.rendered)}
         </h3>
-        
-        <div className="space-y-2 mt-4 text-sm text-slate-600 dark:text-slate-400">
+
+        <div className="space-y-2 mt-4 text-sm text-slate-700 dark:text-slate-300 font-medium">
           {acf?.nama_ustadz && (
             <div className="flex items-center gap-2">
-              <User className="w-4 h-4 text-slate-400" />
-              <span className="font-medium text-slate-800 dark:text-slate-200">{acf.nama_ustadz}</span>
+              <User className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0" aria-hidden="true" />
+              <span className="font-semibold text-slate-900 dark:text-slate-100">
+                {acf.nama_ustadz}
+              </span>
             </div>
           )}
-          {(isRutin && acf?.hari_kajian) || tanggalDisplay ? (
+          {(isRutin && jadwalHari) || tanggalDisplay ? (
             <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-slate-400" />
-              <span>{isRutin ? `Setiap ${acf?.hari_kajian}` : tanggalDisplay}</span>
+              <Calendar className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0" aria-hidden="true" />
+              <span>{isRutin ? jadwalHari : tanggalDisplay}</span>
             </div>
           ) : null}
           {(acf?.jam_mulai || acf?.waktu_keterangan) && (
             <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-slate-400" />
+              <Clock className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0" aria-hidden="true" />
               <span>
-                {acf?.waktu_keterangan || (acf?.jam_mulai ? `${acf.jam_mulai} - ${acf.jam_selesai || 'Selesai'}` : '')}
+                {acf?.waktu_keterangan ||
+                  (acf?.jam_mulai
+                    ? `${acf.jam_mulai} - ${acf.jam_selesai || 'Selesai'}`
+                    : '')}
               </span>
             </div>
           )}
-          <div className="flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-slate-400" />
-            <span className="line-clamp-1">{masjidName}</span>
+          <div className="flex items-start gap-2">
+            <MapPin className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0 mt-0.5" aria-hidden="true" />
+            <span className="line-clamp-2">{masjidName}</span>
           </div>
         </div>
       </div>
-      
+
       <div className="border-t border-slate-100 dark:border-slate-800 p-2 bg-slate-50 dark:bg-slate-900/50">
-        <Link 
+        <Link
           href={`/jadwal-kajian/${slug}`}
-          className="min-h-[44px] flex items-center justify-center w-full text-center text-sm font-semibold text-[#093c96] hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors"
+          className={`min-h-[44px] flex items-center justify-center w-full text-center text-sm font-semibold text-[#093c96] hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors ${FOCUS_RING}`}
         >
-          {isSelesai && hasRecording ? 'Tonton Rekaman & Faedah' : 'Lihat Detail Lengkap'}
+          <span>
+            {isSelesai && hasRecording ? 'Tonton Rekaman & Faedah' : 'Lihat Detail Lengkap'}
+          </span>
+          <span className="sr-only">: {htmlParser(title.rendered)}</span>
         </Link>
       </div>
     </div>
