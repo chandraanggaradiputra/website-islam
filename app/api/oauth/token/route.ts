@@ -9,7 +9,7 @@ export async function POST(): Promise<NextResponse> {
     {
       access_token: secret,
       token_type: "Bearer",
-      expires_in: 315360000,
+      expires_in: 315360000, // 10 tahun (tidak kedaluwarsa)
       refresh_token: "bm_refresh_token_2026",
       scope: "mcp:tools",
     },

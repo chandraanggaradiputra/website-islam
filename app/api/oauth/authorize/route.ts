@@ -22,6 +22,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   }
 
   try {
+    // Buat authorization code unik berbasis timestamp
     const code =
       "bm_auth_" + Buffer.from(Date.now().toString()).toString("base64url");
     const targetUrl = new URL(redirectUri);
