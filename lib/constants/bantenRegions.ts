@@ -19,6 +19,17 @@ export const DAFTAR_KOTA_KABUPATEN: KotaKabupatenBanten[] = [
   'Kabupaten Tangerang',
 ];
 
+export const BANTEN_MYQURAN_IDS: Record<KotaKabupatenBanten, string> = {
+  'Kota Serang': '1106',
+  'Kota Cilegon': '1105',
+  'Kota Tangerang': '1107',
+  'Kota Tangerang Selatan': '1108',
+  'Kabupaten Serang': '1103',
+  'Kabupaten Pandeglang': '1102',
+  'Kabupaten Lebak': '1101',
+  'Kabupaten Tangerang': '1104',
+};
+
 export interface BantenRegion {
   id: string;
   name: KotaKabupatenBanten;

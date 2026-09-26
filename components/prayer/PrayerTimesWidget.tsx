@@ -1,28 +1,44 @@
 // components/prayer/PrayerTimesWidget.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { fetchMonthlyPrayerTimesAction } from '@/app/actions/prayer';
-import { Clock, MapPin, CalendarDays, ArrowRight, LocateFixed, Loader2 } from 'lucide-react';
+import { Clock, MapPin, CalendarDays, ArrowRight, LocateFixed, Loader2, Sparkles } from 'lucide-react';
 import { BANTEN_REGIONS, KotaKabupatenBanten, findNearestBantenRegion } from '@/lib/constants/bantenRegions';
 import { EQuranDailyShalat } from '@/types/prayer';
 
+const INDONESIAN_MONTHS = [
+  'Januari',
+  'Februari',
+  'Maret',
+  'April',
+  'Mei',
+  'Juni',
+  'Juli',
+  'Agustus',
+  'September',
+  'Oktober',
+  'November',
+  'Desember',
+];
+
 export function PrayerTimesWidget() {
   const [now, setNow] = useState<Date | null>(null);
-  const [region, setRegion] = useState<KotaKabupatenBanten>('Kota Serang');
+  const [region, setRegion] = useState<KotaKabupatenBanten>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('banten_mengaji_region');
+      if (stored && BANTEN_REGIONS.some((r) => r.name === stored)) {
+        return stored as KotaKabupatenBanten;
+      }
+    }
+    return 'Kota Serang';
+  });
   const [isLocating, setIsLocating] = useState(false);
   const [todaySchedule, setTodaySchedule] = useState<EQuranDailyShalat | null>(null);
-  const [nextPrayer, setNextPrayer] = useState('Subuh');
-  const [prayerItems, setPrayerItems] = useState<{name: string, time: string, isPassed: boolean, isNext: boolean}[]>([]);
+  const [hijriDate, setHijriDate] = useState<string>('');
 
   useEffect(() => {
-    // Sinkronisasi region dari localStorage (Hydration Safe)
-    const storedRegion = typeof window !== 'undefined' ? localStorage.getItem('banten_mengaji_region') : null;
-    if (storedRegion && BANTEN_REGIONS.some((r) => r.name === storedRegion)) {
-      setRegion(storedRegion as KotaKabupatenBanten);
-    }
-
     const timeout = setTimeout(() => setNow(new Date()), 0);
 
     const interval = setInterval(() => {
@@ -35,32 +51,52 @@ export function PrayerTimesWidget() {
     };
   }, []);
 
+  const dayNumber = now ? now.getDate() : 0;
+  const monthNumber = now ? now.getMonth() + 1 : 0;
+  const yearNumber = now ? now.getFullYear() : 0;
+
   useEffect(() => {
-    if (!now) return;
+    if (!dayNumber || !monthNumber || !yearNumber) return;
+    let isMounted = true;
+
     const fetchPrayerTimes = async () => {
-      const month = now.getMonth() + 1;
-      const year = now.getFullYear();
-      
       const pad = (n: number) => n.toString().padStart(2, '0');
-      const dateStr = `${year}-${pad(month)}-${pad(now.getDate())}`;
-      
+      const dateStr = `${yearNumber}-${pad(monthNumber)}-${pad(dayNumber)}`;
+
       try {
-        const data = await fetchMonthlyPrayerTimesAction(region, month, year);
-        const today = data.jadwal.find(d => d.tanggal_lengkap === dateStr) || data.jadwal[now.getDate() - 1];
-        if (today) setTodaySchedule(today);
+        const data = await fetchMonthlyPrayerTimesAction(region, monthNumber, yearNumber);
+        if (!isMounted) return;
+
+        const today =
+          data.jadwal.find((d) => d.tanggal_lengkap === dateStr) ||
+          data.jadwal[dayNumber - 1];
+        if (today) {
+          setTodaySchedule(today);
+          if (today.tanggal_hijriah) {
+            setHijriDate(today.tanggal_hijriah);
+          } else if (data.tanggal_hijriah_hari_ini) {
+            setHijriDate(data.tanggal_hijriah_hari_ini);
+          }
+        }
       } catch (error) {
-        console.error("Failed to fetch prayer times", error);
+        console.error('Failed to fetch prayer times', error);
       }
     };
-    
-    fetchPrayerTimes();
-  }, [region, now?.getDate(), now?.getMonth(), now?.getFullYear()]);
 
-  useEffect(() => {
-    if (!now || !todaySchedule) return;
+    fetchPrayerTimes();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [region, dayNumber, monthNumber, yearNumber]);
+
+  const { prayerItems, nextPrayer } = useMemo(() => {
+    if (!now || !todaySchedule) {
+      return { prayerItems: [], nextPrayer: 'Subuh' };
+    }
 
     const [year, month, day] = todaySchedule.tanggal_lengkap.split('-');
-    
+
     const parseTime = (timeStr: string) => {
       const [h, m] = timeStr.split(':').map(Number);
       return new Date(Number(year), Number(month) - 1, Number(day), h, m);
@@ -68,6 +104,7 @@ export function PrayerTimesWidget() {
 
     const rawTimes = [
       { name: 'Subuh', time: todaySchedule.subuh, dateObj: parseTime(todaySchedule.subuh) },
+      { name: 'Terbit', time: todaySchedule.terbit, dateObj: parseTime(todaySchedule.terbit) },
       { name: 'Dzuhur', time: todaySchedule.dzuhur, dateObj: parseTime(todaySchedule.dzuhur) },
       { name: 'Ashar', time: todaySchedule.ashar, dateObj: parseTime(todaySchedule.ashar) },
       { name: 'Maghrib', time: todaySchedule.maghrib, dateObj: parseTime(todaySchedule.maghrib) },
@@ -93,8 +130,7 @@ export function PrayerTimesWidget() {
       };
     });
 
-    setPrayerItems(items);
-    setNextPrayer(nextName);
+    return { prayerItems: items, nextPrayer: nextName };
   }, [now, todaySchedule]);
 
   const handleRegionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -107,10 +143,10 @@ export function PrayerTimesWidget() {
 
   const handleLocateMe = () => {
     if (!navigator.geolocation) {
-      alert("Browser Anda tidak mendukung deteksi lokasi otomatis.");
+      alert('Browser Anda tidak mendukung deteksi lokasi otomatis.');
       return;
     }
-    
+
     setIsLocating(true);
     navigator.geolocation.getCurrentPosition(
       (position) => {
@@ -124,26 +160,29 @@ export function PrayerTimesWidget() {
       },
       (error) => {
         console.error(error);
-        alert("Gagal mendeteksi lokasi. Pastikan izin akses lokasi diberikan.");
+        alert('Gagal mendeteksi lokasi. Pastikan izin akses lokasi diberikan.');
         setIsLocating(false);
       },
       { timeout: 10000, maximumAge: 60000 }
     );
   };
 
-  if (!now || !prayerItems.length) {
+  if (!now || !prayerItems.length || !todaySchedule) {
     return (
-      <div className="bg-slate-100 dark:bg-slate-900 rounded-2xl w-full h-40 animate-pulse flex items-center justify-center">
+      <div className="bg-slate-100 dark:bg-slate-900 rounded-2xl w-full h-44 animate-pulse flex items-center justify-center">
         <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
       </div>
     );
   }
 
+  const tanggalMasehi = `${now.getDate()} ${INDONESIAN_MONTHS[now.getMonth()]} ${now.getFullYear()} M`;
+
   return (
     <div className="bg-gradient-to-br from-[#093c96] to-blue-900 shadow-lg p-5 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden text-white">
-      <div className="flex justify-between items-center mb-4 gap-2">
+      {/* Top Header: Region Picker & Next Prayer Indicator */}
+      <div className="flex justify-between items-center mb-3 gap-2">
         <div className="flex items-center gap-2 text-blue-100 min-w-0">
-          <MapPin className="w-4 h-4 shrink-0" />
+          <MapPin className="w-4 h-4 shrink-0 text-blue-300" />
           <select
             aria-label="Pilih Kota atau Wilayah Sholat"
             value={region}
@@ -161,48 +200,57 @@ export function PrayerTimesWidget() {
             onClick={handleLocateMe}
             disabled={isLocating}
             title="Deteksi Lokasi Saya"
-            className="shrink-0 p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors disabled:opacity-50"
+            aria-label="Deteksi Lokasi Saya"
+            className="shrink-0 p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors disabled:opacity-50 min-h-[36px] min-w-[36px] flex items-center justify-center cursor-pointer"
           >
-            {isLocating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <LocateFixed className="w-3.5 h-3.5" />}
+            {isLocating ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <LocateFixed className="w-3.5 h-3.5" />
+            )}
           </button>
         </div>
-        <div className="flex items-center gap-1.5 bg-white/10 backdrop-blur px-3 py-1 rounded-full text-xs shrink-0">
-          <Clock className="w-3.5 h-3.5" />
+        <div className="flex items-center gap-1.5 bg-white/10 backdrop-blur px-3 py-1 rounded-full text-xs shrink-0 font-medium">
+          <Clock className="w-3.5 h-3.5 text-blue-200" />
           <span>Menuju {nextPrayer}</span>
         </div>
       </div>
 
-      <div className="grid grid-cols-6 gap-2 min-[450px]:grid-cols-5 mb-4">
-        {prayerItems.map((item, index) => {
-          const isFirstThree = index < 3;
-          const colSpanClass = isFirstThree 
-            ? 'col-span-2 min-[450px]:col-span-1' 
-            : 'col-span-3 min-[450px]:col-span-1';
-
-          return (
-            <div
-              key={item.name}
-              className={`flex flex-col items-center justify-center rounded-xl p-2.5 transition-all text-center ${colSpanClass} ${
-                item.isNext
-                  ? 'bg-white text-[#093c96] shadow-md scale-105 font-bold'
-                  : 'bg-white/10 text-blue-100 hover:bg-white/15'
-              }`}
-            >
-              <span className="text-xs font-semibold tracking-tight">{item.name}</span>
-              <span className="text-sm font-extrabold mt-0.5">{item.time}</span>
-            </div>
-          );
-        })}
+      {/* Penanggalan Ganda Masehi & Kalender Hijriah */}
+      <div className="flex items-center gap-2 text-xs text-blue-100 font-medium mb-3.5 bg-black/15 px-3 py-1.5 rounded-lg border border-white/10">
+        <CalendarDays className="w-3.5 h-3.5 text-blue-300 shrink-0" />
+        <span className="truncate">
+          {todaySchedule.hari}, {tanggalMasehi}
+          {hijriDate ? ` / ${hijriDate}` : ''}
+        </span>
       </div>
 
+      {/* Grid 6 Waktu Shalat: Subuh, Terbit, Dzuhur, Ashar, Maghrib, Isya */}
+      <div className="grid grid-cols-3 min-[480px]:grid-cols-6 gap-2 mb-4">
+        {prayerItems.map((item) => (
+          <div
+            key={item.name}
+            className={`flex flex-col items-center justify-center rounded-xl p-2.5 transition-all text-center ${
+              item.isNext
+                ? 'bg-white text-[#093c96] shadow-md scale-105 font-bold'
+                : 'bg-white/10 text-blue-100 hover:bg-white/15'
+            }`}
+          >
+            <span className="text-xs font-semibold tracking-tight">{item.name}</span>
+            <span className="text-sm font-extrabold mt-0.5">{item.time}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Footer Info & Link Kalender 1 Bulan Penuh */}
       <div className="mt-4 pt-3 border-t border-white/15 flex flex-wrap items-center justify-between gap-2">
         <span className="text-xs text-blue-200 flex items-center gap-1.5">
-          <CalendarDays className="w-3.5 h-3.5 text-blue-300" />
-          <span>Jadwal Bimas Islam Kemenag</span>
+          <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
+          <span>Jadwal Bimas Islam Kemenag RI</span>
         </span>
         <Link
           href="/jadwal-sholat"
-          className="inline-flex items-center gap-1 text-xs font-semibold text-white bg-white/15 hover:bg-white/25 px-3 py-1 rounded-lg transition-colors group"
+          className="inline-flex items-center gap-1 text-xs font-semibold text-white bg-white/15 hover:bg-white/25 px-3 py-1.5 rounded-lg transition-colors group min-h-[36px]"
         >
           <span>Lihat Jadwal 1 Bulan Penuh</span>
           <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
