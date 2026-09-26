@@ -180,7 +180,7 @@ export function MonthlyPrayerCalendar({
                 Waktu Sholat Hari Ini ({todaySchedule.hari},{' '}
                 {todaySchedule.tanggal} {MONTH_NAMES[currentMonth - 1]}{' '}
                 {currentYear} M
-                {currentData.tanggal_hijriah_hari_ini
+                {currentData?.tanggal_hijriah_hari_ini
                   ? ` / ${currentData.tanggal_hijriah_hari_ini}`
                   : ''}
                 ):
@@ -252,6 +252,7 @@ export function MonthlyPrayerCalendar({
             {/* Dropdown khusus Desktop (md:flex) */}
             <div className="hidden md:flex items-center gap-2">
               <select
+                aria-label="Pilih Kota atau Wilayah Sholat"
                 value={region}
                 onChange={handleRegionChange}
                 className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 font-medium text-sm rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-[#093c96]/20 outline-none hover:border-[#093c96]/50 transition-colors cursor-pointer"
@@ -273,6 +274,7 @@ export function MonthlyPrayerCalendar({
             {/* Dropdown khusus Mobile (md:hidden) berdampingan di kiri tombol pagination */}
             <div className="flex items-center gap-2 flex-1 max-w-[200px] sm:max-w-xs md:hidden">
               <select
+                aria-label="Pilih Kota atau Wilayah Sholat"
                 value={region}
                 onChange={handleRegionChange}
                 className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 font-medium text-xs sm:text-sm rounded-lg px-2.5 py-1.5 focus:ring-2 focus:ring-[#093c96]/20 outline-none hover:border-[#093c96]/50 transition-colors cursor-pointer truncate"
@@ -377,7 +379,7 @@ export function MonthlyPrayerCalendar({
                         )}>
                           {item.tanggal} {MONTH_NAMES[currentMonth - 1].slice(0, 3)}
                         </span>
-                        <span className="text-slate-400 dark:text-slate-500 text-xs">
+                        <span className="text-slate-600 dark:text-slate-300 text-xs">
                           • {item.hari}
                         </span>
                         {isToday && (
