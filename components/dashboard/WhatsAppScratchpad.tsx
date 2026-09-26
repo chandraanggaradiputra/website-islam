@@ -209,13 +209,13 @@ export function WhatsAppScratchpad({
             ref={textareaRef}
             id={id}
             name={name}
-            dir="auto"
+            dir="ltr"
             rows={rows}
             value={currentText}
             onChange={handleTextChange}
             placeholder={defaultPlaceholder}
             required={required}
-            className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 p-3.5 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 font-sans leading-relaxed whitespace-pre-wrap transition-colors"
+            className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 p-3.5 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 font-sans leading-relaxed whitespace-pre-wrap transition-colors text-left [unicode-bidi:plaintext]"
           />
           <div className="flex items-center justify-between mt-1 px-1 text-[11px] text-slate-500 dark:text-slate-400">
             <span>Mendukung teks Arab, emoji, dan format WhatsApp</span>
@@ -229,8 +229,8 @@ export function WhatsAppScratchpad({
         <div className="rounded-xl border border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-950 p-4 min-h-[160px] text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-relaxed overflow-x-auto">
           {currentText.trim() ? (
             <div
-              dir="auto"
-              className="whitespace-pre-wrap break-words leading-relaxed [&_strong]:font-bold [&_strong]:text-slate-900 dark:[&_strong]:text-white [&_em]:italic [&_del]:line-through"
+              dir="ltr"
+              className="space-y-4 break-words leading-relaxed text-left [unicode-bidi:plaintext] [&_strong]:font-bold [&_strong]:text-slate-900 dark:[&_strong]:text-white [&_em]:italic [&_del]:line-through"
               dangerouslySetInnerHTML={{ __html: renderedPreview }}
             />
           ) : (

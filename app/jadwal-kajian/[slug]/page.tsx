@@ -275,9 +275,9 @@ export default async function SingleKajianPage({ params }: { params: Promise<{ s
             <div className="mb-8">
               <div className="flex items-center gap-2 mb-2">
                 <Video className="w-5 h-5 text-[#093c96] dark:text-blue-400" />
-                <h3 className="font-bold text-lg text-slate-900 dark:text-white">
+                <h2 className="font-bold text-lg text-slate-900 dark:text-white">
                   {isSelesai ? 'Rekaman Video Kajian' : 'Siaran Live / Streaming Kajian'}
-                </h3>
+                </h2>
               </div>
               <p className="text-xs text-slate-600 dark:text-slate-400 mb-4">
                 {isSelesai
@@ -297,12 +297,12 @@ export default async function SingleKajianPage({ params }: { params: Promise<{ s
                   <div className="p-2 rounded-xl bg-emerald-600 text-white shadow-xs">
                     <Book className="w-4 h-4" />
                   </div>
-                  <h3 className="font-bold text-lg text-slate-900 dark:text-white">
+                  <h2 className="font-bold text-lg text-slate-900 dark:text-white">
                     Catatan &amp; Ringkasan Faedah Kajian
-                  </h3>
+                  </h2>
                 </div>
 
-                <div className="p-5 sm:p-6 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-slate-200/80 dark:border-slate-800 text-sm sm:text-base text-slate-800 dark:text-slate-200 whitespace-pre-line leading-relaxed font-sans">
+                <div dir="ltr" className="p-5 sm:p-6 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-slate-200/80 dark:border-slate-800 text-sm sm:text-base text-slate-800 dark:text-slate-200 whitespace-pre-line leading-relaxed font-sans text-left [unicode-bidi:plaintext]">
                   {catatanFaedahText}
                 </div>
               </div>
@@ -316,9 +316,9 @@ export default async function SingleKajianPage({ params }: { params: Promise<{ s
                     <div className="p-2 rounded-xl bg-emerald-600 text-white shadow-xs">
                       <MessageSquareShare className="w-4 h-4" />
                     </div>
-                    <h3 className="font-bold text-lg text-slate-900 dark:text-white">
+                    <h2 className="font-bold text-lg text-slate-900 dark:text-white">
                       Informasi &amp; Teks Siaran WhatsApp
-                    </h3>
+                    </h2>
                   </div>
                   <CopyWhatsAppButton
                     textToCopy={finalWhatsAppText}
@@ -328,15 +328,15 @@ export default async function SingleKajianPage({ params }: { params: Promise<{ s
                 </div>
 
                 {acf?.catatan_faedah && (
-                  <div className="mb-4 p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/50 text-slate-800 dark:text-slate-200 text-sm leading-relaxed whitespace-pre-line">
+                  <div dir="ltr" className="mb-4 p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/50 text-slate-800 dark:text-slate-200 text-sm leading-relaxed whitespace-pre-line text-left [unicode-bidi:plaintext]">
                     {acf.catatan_faedah}
                   </div>
                 )}
 
                 {rawContentText.trim() && (
                   <div
-                    dir="auto"
-                    className="p-4 sm:p-6 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-slate-200/80 dark:border-slate-800 text-sm sm:text-base text-slate-800 dark:text-slate-200 whitespace-pre-wrap leading-relaxed font-sans break-words [&_strong]:font-bold [&_strong]:text-slate-900 dark:[&_strong]:text-white [&_em]:italic [&_del]:line-through"
+                    dir="ltr"
+                    className="p-4 sm:p-6 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-slate-200/80 dark:border-slate-800 text-sm sm:text-base text-slate-800 dark:text-slate-200 space-y-4 leading-relaxed font-sans break-words text-left [unicode-bidi:plaintext] [&_strong]:font-bold [&_strong]:text-slate-900 dark:[&_strong]:text-white [&_em]:italic [&_del]:line-through"
                     dangerouslySetInnerHTML={{ __html: formatWhatsAppText(rawContentText) }}
                   />
                 )}

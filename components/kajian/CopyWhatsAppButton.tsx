@@ -63,7 +63,7 @@ export function CopyWhatsAppButton({
         type="button"
         onClick={handleCopy}
         disabled={!textToCopy}
-        aria-label={`Salin format WhatsApp untuk ${title}`}
+        aria-label={copied ? 'Format WhatsApp Tersalin!' : `Salin WA untuk ${title}`}
         title="Salin teks format WhatsApp"
         className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all min-h-[44px] min-w-[44px] cursor-pointer disabled:opacity-50 ${
           copied
@@ -91,7 +91,7 @@ export function CopyWhatsAppButton({
       type="button"
       onClick={handleCopy}
       disabled={!textToCopy}
-      aria-label={`Salin teks format siaran WhatsApp untuk ${title}`}
+      aria-label={copied ? 'Format WhatsApp Tersalin!' : `Salin Format WhatsApp untuk ${title}`}
       className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all min-h-[44px] cursor-pointer disabled:opacity-50 ${
         copied
           ? 'bg-emerald-600 text-white shadow-md ring-2 ring-emerald-400/40'
