@@ -105,7 +105,7 @@ export function GlobalSearch({ triggerClassName, triggerText = "Cari...", iconOn
       <button
         onClick={() => setIsOpen(true)}
         className={triggerClassName || "flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm text-slate-500 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400 dark:hover:bg-slate-800 transition-colors"}
-        aria-label="Pencarian Global"
+        aria-label={iconOnly ? "Pencarian Global" : (triggerText || "Pencarian Global")}
       >
         <Search className="h-4 w-4 shrink-0" />
         {!iconOnly && (

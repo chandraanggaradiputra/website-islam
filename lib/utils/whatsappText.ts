@@ -4,6 +4,7 @@
 
 /**
  * Mengonversi teks format WhatsApp (*bold*, _italic_, link URL) menjadi markup HTML yang aman
+ * serta mendukung bidirectional text (BiDi LTR/RTL) terisolasi.
  */
 export function formatWhatsAppText(text: string): string {
   if (!text) return '';
@@ -13,7 +14,6 @@ export function formatWhatsAppText(text: string): string {
     .replace(/\r\n/g, '\n')
     .replace(/\r/g, '\n')
     .replace(/^[ \t]+$/gm, '')
-    .replace(/\n{3,}/g, '\n\n')
     .trim();
 
   // 2. Amankan karakter HTML dasar untuk mencegah XSS
@@ -39,7 +39,46 @@ export function formatWhatsAppText(text: string): string {
     '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 underline hover:text-blue-800 break-all font-medium">$1</a>'
   );
 
-  return clean;
+  // 7. Pemisahan Paragraf & Pengaturan Arah Teks Dwiarah (BiDi)
+  const paragraphs = clean.split(/\n{2,}/);
+
+  const renderedParagraphs = paragraphs.map(p => {
+    const trimmed = p.trim();
+    if (!trimmed) return '';
+
+    const lines = trimmed.split('\n');
+
+    // Cek apakah seluruh paragraf adalah aksara Arab murni (seperti Basmalah / Ayat / Hadits)
+    const hasArabic = /\p{sc=Arabic}/u.test(trimmed);
+    const hasLatin = /\p{sc=Latin}/u.test(trimmed);
+
+    if (hasArabic && !hasLatin) {
+      return `<div dir="rtl" class="text-center font-arabic text-xl sm:text-2xl py-1 my-1 text-slate-900 dark:text-slate-100 font-normal leading-loose">${lines.join('<br />')}</div>`;
+    }
+
+    // Paragraf Latin atau Campuran
+    const formattedLines = lines.map(line => {
+      const lineHasArabic = /\p{sc=Arabic}/u.test(line);
+      const lineHasLatin = /\p{sc=Latin}/u.test(line);
+
+      // Baris tunggal Arab di dalam paragraf campuran
+      if (lineHasArabic && !lineHasLatin) {
+        return `<span dir="rtl" class="block text-center font-arabic text-lg sm:text-xl py-0.5 my-0.5 text-slate-900 dark:text-slate-100">${line}</span>`;
+      }
+
+      // Baris campuran (ada Latin dan Arab, misal "Ustadz Dr. Fulan حفظه الله تعالى")
+      // Bungkus frasa Arab dalam <bdi class="font-arabic"> agar terisolasi dari tanda kutip, titik gelar, dan emoji
+      if (lineHasArabic && lineHasLatin) {
+        return line.replace(/([\p{sc=Arabic}][\p{sc=Arabic}\s]*[\p{sc=Arabic}])/gu, '<bdi class="font-arabic">$1</bdi>');
+      }
+
+      return line;
+    });
+
+    return `<div dir="ltr" class="text-left leading-relaxed">${formattedLines.join('<br />')}</div>`;
+  });
+
+  return renderedParagraphs.filter(Boolean).join('\n\n');
 }
 
 import { decodeHtmlEntities } from './text';
@@ -70,9 +109,9 @@ export function stripHtmlToWhatsAppText(html: string): string {
   });
 
   // 4. Kembalikan tag tebal (*teks*), miring (_teks_), dan coret (~teks~) ke format WhatsApp
-  text = text.replace(/<(?:strong|b)[^>]*>(.*?)<\/(?:strong|b)>/gi, '*$1*');
-  text = text.replace(/<(?:em|i)[^>]*>(.*?)<\/(?:em|i)>/gi, '_$1_');
-  text = text.replace(/<(?:del|s|strike)[^>]*>(.*?)<\/(?:del|s|strike)>/gi, '~$1~');
+  text = text.replace(/<(?:strong|b)\b[^>]*>(.*?)<\/(?:strong|b)\b>/gi, '*$1*');
+  text = text.replace(/<(?:em|i)\b[^>]*>(.*?)<\/(?:em|i)\b>/gi, '_$1_');
+  text = text.replace(/<(?:del|s|strike)\b[^>]*>(.*?)<\/(?:del|s|strike)\b>/gi, '~$1~');
 
   // 5. Ganti pemisah baris & blok HTML
   // Catatan: wpautop secara default menyisipkan \n setelah <br /> sehingga <br />\n harus diubah menjadi 1 \n
@@ -80,7 +119,7 @@ export function stripHtmlToWhatsAppText(html: string): string {
   text = text.replace(/<br\s*[\/]?>[ \t]*\n?/gi, '\n');
   text = text.replace(/<\/?(?:p|div)[^>]*>/gi, '\n');
 
-  // 6. Bersihkan semua sisa tag HTML lainnya
+  // 6. Bersihkan semua sisa tag HTML lainnya (termasuk <bdi>, </bdi>, <span>, dll)
   text = text.replace(/<[^>]+>/g, '');
 
   // 7. Decode seluruh entitas HTML baik bernama maupun numerik desimal/heksadesimal (&#038;, &#8217;, dsb)

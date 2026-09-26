@@ -22,7 +22,7 @@ export function ShareButton({ title, text, url }: { title: string; text: string;
     <button
       type="button"
       onClick={handleShare}
-      className="min-h-[40px] flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors font-medium text-sm shadow-sm cursor-pointer"
+      className="min-h-[44px] flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-2 rounded-xl transition-colors font-semibold text-sm shadow-sm cursor-pointer"
       aria-label="Bagikan ke WhatsApp"
     >
       <Share2 className="w-4 h-4" />

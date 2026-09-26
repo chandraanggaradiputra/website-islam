@@ -26,3 +26,7 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.font-arabic {
+  font-family: 'Amiri', 'Scheherazade New', 'Traditional Arabic', 'Noto Naskh Arabic', 'Geeza Pro', 'Arial', sans-serif;
+}
