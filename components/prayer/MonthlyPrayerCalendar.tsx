@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useTransition, useEffect, useMemo } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { EQuranDailyShalat } from '@/types/prayer';
-import { getMonthlyRegionPrayerTimes } from '@/lib/prayerTimes';
+import { EQuranDailyShalat, EQuranShalatData } from '@/types/prayer';
 import { BANTEN_REGIONS, KotaKabupatenBanten } from '@/lib/constants/bantenRegions';
 import {
   Printer,
@@ -48,14 +47,15 @@ export function MonthlyPrayerCalendar({
   const currentMonth = bulan;
   const currentYear = tahun;
 
-  const [region, setRegion] = useState<KotaKabupatenBanten>('Kota Serang');
-
-  useEffect(() => {
-    const storedRegion = typeof window !== 'undefined' ? localStorage.getItem('banten_mengaji_region') : null;
-    if (storedRegion && BANTEN_REGIONS.some((r) => r.name === storedRegion)) {
-      setRegion(storedRegion as KotaKabupatenBanten);
+  const [region, setRegion] = useState<KotaKabupatenBanten>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('banten_mengaji_region');
+      if (stored && BANTEN_REGIONS.some((r) => r.name === stored)) {
+        return stored as KotaKabupatenBanten;
+      }
     }
-  }, []);
+    return 'Kota Serang';
+  });
 
   const handleRegionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newRegion = e.target.value as KotaKabupatenBanten;
@@ -65,7 +65,7 @@ export function MonthlyPrayerCalendar({
     }
   };
 
-  const [currentData, setCurrentData] = useState<any>(null);
+  const [currentData, setCurrentData] = useState<EQuranShalatData | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -179,7 +179,11 @@ export function MonthlyPrayerCalendar({
               <span>
                 Waktu Sholat Hari Ini ({todaySchedule.hari},{' '}
                 {todaySchedule.tanggal} {MONTH_NAMES[currentMonth - 1]}{' '}
-                {currentYear}):
+                {currentYear} M
+                {currentData?.tanggal_hijriah_hari_ini
+                  ? ` / ${currentData.tanggal_hijriah_hari_ini}`
+                  : ''}
+                ):
               </span>
             </div>
             <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 text-center text-xs">
@@ -248,6 +252,7 @@ export function MonthlyPrayerCalendar({
             {/* Dropdown khusus Desktop (md:flex) */}
             <div className="hidden md:flex items-center gap-2">
               <select
+                aria-label="Pilih Kota atau Wilayah Sholat"
                 value={region}
                 onChange={handleRegionChange}
                 className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 font-medium text-sm rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-[#093c96]/20 outline-none hover:border-[#093c96]/50 transition-colors cursor-pointer"
@@ -269,6 +274,7 @@ export function MonthlyPrayerCalendar({
             {/* Dropdown khusus Mobile (md:hidden) berdampingan di kiri tombol pagination */}
             <div className="flex items-center gap-2 flex-1 max-w-[200px] sm:max-w-xs md:hidden">
               <select
+                aria-label="Pilih Kota atau Wilayah Sholat"
                 value={region}
                 onChange={handleRegionChange}
                 className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 font-medium text-xs sm:text-sm rounded-lg px-2.5 py-1.5 focus:ring-2 focus:ring-[#093c96]/20 outline-none hover:border-[#093c96]/50 transition-colors cursor-pointer truncate"
@@ -373,7 +379,7 @@ export function MonthlyPrayerCalendar({
                         )}>
                           {item.tanggal} {MONTH_NAMES[currentMonth - 1].slice(0, 3)}
                         </span>
-                        <span className="text-slate-400 dark:text-slate-500 text-xs">
+                        <span className="text-slate-600 dark:text-slate-300 text-xs">
                           • {item.hari}
                         </span>
                         {isToday && (
@@ -382,6 +388,11 @@ export function MonthlyPrayerCalendar({
                           </span>
                         )}
                       </div>
+                      {item.tanggal_hijriah && (
+                        <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium mt-0.5">
+                          {item.tanggal_hijriah}
+                        </div>
+                      )}
                     </td>
 
                     {/* Waktu Sholat */}
@@ -421,12 +432,12 @@ export function MonthlyPrayerCalendar({
           <div className="flex items-start gap-1.5">
             <Info className="w-4 h-4 text-[#093c96] dark:text-blue-400 shrink-0 mt-0.5 print:hidden" />
             <p className="leading-relaxed">
-              <strong>Sumber Data:</strong> Kalkulasi lokal akurasi tinggi menggunakan Adhan Library standar Bimas Islam Kemenag RI.
+              <strong>Sumber Data:</strong> Jadwal shalat resmi Bimas Islam Kemenag RI via MyQuran API (tersinkronisasi hisab aplikasi HijrahApp) dengan perlindungan fallback kalkulasi lokal Adhan.
               Waktu sholat berlaku untuk wilayah {region} dan sekitarnya (WIB).
             </p>
           </div>
           <p className="text-[11px] text-slate-400 dark:text-slate-500">
-            * Imsak ditetapkan 10 menit sebelum waktu Subuh. Waktu Dhuha dianjurkan dimulai sekitar 20-25 menit setelah matahari terbit (tinggi matahari ± 4°30').
+            * Imsak ditetapkan 10 menit sebelum waktu Subuh. Waktu Dhuha dianjurkan dimulai sekitar 20-25 menit setelah matahari terbit (tinggi matahari &plusmn; 4&deg;30&apos;).
           </p>
         </div>
       </div>
