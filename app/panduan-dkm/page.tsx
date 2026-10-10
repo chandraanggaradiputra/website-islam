@@ -8,15 +8,11 @@ import {
   Globe,
   MessageCircle,
   Smartphone,
-  Video,
   Share2,
-  CheckCircle2,
   Sparkles,
-  PlayCircle,
   BookOpen,
   FileText,
   Lightbulb,
-  ArrowRight,
 } from 'lucide-react';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { getPanduanDkmJsonLd } from '@/lib/schema';
@@ -155,8 +151,8 @@ export default function PanduanDKMPage() {
                 </div>
                 <ol className="space-y-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400 pl-4 list-decimal leading-relaxed">
                   <li>Buka website <span className="font-semibold text-slate-800 dark:text-slate-200">bantenmengaji.id</span> di Google Chrome.</li>
-                  <li>Tunggu banner instalasi muncul di bilah bawah layar, lalu ketuk tombol <span className="font-semibold text-[#093c96] dark:text-blue-400">"Pasang Sekarang"</span>.</li>
-                  <li>Atau ketuk menu titik tiga (<span className="font-semibold">⋮</span>) di kanan atas, lalu pilih <span className="font-semibold text-slate-800 dark:text-slate-200">"Tambahkan ke Layar Utama"</span> / <span className="font-semibold text-slate-800 dark:text-slate-200">"Instal Aplikasi"</span>.</li>
+                  <li>Tunggu banner instalasi muncul di bilah bawah layar, lalu ketuk tombol <span className="font-semibold text-[#093c96] dark:text-blue-400">&quot;Pasang Sekarang&quot;</span>.</li>
+                  <li>Atau ketuk menu titik tiga (<span className="font-semibold">⋮</span>) di kanan atas, lalu pilih <span className="font-semibold text-slate-800 dark:text-slate-200">&quot;Tambahkan ke Layar Utama&quot;</span> / <span className="font-semibold text-slate-800 dark:text-slate-200">&quot;Instal Aplikasi&quot;</span>.</li>
                   <li>Ikon aplikasi Banten Mengaji siap digunakan langsung dari layar utama handphone Anda.</li>
                 </ol>
               </div>
@@ -172,8 +168,8 @@ export default function PanduanDKMPage() {
                 <ol className="space-y-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400 pl-4 list-decimal leading-relaxed">
                   <li>Buka website <span className="font-semibold text-slate-800 dark:text-slate-200">bantenmengaji.id</span> menggunakan peramban resmi <span className="font-semibold">Safari</span>.</li>
                   <li>Ketuk tombol <span className="font-semibold text-slate-800 dark:text-slate-200">Bagikan (Share)</span> (ikon kotak berpanah ke atas <Share2 className="w-3.5 h-3.5 inline text-blue-600" />) di bilah bawah.</li>
-                  <li>Gulir menu ke bawah lalu pilih opsi <span className="font-semibold text-[#093c96] dark:text-blue-400">"Tambahkan ke Layar Utama" (Add to Home Screen)</span>.</li>
-                  <li>Ketuk tombol <span className="font-semibold text-slate-800 dark:text-slate-200">"Tambah"</span> di pojok kanan atas untuk menyelesaikan pemasangan.</li>
+                  <li>Gulir menu ke bawah lalu pilih opsi <span className="font-semibold text-[#093c96] dark:text-blue-400">&quot;Tambahkan ke Layar Utama&quot; (Add to Home Screen)</span>.</li>
+                  <li>Ketuk tombol <span className="font-semibold text-slate-800 dark:text-slate-200">&quot;Tambah&quot;</span> di pojok kanan atas untuk menyelesaikan pemasangan.</li>
                 </ol>
               </div>
             </div>

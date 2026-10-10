@@ -13,21 +13,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const dynamicKajian = kajianList.map((kajian) => ({
     url: `${baseUrl}/jadwal-kajian/${kajian.slug}`,
-    lastModified: new Date((kajian as any).modified || kajian.date || new Date()),
+    lastModified: new Date((kajian as { modified?: string }).modified || kajian.date || new Date()),
     changeFrequency: 'daily' as const,
     priority: 0.8,
   }));
 
   const dynamicMasjid = masjidList.map((masjid) => ({
     url: `${baseUrl}/masjid/${masjid.slug}`,
-    lastModified: new Date((masjid as any).modified || (masjid as any).date || new Date()),
+    lastModified: new Date((masjid as { modified?: string; date?: string }).modified || (masjid as { modified?: string; date?: string }).date || new Date()),
     changeFrequency: 'weekly' as const,
     priority: 0.8,
   }));
 
   const dynamicArtikel = artikelList.map((artikel) => ({
     url: `${baseUrl}/artikel/${artikel.slug}`,
-    lastModified: new Date((artikel as any).modified || artikel.date || new Date()),
+    lastModified: new Date((artikel as { modified?: string }).modified || artikel.date || new Date()),
     changeFrequency: 'monthly' as const,
     priority: 0.7,
   }));
