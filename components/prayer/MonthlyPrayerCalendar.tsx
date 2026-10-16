@@ -4,6 +4,7 @@ import { useState, useTransition, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { EQuranDailyShalat, EQuranShalatData } from '@/types/prayer';
 import { BANTEN_REGIONS, KotaKabupatenBanten } from '@/lib/constants/bantenRegions';
+import { formatAdjustedHijriDate } from '@/lib/equranShalat';
 import {
   Printer,
   Calendar,
@@ -180,9 +181,9 @@ export function MonthlyPrayerCalendar({
                 Waktu Sholat Hari Ini ({todaySchedule.hari},{' '}
                 {todaySchedule.tanggal} {MONTH_NAMES[currentMonth - 1]}{' '}
                 {currentYear} M
-                {currentData?.tanggal_hijriah_hari_ini
-                  ? ` / ${currentData.tanggal_hijriah_hari_ini}`
-                  : ''}
+                {(todaySchedule.tanggal_hijriah || currentData?.tanggal_hijriah_hari_ini)
+                  ? ` / ${todaySchedule.tanggal_hijriah || currentData?.tanggal_hijriah_hari_ini}`
+                  : ` / ${formatAdjustedHijriDate(now)}`}
                 ):
               </span>
             </div>

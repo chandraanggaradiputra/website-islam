@@ -1,7 +1,52 @@
-# Laporan Verifikasi & Walkthrough: [TASK-BM-009] Integrasi Jadwal Shalat MyQuran API (Kemenag RI) & Tampilan Kalender Hijriah
+# Walkthrough & Laporan Pengujian: Koreksi Selisih Penanggalan Hijriah & Implementasi Hijri Adjustment
 
 ## 1. Ringkasan Eksekutif
-Tugas **[TASK-BM-009]** telah diselesaikan dengan sukses pada branch `staging-website-islam`. Seluruh fungsionalitas penanggalan Kalender Hijriah, integrasi data resmi Bimas Islam Kementerian Agama RI via MyQuran API v2 (selaras 100% dengan hisab aplikasi **HijrahApp**), serta penyajian 6 waktu shalat (Subuh, Terbit, Dzuhur, Ashar, Maghrib, Isya) telah diimplementasikan dan diverifikasi secara komprehensif.
+Tugas eksekusi GitHub Issue [#6](https://github.com/chandraanggaradiputra/website-islam/issues/6) telah diselesaikan dengan sukses pada branch `fix/hijri-calendar-adjustment`.
+Selisih keterlambatan 2 hari penanggalan Hijriah antara website Banten Mengaji dengan aplikasi rujukan (**HijrahApp** / Standar Bimas Islam Kemenag RI) telah berhasil dikoreksi secara tuntas dan presisi.
+
+- **Tanggal Pengujian:** Jum'at, 16 Oktober 2026
+- **Tanggal Rujukan Aktual:** **6 Jumadil Awwal 1448 H**
+- **Hasil Tampilan Baru Website:** **6 Jumadil Awwal 1448 H** (Sinkron 100%)
+
+---
+
+## 2. Rincian Perubahan Berkas
+
+1. **`lib/equranShalat.ts`**:
+   - Menambahkan konstanta `HIJRI_OFFSET_DAYS = 2` dan `DEFAULT_MYQURAN_HIJRI_ADJ = 1`.
+   - Menambahkan fungsi helper `getHijriAdjustment()` yang membaca environment variable `NEXT_PUBLIC_HIJRI_ADJUSTMENT` dengan fallback default `1`.
+   - Mengimplementasikan `normalizeHijriMonthName()` untuk menstandarkan ejaan nama bulan Hijriah (`Jumadil Awwal`, `Dzulqa'dah`, `Dzulhijjah`, dll).
+   - Mengimplementasikan `formatAdjustedHijriDate()` yang menggunakan `Intl.DateTimeFormat('id-ID-u-ca-islamic-umalqura')` dengan koreksi offset dinamis.
+   - Memperbarui `getMyQuranHijriDate(adjValue)` untuk memanggil endpoint `https://api.myquran.com/v2/cal/hijr?adj=${adjValue}`.
+   - Memperbarui `getFallbackMonthlyShalat()` dan `getMonthlyShalat()` agar jadwal harian menyertakan `tanggal_hijriah` terkoreksi secara konsisten.
+   - Menambahkan alias `getMonthlyShalatSerang()`.
+
+2. **`components/prayer/PrayerTimesWidget.tsx`**:
+   - Mengimpor `formatAdjustedHijriDate` dari `@/lib/equranShalat`.
+   - Menambahkan sinkronisasi fallback tanggal Hijriah dengan `formatAdjustedHijriDate(new Date())` saat inisialisasi maupun penanganan error.
+   - Memastikan tampilan tanggal memuat `displayedHijri` agar konsisten jika data API terlambat.
+
+3. **`components/prayer/MonthlyPrayerCalendar.tsx`**:
+   - Mengimpor `formatAdjustedHijriDate` dari `@/lib/equranShalat`.
+   - Menggunakan fallback `formatAdjustedHijriDate(now)` pada highlight waktu sholat hari ini.
+
+---
+
+## 3. Hasil Pengujian & Verifikasi
+
+### A. Pengujian Penanggalan Hijriah (16 Oktober 2026)
+- **MyQuran API (`/v2/cal/hijr?adj=1`):**
+  - Endpoint: `https://api.myquran.com/v2/cal/hijr?adj=1`
+  - Respons Raw: `{"status":true,"request":{"path":"/cal/hijr","date":"2026-10-16","adj":1},"data":{"date":["Jum'at","6 Jumadil Awal 1448 H","16-10-2026"],"num":[6,16,10,2026,6,5,1448]}}`
+  - Hasil Normalisasi: **`6 Jumadil Awwal 1448 H`**
+- **Fallback Astronomi Lokal (`Intl` Ummul Qura +1 hari):**
+  - Hasil Format: **`6 Jumadil Awwal 1448 H`**
+  - **Sinkronisasi 100%** antara MyQuran API dan fallback astronomi lokal.
+
+### B. Quality Gates
+- **TypeScript**: `npx tsc --noEmit` -> **0 error**.
+- **ESLint**: `npm run lint` -> **0 error, 45 pre-existing warnings**.
+- **Next.js Production Build**: `npm run build` -> **Exit code 0** (seluruh 19 route statis & dinamis terkompilasi optimal).
 
 ---
 

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { fetchMonthlyPrayerTimesAction } from '@/app/actions/prayer';
 import { Clock, MapPin, CalendarDays, ArrowRight, LocateFixed, Loader2, Sparkles } from 'lucide-react';
 import { BANTEN_REGIONS, KotaKabupatenBanten, findNearestBantenRegion } from '@/lib/constants/bantenRegions';
+import { formatAdjustedHijriDate } from '@/lib/equranShalat';
 import { EQuranDailyShalat } from '@/types/prayer';
 
 const INDONESIAN_MONTHS = [
@@ -76,10 +77,15 @@ export function PrayerTimesWidget() {
             setHijriDate(today.tanggal_hijriah);
           } else if (data.tanggal_hijriah_hari_ini) {
             setHijriDate(data.tanggal_hijriah_hari_ini);
+          } else {
+            setHijriDate(formatAdjustedHijriDate(new Date()));
           }
         }
       } catch (error) {
         console.error('Failed to fetch prayer times', error);
+        if (isMounted) {
+          setHijriDate(formatAdjustedHijriDate(new Date()));
+        }
       }
     };
 
@@ -176,6 +182,7 @@ export function PrayerTimesWidget() {
   }
 
   const tanggalMasehi = `${now.getDate()} ${INDONESIAN_MONTHS[now.getMonth()]} ${now.getFullYear()} M`;
+  const displayedHijri = hijriDate || todaySchedule.tanggal_hijriah || formatAdjustedHijriDate(now);
 
   return (
     <div className="bg-gradient-to-br from-[#093c96] to-blue-900 shadow-lg p-5 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden text-white">
@@ -221,7 +228,7 @@ export function PrayerTimesWidget() {
         <CalendarDays className="w-3.5 h-3.5 text-blue-300 shrink-0" />
         <span className="truncate">
           {todaySchedule.hari}, {tanggalMasehi}
-          {hijriDate ? ` / ${hijriDate}` : ''}
+          {displayedHijri ? ` / ${displayedHijri}` : ''}
         </span>
       </div>
 
