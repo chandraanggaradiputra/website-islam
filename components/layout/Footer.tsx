@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { MapPin, Phone, Mail, Heart } from 'lucide-react';
+import { MapPin, Phone, Mail } from 'lucide-react';
 import clsx from 'clsx';
 
 import { BANTEN_REGIONS } from '@/lib/constants/bantenRegions';

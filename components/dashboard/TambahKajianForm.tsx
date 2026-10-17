@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -386,7 +387,13 @@ export function TambahKajianForm({ masjidId, masjidName }: TambahKajianFormProps
                 />
                 {posterPreview ? (
                   <div className="relative w-full aspect-[4/5] rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800">
-                    <img src={posterPreview} alt="Preview Poster" className="w-full h-full object-contain" />
+                    <Image
+                      src={posterPreview}
+                      alt="Preview Poster"
+                      fill
+                      unoptimized
+                      className="w-full h-full object-contain"
+                    />
                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                       <p className="text-white font-medium">Ubah Gambar</p>
                     </div>

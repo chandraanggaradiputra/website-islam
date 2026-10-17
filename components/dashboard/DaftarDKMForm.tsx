@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
+import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -27,7 +28,6 @@ import {
   EyeOff,
   Upload,
   X,
-  ImageIcon,
 } from 'lucide-react';
 
 import { normalizeFasilitas } from '@/lib/utils/fasilitas';
@@ -571,9 +571,12 @@ export function DaftarDKMForm({ masjidList = [], kecamatanTerms = [] }: DaftarDK
               </label>
               {fotoPreview ? (
                 <div className="relative rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-2.5 flex items-center gap-3">
-                  <img
+                  <Image
                     src={fotoPreview}
                     alt="Pratinjau Masjid"
+                    width={64}
+                    height={64}
+                    unoptimized
                     className="w-16 h-16 rounded-lg object-cover border border-slate-200 dark:border-slate-700 shrink-0"
                   />
                   <div className="flex-1 min-w-0">

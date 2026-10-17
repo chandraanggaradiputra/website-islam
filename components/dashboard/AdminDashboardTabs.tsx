@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -23,8 +23,6 @@ import {
   deleteMasjidByAdmin,
 } from '@/lib/actions/masjid';
 import {
-  approveKajian,
-  rejectKajian,
   updateKajianStatus,
   createKajianByAdmin,
   updateKajianByAdmin,
@@ -52,7 +50,6 @@ import {
   MapPin,
   Phone,
   CreditCard,
-  Upload,
   Loader2,
   Save,
   Check,
@@ -133,19 +130,12 @@ export function AdminDashboardTabs({
 }: AdminDashboardTabsProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const tabFromUrl = searchParams.get('tab') || initialTab;
-  const [activeTab, setActiveTab] = useState<'dkm' | 'masjid' | 'kajian' | 'pengguna' | 'pengaturan' | 'broadcast'>(
-    (tabFromUrl as 'dkm' | 'masjid' | 'kajian' | 'pengguna' | 'pengaturan' | 'broadcast') || 'dkm'
-  );
-
-  useEffect(() => {
-    if (
-      tabFromUrl &&
-      ['dkm', 'masjid', 'kajian', 'pengguna', 'pengaturan', 'broadcast'].includes(tabFromUrl)
-    ) {
-      setActiveTab(tabFromUrl as 'dkm' | 'masjid' | 'kajian' | 'pengguna' | 'pengaturan' | 'broadcast');
-    }
-  }, [tabFromUrl]);
+  const rawTab = searchParams.get('tab') || initialTab;
+  const activeTab = (
+    ['dkm', 'masjid', 'kajian', 'pengguna', 'pengaturan', 'broadcast'].includes(rawTab)
+      ? rawTab
+      : 'dkm'
+  ) as 'dkm' | 'masjid' | 'kajian' | 'pengguna' | 'pengaturan' | 'broadcast';
 
   const [isPending, startTransition] = useTransition();
 
@@ -160,12 +150,8 @@ export function AdminDashboardTabs({
   const [editingMasjid, setEditingMasjid] = useState<WPMasjid | null>(null);
   const [isAddKajianOpen, setIsAddKajianOpen] = useState(false);
   const [editingKajian, setEditingKajian] = useState<WPKajian | null>(null);
-  const [kajianList, setKajianList] = useState<WPKajian[]>(allKajian);
+  const [updatedKajianMap, setUpdatedKajianMap] = useState<Record<number, WPKajian>>({});
   const [faedahModalKajian, setFaedahModalKajian] = useState<WPKajian | null>(null);
-
-  useEffect(() => {
-    setKajianList(allKajian);
-  }, [allKajian]);
   const [resetTargetUser, setResetTargetUser] = useState<DKMUserItem | null>(null);
 
   // Settings state
@@ -196,6 +182,7 @@ export function AdminDashboardTabs({
   );
 
   // Filtered lists
+  const currentKajianList = allKajian.map((k) => updatedKajianMap[k.id] || k);
   const filteredDKM = registrations.filter((r) => {
     const q = searchDKM.toLowerCase();
     return (
@@ -214,7 +201,7 @@ export function AdminDashboardTabs({
     return title.toLowerCase().includes(q) || alamat.toLowerCase().includes(q);
   });
 
-  const filteredKajian = kajianList.filter((k) => {
+  const filteredKajian = currentKajianList.filter((k) => {
     const q = searchKajian.toLowerCase();
     const title = k.title?.rendered || '';
     const ustadz = k.acf?.nama_ustadz || '';
@@ -239,7 +226,6 @@ export function AdminDashboardTabs({
   });
 
   const handleTabChange = (tab: 'dkm' | 'masjid' | 'kajian' | 'pengguna' | 'pengaturan' | 'broadcast') => {
-    setActiveTab(tab);
     router.push(`/dashboard/admin?tab=${tab}`);
   };
 
@@ -1772,21 +1758,18 @@ export function AdminDashboardTabs({
           isOpen={!!faedahModalKajian}
           onClose={() => setFaedahModalKajian(null)}
           onSuccess={(updatedFaedah, updatedStreaming) => {
-            setKajianList((prev) =>
-              prev.map((k) =>
-                k.id === faedahModalKajian.id
-                  ? {
-                      ...k,
-                      acf: {
-                        ...k.acf,
-                        catatan_faedah: updatedFaedah,
-                        ringkasan_faedah: updatedFaedah,
-                        link_streaming: updatedStreaming || k.acf?.link_streaming,
-                      },
-                    }
-                  : k
-              )
-            );
+            setUpdatedKajianMap((prev) => ({
+              ...prev,
+              [faedahModalKajian.id]: {
+                ...faedahModalKajian,
+                acf: {
+                  ...faedahModalKajian.acf,
+                  catatan_faedah: updatedFaedah,
+                  ringkasan_faedah: updatedFaedah,
+                  link_streaming: updatedStreaming || faedahModalKajian.acf?.link_streaming,
+                },
+              },
+            }));
             router.refresh();
           }}
         />

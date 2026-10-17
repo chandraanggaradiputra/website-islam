@@ -21,9 +21,6 @@ function runTests() {
   // Helper untuk membuat tanggal & jam di zona WIB (+07:00)
   const now = new Date();
   
-  // Waktu WIB saat ini
-  const wibTime = new Date(now.getTime() + (7 * 3600 * 1000) + (now.getTimezoneOffset() * 60 * 1000));
-  
   // Tanggal besok (Masa depan)
   const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
   const tomorrowStr = tomorrow.toISOString().split('T')[0];

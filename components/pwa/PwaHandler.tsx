@@ -5,6 +5,15 @@ import Image from 'next/image';
 import { Download, Share2, PlusSquare, X, Smartphone } from 'lucide-react';
 import { PushNotificationManager } from './PushNotificationManager';
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+}
+
+interface NavigatorWithStandalone extends Navigator {
+  standalone?: boolean;
+}
+
 /**
  * Komponen Penanganan PWA (Progressive Web App)
  * - Mendaftarkan service worker /sw.js di browser
@@ -14,7 +23,7 @@ import { PushNotificationManager } from './PushNotificationManager';
  */
 export function PwaHandler() {
   // State untuk menyimpan event instalasi Android/Chrome
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   // State visibilitas banner instalasi Android/Chrome
   const [showAndroidBanner, setShowAndroidBanner] = useState(false);
   // State visibilitas panduan instalasi iOS Safari
@@ -40,14 +49,14 @@ export function PwaHandler() {
     // Periksa apakah aplikasi sudah berjalan dalam mode standalone (sudah terinstal)
     const isStandalone =
       window.matchMedia('(display-mode: standalone)').matches ||
-      (navigator as any).standalone === true;
+      (navigator as NavigatorWithStandalone).standalone === true;
 
     if (isStandalone) return;
 
     // 2. Deteksi Android / Desktop Chrome via beforeinstallprompt
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
-      setDeferredPrompt(e);
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
       setShowAndroidBanner(true);
     };
 
@@ -59,8 +68,14 @@ export function PwaHandler() {
     const isSafari = /safari/.test(ua) && !/crios|fxios|optios|edgios/.test(ua);
 
     if (isIos && isSafari && !isStandalone) {
-      // Tampilkan banner panduan iOS jika belum pernah ditutup
-      setShowIosGuide(true);
+      // Tampilkan banner panduan iOS jika belum pernah ditutup (jadwalkan di microtask/timer agar tidak sinkron langsung di body effect)
+      const timer = setTimeout(() => {
+        setShowIosGuide(true);
+      }, 0);
+      return () => {
+        clearTimeout(timer);
+        window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      };
     }
 
     return () => {

@@ -40,10 +40,11 @@ export function createGoogleCalendarUrl(kajian: WPKajian, masjid?: WPMasjid | nu
   const title = rawTitle.replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(dec)).replace(/&amp;/g, '&');
   const ustadz = kajian.acf?.nama_ustadz || 'Asatidz';
   const kitab = kajian.acf?.kitab_bahasan || '';
+  const masjidRelated = kajian.acf?.masjid_terkait as unknown as { title?: { rendered?: string } } | undefined;
   const masjidName =
     masjid?.title?.rendered?.replace(/<[^>]+>/g, '').trim() ||
     (typeof kajian.acf?.masjid_terkait === 'object' && kajian.acf?.masjid_terkait !== null
-      ? (kajian.acf.masjid_terkait as any).title?.rendered?.replace(/<[^>]+>/g, '').trim()
+      ? masjidRelated?.title?.rendered?.replace(/<[^>]+>/g, '').trim()
       : (kajian.acf?.nama_masjid_manual || kajian.masjid_name || 'Masjid di Banten'));
   const alamat = masjid?.acf?.alamat_lengkap || '';
   const gmaps = masjid?.acf?.google_maps_url || '';
@@ -101,14 +102,13 @@ export function createGoogleCalendarUrl(kajian: WPKajian, masjid?: WPMasjid | nu
   const location = alamat ? `${masjidName}, ${alamat}` : masjidName;
 
   // 4. Susun Parameter URL
-  const params = new URLSearchParams({
-    action: 'TEMPLATE',
-    text: kitab ? `Kajian: ${kitab} - ${ustadz}` : `Kajian: ${title}`,
-    dates: datesParam,
-    details: details,
-    location: location,
-    ctz: 'Asia/Jakarta',
-  });
+  const params = new URLSearchParams();
+  params.set('action', 'TEMPLATE');
+  params.set('text', kitab ? `Kajian: ${kitab} - ${ustadz}` : `Kajian: ${title}`);
+  params.set('dates', datesParam);
+  params.set('details', details);
+  if (location) params.set('location', location);
+  params.set('ctz', 'Asia/Jakarta');
 
   // Jika kajian rutin pekanan, tambahkan aturan pengulangan mingguan
   if (kajian.acf?.jenis_kajian === 'rutin') {

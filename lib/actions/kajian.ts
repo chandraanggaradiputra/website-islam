@@ -17,8 +17,8 @@ export async function submitKajian(formData: FormData) {
   }
 
   // Verifikasi otorisasi DKM: 1 Masjid hanya dapat dikelola oleh akun DKM resmi yang terhubung
-  const userRole = (session as any).user?.role || session.role;
-  const userMasjidId = Number((session as any).user?.masjidId || session.masjidId);
+  const userRole = session.role;
+  const userMasjidId = Number(session.masjidId);
 
   if (userRole === 'dkm') {
     const rawTarget = formData.get('masjid_terkait') || formData.get('masjidId');
@@ -672,8 +672,8 @@ export async function updateKajianByDkm(formData: FormData) {
     const currentKajian: WPKajian = await resCurrent.json();
 
     // Verifikasi otorisasi DKM (hanya boleh mengedit kajian masjid miliknya, kecuali admin)
-    const userRole = (session as any).user?.role || session.role;
-    const userMasjidId = Number((session as any).user?.masjidId || session.masjidId);
+    const userRole = session.role;
+    const userMasjidId = Number(session.masjidId);
 
     if (userRole === 'dkm') {
       const rawMasjid = currentKajian.acf?.masjid_terkait as unknown;
@@ -935,8 +935,8 @@ export async function updateCatatanFaedahKajian(
 
     const currentKajian: WPKajian = await resCurrent.json();
 
-    const userRole = (session as any).user?.role || session.role;
-    const userMasjidId = Number((session as any).user?.masjidId || session.masjidId);
+    const userRole = session.role;
+    const userMasjidId = Number(session.masjidId);
 
     // Otorisasi: Administrator (Super Admin) berhak mengelola seluruh kajian, DKM hanya untuk masjidnya
     if (userRole !== 'admin' && userRole !== 'dkm') {

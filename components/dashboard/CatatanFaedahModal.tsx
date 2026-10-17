@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { WPKajian } from '@/types';
 import { updateCatatanFaedahKajian } from '@/lib/actions/kajian';
 import { decodeHtmlEntities } from '@/lib/utils/text';
@@ -20,20 +20,28 @@ export function CatatanFaedahModal({
   onClose,
   onSuccess,
 }: CatatanFaedahModalProps) {
+  if (!isOpen) return null;
+
+  return (
+    <CatatanFaedahModalContent
+      kajian={kajian}
+      isOpen={isOpen}
+      onClose={onClose}
+      onSuccess={onSuccess}
+    />
+  );
+}
+
+function CatatanFaedahModalContent({
+  kajian,
+  onClose,
+  onSuccess,
+}: CatatanFaedahModalProps) {
   const [faedah, setFaedah] = useState(() => decodeHtmlEntities(getKajianCatatanFaedah(kajian)));
   const [linkStreaming, setLinkStreaming] = useState(kajian.acf?.link_streaming || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-
-  useEffect(() => {
-    setFaedah(decodeHtmlEntities(getKajianCatatanFaedah(kajian)));
-    setLinkStreaming(kajian.acf?.link_streaming || '');
-    setErrorMsg(null);
-    setSuccessMsg(null);
-  }, [kajian, isOpen]);
-
-  if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

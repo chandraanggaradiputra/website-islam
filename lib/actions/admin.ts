@@ -61,7 +61,17 @@ export async function getDKMUsersList(): Promise<DKMUserItem[]> {
     if (!Array.isArray(users)) return [];
 
     // Filter pengguna ber-role 'author' (peran DKM di WordPress)
-    const authorUsers = users.filter((u: any) => {
+    interface WPUserRaw {
+      id: number;
+      name?: string;
+      email?: string;
+      slug?: string;
+      username?: string;
+      registered_date?: string;
+      roles?: string[];
+    }
+
+    const authorUsers = (users as WPUserRaw[]).filter((u) => {
       if (Array.isArray(u.roles)) {
         return u.roles.includes('author');
       }
@@ -69,7 +79,7 @@ export async function getDKMUsersList(): Promise<DKMUserItem[]> {
     });
 
     // Gabungkan data pengguna dengan masjid binaan dan nomor kontak
-    const dkmList: DKMUserItem[] = authorUsers.map((u: any) => {
+    const dkmList: DKMUserItem[] = authorUsers.map((u) => {
       // 1. Cari masjid binaan yang author-nya cocok dengan user.id
       const matchedMasjid = masjids.find(
         (m) =>
@@ -89,7 +99,7 @@ export async function getDKMUsersList(): Promise<DKMUserItem[]> {
 
       return {
         id: u.id,
-        name: u.name || u.username,
+        name: u.name || u.username || 'Pengurus DKM',
         email: u.email || '',
         username: u.username || '',
         phone: phone,

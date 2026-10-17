@@ -31,10 +31,11 @@ export function getWebSiteJsonLd() {
  * Skema Jadwal Kajian (Event)
  */
 export function getKajianJsonLd(kajian: WPKajian, masjid?: WPMasjid | null) {
+  const masjidRelated = kajian.acf?.masjid_terkait as unknown as { title?: { rendered?: string } } | undefined;
   const masjidName =
     masjid?.title?.rendered ||
     (typeof kajian.acf?.masjid_terkait === 'object' && kajian.acf.masjid_terkait !== null
-      ? (kajian.acf.masjid_terkait as any).title?.rendered
+      ? masjidRelated?.title?.rendered
       : 'Masjid di Banten');
 
   const masjidAddress = masjid?.acf?.alamat_lengkap || 'Provinsi Banten, Indonesia';

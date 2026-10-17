@@ -42,8 +42,6 @@ export function PushNotificationManager({
   const [isSupported, setIsSupported] = useState(false);
   // Status apakah perangkat ini sudah berlangganan
   const [isSubscribed, setIsSubscribed] = useState(false);
-  // Status izin notifikasi ('default' | 'granted' | 'denied')
-  const [permission, setPermission] = useState<NotificationPermission>('default');
   // State indikator pemuatan
   const [isLoading, setIsLoading] = useState(false);
   // Pesan feedback untuk pengguna
@@ -57,20 +55,23 @@ export function PushNotificationManager({
       'PushManager' in window &&
       'Notification' in window
     ) {
-      setIsSupported(true);
-      setPermission(Notification.permission);
+      const timer = setTimeout(() => {
+        setIsSupported(true);
 
-      // Cek apakah sudah ada subscription aktif
-      navigator.serviceWorker.ready
-        .then((registration) => registration.pushManager.getSubscription())
-        .then((subscription) => {
-          if (subscription) {
-            setIsSubscribed(true);
-          }
-        })
-        .catch((err) => {
-          console.warn('[PushManager] Gagal memeriksa subscription:', err);
-        });
+        // Cek apakah sudah ada subscription aktif
+        navigator.serviceWorker.ready
+          .then((registration) => registration.pushManager.getSubscription())
+          .then((subscription) => {
+            if (subscription) {
+              setIsSubscribed(true);
+            }
+          })
+          .catch((err) => {
+            console.warn('[PushManager] Gagal memeriksa subscription:', err);
+          });
+      }, 0);
+
+      return () => clearTimeout(timer);
     }
   }, []);
 
@@ -86,7 +87,6 @@ export function PushNotificationManager({
     try {
       // 1. Minta izin notifikasi ke browser
       const permResult = await Notification.requestPermission();
-      setPermission(permResult);
 
       if (permResult !== 'granted') {
         setFeedback({
@@ -111,8 +111,16 @@ export function PushNotificationManager({
       });
 
       // 5. Simpan subscription ke server backend
+      const subJson = subscription.toJSON();
       const result = await savePushSubscription(
-        subscription.toJSON() as any,
+        {
+          endpoint: subscription.endpoint,
+          keys: {
+            p256dh: subJson.keys?.p256dh || '',
+            auth: subJson.keys?.auth || '',
+          },
+          expirationTime: subscription.expirationTime,
+        },
         navigator.userAgent
       );
 
@@ -128,11 +136,11 @@ export function PushNotificationManager({
           message: result.error || 'Gagal mendaftarkan notifikasi ke server.',
         });
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[PushManager] Error subscribing:', err);
       setFeedback({
         type: 'error',
-        message: err.message || 'Terjadi kesalahan saat mengaktifkan notifikasi.',
+        message: err instanceof Error ? err.message : 'Terjadi kesalahan saat mengaktifkan notifikasi.',
       });
     } finally {
       setIsLoading(false);
@@ -162,7 +170,7 @@ export function PushNotificationManager({
         type: 'info',
         message: 'Notifikasi push telah dinonaktifkan untuk perangkat ini.',
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[PushManager] Error unsubscribing:', err);
       setFeedback({
         type: 'error',

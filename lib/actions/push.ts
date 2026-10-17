@@ -223,10 +223,11 @@ export async function sendBroadcastNotification(
           notificationPayload
         );
         sentCount++;
-      } catch (err: any) {
+      } catch (err: unknown) {
         failedCount++;
         // Tangkap endpoint yang kadaluwarsa / ditutup browser (410 Gone atau 404 Not Found)
-        if (err?.statusCode === 410 || err?.statusCode === 404) {
+        const errorWithStatus = err as { statusCode?: number };
+        if (errorWithStatus?.statusCode === 410 || errorWithStatus?.statusCode === 404) {
           staleEndpoints.add(sub.endpoint);
         }
       }

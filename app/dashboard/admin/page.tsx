@@ -26,16 +26,12 @@ export default async function AdminDashboard({
   const currentTab = resolvedParams.tab || 'dkm';
 
   // Fetch data in parallel
-  const [resKajian, masjids, resUsers, registrations, dkmUsers, systemSettings, pushStats] = await Promise.all([
+  const [resKajian, masjids, registrations, dkmUsers, systemSettings, pushStats] = await Promise.all([
     fetch(`${WP_BASE_URL}/kajian?status=any&per_page=100&_embed`, {
       headers: { Authorization: `Bearer ${session.token}` },
       next: { revalidate: 0 },
     }),
     getMasjidList(),
-    fetch(`${WP_BASE_URL}/users?per_page=100`, {
-      headers: { Authorization: `Bearer ${session.token}` },
-      next: { revalidate: 0 },
-    }).catch(() => null),
     getStoredRegistrations(),
     getDKMUsersList(),
     getSystemSettings(),
@@ -45,14 +41,12 @@ export default async function AdminDashboard({
   const rawKajian: WPKajian[] = resKajian.ok ? await resKajian.json() : [];
   const masjidsList: WPMasjid[] = masjids || [];
   const allKajian: WPKajian[] = enrichKajianWithMasjid(rawKajian, masjidsList);
-  const usersList = resUsers?.ok ? await resUsers.json() : [];
 
   const pendingKajian = allKajian.filter((k) => k.status === 'pending');
   const publishedKajian = allKajian.filter((k) => k.status === 'publish');
   const pendingRegistrations = registrations.filter((r) => r.status === 'pending');
 
   const totalMasjid = masjidsList.length;
-  const totalDkm = Array.isArray(usersList) ? usersList.length : registrations.length;
 
   return (
     <div className="space-y-6">

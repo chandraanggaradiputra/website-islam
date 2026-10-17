@@ -768,7 +768,7 @@ export function DKMKajianList({ initialKajian }: { initialKajian: WPKajian[] }) 
                         catatan_faedah: updatedFaedah,
                         ringkasan_faedah: updatedFaedah,
                         link_streaming: updatedStreaming,
-                      } as any,
+                      },
                     }
                   : k
               )

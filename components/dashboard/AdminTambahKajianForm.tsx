@@ -10,7 +10,6 @@ import { WhatsAppScratchpad } from '@/components/dashboard/WhatsAppScratchpad';
 import {
   BookOpen,
   Building2,
-  Calendar,
   Clock,
   Upload,
   Loader2,

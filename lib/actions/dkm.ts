@@ -2,7 +2,7 @@
 
 import { getSession } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
-import { DKMRegistrationPayload, DKMRegistrationApplication } from '@/types';
+import { DKMRegistrationPayload, DKMRegistrationApplication, WPMasjid } from '@/types';
 import { sendNewDKMNotificationToAdmin, sendDKMApprovalEmail, sendDKMRejectionEmail, addDKMSubscriberToMailketing } from '@/lib/mailketing';
 import { getWPAdminAuthHeader, resolveKecamatanTermId, resolveKecamatanName, getMasjidList } from '@/lib/wordpress';
 import { normalizeFasilitas } from '@/lib/utils/fasilitas';
@@ -41,7 +41,8 @@ export async function getStoredRegistrations(): Promise<DKMRegistrationApplicati
     }
 
     const pendingMasjids = await res.json();
-    const applications: DKMRegistrationApplication[] = pendingMasjids.map((masjid: any) => {
+    const applications: DKMRegistrationApplication[] = pendingMasjids.map((masjid: WPMasjid & { content?: { rendered?: string }; kecamatan?: number[]; date?: string }) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let appData: any = {};
       try {
         if (masjid.content?.rendered) {
@@ -117,7 +118,7 @@ export async function submitDaftarDKM(formDataOrPayload: FormData | DKMRegistrat
       return { success: false, error: 'Sistem pendaftaran sedang tidak tersedia (Kredensial Server belum dikonfigurasi).' };
     }
 
-    const isFormData = typeof (formDataOrPayload as any)?.get === 'function';
+    const isFormData = typeof (formDataOrPayload as { get?: unknown })?.get === 'function';
 
     let namaPengurus = '';
     let email = '';
@@ -185,7 +186,7 @@ export async function submitDaftarDKM(formDataOrPayload: FormData | DKMRegistrat
     }
 
     // Validasi Kepemilikan Tunggal: 1 Masjid hanya dapat dikelola oleh 1 akun DKM resmi
-    let existingMasjidDetail: any = null;
+    let existingMasjidDetail: WPMasjid | null = null;
     let existingMasjidTitle = '';
     if (!isNewMasjid) {
       const targetMasjidId = Number(masjidOption);
@@ -462,6 +463,7 @@ export async function approveDKMRegistration(registrationId: string | number) {
       : (typeof masjidData.title === 'string' ? masjidData.title : '');
 
     // Ekstrak metadata pendaftar (nama, email, password)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let appData: any = {};
     try {
       if (masjidData.content?.rendered) {
@@ -511,8 +513,8 @@ export async function approveDKMRegistration(registrationId: string | number) {
           });
           if (searchRes.ok) {
             const users = await searchRes.json();
-            const foundUser = users.find(
-              (u: any) =>
+            const foundUser = (users as Array<{ email?: string; username?: string; id: number }>).find(
+              (u) =>
                 u.email?.toLowerCase() === appData.email?.toLowerCase() ||
                 u.username?.toLowerCase() === appData.email?.toLowerCase()
             );
@@ -642,6 +644,7 @@ export async function rejectDKMRegistration(registrationId: string | number) {
     
     if (resGet.ok) {
       const masjidData = await resGet.json();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let appData: any = {};
       try {
         if (masjidData.content?.rendered) {

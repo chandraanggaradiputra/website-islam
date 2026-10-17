@@ -1,7 +1,7 @@
 // --- SERVICE WORKER BANTEN MENGAJI PWA ---
 const CACHE_NAME = 'banten-mengaji-pwa-v1';
 
-self.addEventListener('install', (event) => {
+self.addEventListener('install', () => {
   self.skipWaiting();
 });
 
@@ -29,7 +29,7 @@ self.addEventListener('push', (event) => {
   let payload = {};
   try {
     payload = event.data.json();
-  } catch (e) {
+  } catch {
     payload = {
       title: 'Banten Mengaji',
       body: event.data.text(),

@@ -67,7 +67,6 @@ function DashboardSidebarContent({
   userName = 'Pengurus',
   userEmail = '',
   masjidName,
-  masjidId,
   kecamatanName,
 }: DashboardSidebarProps) {
   // Hook navigasi rute aktif
