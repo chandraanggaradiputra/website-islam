@@ -28,7 +28,8 @@ import { CatatanFaedahModal } from '@/components/dashboard/CatatanFaedahModal';
 
 export function DKMKajianList({ initialKajian }: { initialKajian: WPKajian[] }) {
   const router = useRouter();
-  const [kajianList, setKajianList] = useState<WPKajian[]>(initialKajian);
+  const [updatedKajianMap, setUpdatedKajianMap] = useState<Record<number, WPKajian>>({});
+  const kajianList = initialKajian.map((k) => updatedKajianMap[k.id] || k);
   const [editingKajian, setEditingKajian] = useState<WPKajian | null>(null);
   const [faedahModalKajian, setFaedahModalKajian] = useState<WPKajian | null>(null);
 
@@ -149,33 +150,29 @@ export function DKMKajianList({ initialKajian }: { initialKajian: WPKajian[] }) 
           editingKajian.content?.rendered ||
           '';
 
-        setKajianList((prev) =>
-          prev.map((item) => {
-            if (item.id === editingKajian.id) {
-              return {
-                ...item,
-                title: { rendered: updatedTitle },
-                content: { rendered: updatedContent },
-                featured_media_url: posterPreview || item.featured_media_url,
-                acf: {
-                  ...item.acf,
-                  status_kajian: selectedStatus,
-                  nama_ustadz: updatedUstadz,
-                  kitab_bahasan: updatedKitab,
-                  jenis_kajian: updatedJenisKajian,
-                  kategori_jamaah: updatedKategoriJamaah,
-                  hari_kajian: updatedHari,
-                  tanggal_kajian: updatedTanggal,
-                  jam_mulai: updatedJamMulai,
-                  jam_selesai: updatedJamSelesai,
-                  waktu_keterangan: updatedWaktuKeterangan,
-                  link_streaming: updatedLinkStreaming,
-                },
-              };
-            }
-            return item;
-          })
-        );
+        setUpdatedKajianMap((prev) => ({
+          ...prev,
+          [editingKajian.id]: {
+            ...editingKajian,
+            title: { rendered: updatedTitle },
+            content: { rendered: updatedContent },
+            featured_media_url: posterPreview || editingKajian.featured_media_url,
+            acf: {
+              ...editingKajian.acf,
+              status_kajian: selectedStatus,
+              nama_ustadz: updatedUstadz,
+              kitab_bahasan: updatedKitab,
+              jenis_kajian: updatedJenisKajian,
+              kategori_jamaah: updatedKategoriJamaah,
+              hari_kajian: updatedHari,
+              tanggal_kajian: updatedTanggal,
+              jam_mulai: updatedJamMulai,
+              jam_selesai: updatedJamSelesai,
+              waktu_keterangan: updatedWaktuKeterangan,
+              link_streaming: updatedLinkStreaming,
+            },
+          },
+        }));
 
         startTransition(() => {
           router.refresh();
@@ -758,21 +755,21 @@ export function DKMKajianList({ initialKajian }: { initialKajian: WPKajian[] }) 
           isOpen={!!faedahModalKajian}
           onClose={() => setFaedahModalKajian(null)}
           onSuccess={(updatedFaedah, updatedStreaming) => {
-            setKajianList((prev) =>
-              prev.map((k) =>
-                k.id === faedahModalKajian.id
-                  ? {
-                      ...k,
-                      acf: {
-                        ...k.acf,
-                        catatan_faedah: updatedFaedah,
-                        ringkasan_faedah: updatedFaedah,
-                        link_streaming: updatedStreaming,
-                      },
-                    }
-                  : k
-              )
-            );
+            setUpdatedKajianMap((prev) => ({
+              ...prev,
+              [faedahModalKajian.id]: {
+                ...faedahModalKajian,
+                acf: {
+                  ...faedahModalKajian.acf,
+                  catatan_faedah: updatedFaedah,
+                  ringkasan_faedah: updatedFaedah,
+                  link_streaming: updatedStreaming,
+                },
+              },
+            }));
+            startTransition(() => {
+              router.refresh();
+            });
           }}
         />
       )}

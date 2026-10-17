@@ -1,4 +1,5 @@
 import { getSession } from '@/lib/auth';
+import { redirect } from 'next/navigation';
 import { Users, BookOpen, CheckCircle, Clock } from 'lucide-react';
 import { WPKajian, WPMasjid } from '@/types';
 import { getMasjidList, enrichKajianWithMasjid } from '@/lib/wordpress';
@@ -18,8 +19,11 @@ export default async function AdminDashboard({
 }) {
   const session = await getSession();
 
-  if (!session?.token || session.role !== 'admin') {
-    return <div className="p-8 text-center text-slate-500">Silakan login sebagai administrator.</div>;
+  if (!session || !session.token) {
+    redirect('/login');
+  }
+  if (session.role !== 'admin') {
+    redirect('/dashboard/dkm');
   }
 
   const resolvedParams = searchParams ? await searchParams : {};

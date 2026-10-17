@@ -1,47 +1,43 @@
 import { getSession } from '@/lib/auth';
+import { redirect } from 'next/navigation';
 import { Calendar, Clock, CheckCircle2, Building2 } from 'lucide-react';
 import Link from 'next/link';
 import { WPKajian } from '@/types';
-import { getMasjidList, enrichKajianWithMasjid } from '@/lib/wordpress';
+import { getMasjidList, enrichKajianWithMasjid, resolveMasjidIdFromAcf, getWPAdminAuthHeader } from '@/lib/wordpress';
 import { DKMKajianList } from '@/components/dashboard/DKMKajianList';
 
 export const dynamic = 'force-dynamic';
 
+const WP_BASE_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || 'https://salaf.maschandigital.id/wp-json/wp/v2';
+
 async function getDKMKajian(token: string, masjidId?: number) {
+  // Zero Silent Fallback: Jika tidak memiliki ID masjid yang valid, DILARANG mengembalikan data masjid lain
+  if (!masjidId || Number.isNaN(Number(masjidId)) || Number(masjidId) <= 0) {
+    return [];
+  }
+
+  const authHeader = (token ? `Bearer ${token}` : null) || getWPAdminAuthHeader();
+
   try {
     const [res, masjids] = await Promise.all([
-      fetch('https://salaf.maschandigital.id/wp-json/wp/v2/kajian?status=publish,pending,draft&per_page=100', {
+      fetch(`${WP_BASE_URL}/kajian?status=publish,pending,draft&per_page=100&_embed`, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          ...(authHeader ? { Authorization: authHeader } : {}),
         },
-        next: { revalidate: 0 }
+        next: { revalidate: 0 },
       }),
-      getMasjidList()
+      getMasjidList(),
     ]);
 
     if (!res.ok) return [];
     const kajianList: WPKajian[] = await res.json();
     const enrichedList = enrichKajianWithMasjid(kajianList, masjids || []);
     
-    // Filter by masjidId if it exists
-    if (masjidId) {
-      return enrichedList.filter(k => {
-        const raw = k.acf?.masjid_terkait as unknown;
-        let targetId: number | null = null;
-        if (Array.isArray(raw) && raw.length > 0) {
-          const first = raw[0];
-          targetId = typeof first === 'object' && first !== null 
-            ? Number((first as { ID?: number; id?: number }).ID || (first as { ID?: number; id?: number }).id) 
-            : Number(first);
-        } else if (typeof raw === 'object' && raw !== null) {
-          targetId = Number((raw as { ID?: number; id?: number }).ID || (raw as { ID?: number; id?: number }).id);
-        } else if (raw) {
-          targetId = Number(raw);
-        }
-        return Number(targetId) === Number(masjidId);
-      });
-    }
-    return enrichedList;
+    // Filter ketat hanya jadwal kajian milik masjid ini
+    return enrichedList.filter((k) => {
+      const targetId = resolveMasjidIdFromAcf(k.acf?.masjid_terkait);
+      return Number(targetId) === Number(masjidId);
+    });
   } catch {
     return [];
   }
@@ -49,8 +45,15 @@ async function getDKMKajian(token: string, masjidId?: number) {
 
 export default async function DKMDashboard() {
   const session = await getSession();
+
+  if (!session || !session.token) {
+    redirect('/login');
+  }
+  if (session.role !== 'dkm') {
+    redirect('/dashboard/admin');
+  }
   
-  const kajianList = session?.token ? await getDKMKajian(session.token, session.masjidId) : [];
+  const kajianList = await getDKMKajian(session.token, session.masjidId);
   
   const totalKajian = kajianList.length;
   const activeKajian = kajianList.filter(k => k.status === 'publish').length;

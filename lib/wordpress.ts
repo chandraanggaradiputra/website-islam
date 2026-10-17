@@ -41,23 +41,41 @@ export function normalizeACFHari(hariStr?: string): string {
   return hariStr;
 }
 
+/**
+ * Mengekstrak ID numerik Masjid dari berbagai variasi payload ACF `masjid_terkait`
+ * (mendukung Array of Objects WP_Post, Single Object WP_Post, Array of IDs, Number, atau String).
+ */
+export function resolveMasjidIdFromAcf(raw: unknown): number | null {
+  if (raw === null || raw === undefined || raw === '') return null;
+
+  if (Array.isArray(raw)) {
+    if (raw.length === 0) return null;
+    return resolveMasjidIdFromAcf(raw[0]);
+  }
+
+  if (typeof raw === 'object') {
+    const obj = raw as { ID?: number | string; id?: number | string };
+    const candidate = obj.ID ?? obj.id;
+    if (candidate !== undefined && candidate !== null && candidate !== '') {
+      const parsed = Number(candidate);
+      return !Number.isNaN(parsed) && parsed > 0 ? parsed : null;
+    }
+    return null;
+  }
+
+  if (typeof raw === 'number' || typeof raw === 'string') {
+    const parsed = Number(raw);
+    return !Number.isNaN(parsed) && parsed > 0 ? parsed : null;
+  }
+
+  return null;
+}
+
 // Fungsi penggabungan data kajian dengan nama masjid yang akurat
 export function enrichKajianWithMasjid(kajianList: unknown[], masjidList: WPMasjid[] = []): WPKajian[] {
   return (kajianList as WPKajian[]).map((kajian) => {
     const raw = kajian.acf?.masjid_terkait as unknown;
-    let targetId: number | null = null;
-
-    // Ekstrak ID dari berbagai kemungkinan format ACF
-    if (Array.isArray(raw) && raw.length > 0) {
-      const first = raw[0];
-      targetId = typeof first === 'object' && first !== null 
-        ? Number((first as { ID?: number; id?: number }).ID || (first as { ID?: number; id?: number }).id) 
-        : Number(first);
-    } else if (typeof raw === 'object' && raw !== null) {
-      targetId = Number((raw as { ID?: number; id?: number }).ID || (raw as { ID?: number; id?: number }).id);
-    } else if (raw) {
-      targetId = Number(raw);
-    }
+    const targetId = resolveMasjidIdFromAcf(raw);
 
     // Cari masjid yang cocok di database
     const matchedMasjid = targetId ? masjidList.find((m) => Number(m.id) === targetId) : null;
@@ -94,6 +112,7 @@ export function enrichKajianWithMasjid(kajianList: unknown[], masjidList: WPMasj
 
     return {
       ...kajian,
+      masjid_id: targetId,
       masjid_name: resolvedName,
       masjid_detail: matchedMasjid || null,
     };

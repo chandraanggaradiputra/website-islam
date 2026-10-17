@@ -1,4 +1,6 @@
 import { ReactNode } from 'react';
+import { redirect } from 'next/navigation';
+import { getSession } from '@/lib/auth';
 import { DkmSubNav } from '@/components/dashboard/DkmSubNav';
 
 export const dynamic = 'force-dynamic';
@@ -12,7 +14,14 @@ export const dynamic = 'force-dynamic';
  * /dashboard/dkm/tambah-kajian).
  * ============================================================================
  */
-export default function DKMDashboardLayout({ children }: { children: ReactNode }) {
+export default async function DKMDashboardLayout({ children }: { children: ReactNode }) {
+  const session = await getSession();
+  if (!session || !session.token) {
+    redirect('/login');
+  }
+  if (session.role === 'admin') {
+    redirect('/dashboard/admin');
+  }
   return (
     <div className="w-full">
       <DkmSubNav />

@@ -1,4 +1,90 @@
-# Walkthrough Resmi: Route Handler Cross-Posting Artikel Dakwah ke Media Sosial (TASK-2026-ISLAM-002)
+# Walkthrough - [AUDIT-COMPATIBILITY] Sinkronisasi & Audit Kompatibilitas Dashboard Super Admin & DKM
+
+Repositori: `website-islam` (Banten Mengaji)  
+Branch: `fix/audit-dashboard-admin-dkm-compatibility`  
+Terkait Issue: #9 (Closes #9)  
+Tanggal: 18 Oktober 2026  
+Status Quality Gates: **PASSED (0 TypeScript Error, 0 Lint Error, Build Sukses)**
+
+---
+
+## 📌 Ringkasan Perubahan
+
+Telah dilakukan audit menyeluruh dan sinkronisasi kompatibilitas antara **Dashboard Super Admin (`/dashboard/admin`)** dan **Dashboard Pengurus DKM (`/dashboard/dkm`)** untuk menutup celah kebocoran data lintas masjid (*cross-mosque data leakage*), menormalisasi relasi `acf.masjid_terkait`, menyinkronkan alur moderasi jadwal kajian (`status: 'pending'` -> `status: 'publish'`), serta memastikan UI state di `AdminDashboardTabs` dan `DKMKajianList` bebas dari *stale data* tanpa melanggar aturan linter React Hooks (`react-hooks/set-state-in-effect`).
+
+---
+
+## 🛠️ Rincian Modifikasi per Berkas
+
+### 1. `types/index.ts`
+- Menyematkan properti `masjid_id?: number | null;` pada interface `WPKajian` agar ID relasi masjid hasil ekstraksi dapat diakses secara type-safe di seluruh antarmuka komponen.
+
+### 2. `lib/wordpress.ts`
+- Membuat dan mengekspor fungsi helper terpusat `resolveMasjidIdFromAcf(raw: unknown): number | null`:
+  - Menangani variasi format `number`, `string`, `WP_Post object` (`ID` atau `id`), maupun `Array<number | string | object>`.
+- Memperbarui `enrichKajianWithMasjid()`:
+  - Menggunakan `resolveMasjidIdFromAcf(raw)` untuk mendapatkan `targetId`.
+  - Mengisi `masjid_id: targetId` pada setiap objek `WPKajian`.
+  - Mempertahankan resolusi nama masjid asli dan Zero Silent Fallback (`null` jika tidak ditemukan, dilarang menyuntikkan nama default palsu).
+
+### 3. `app/dashboard/dkm/layout.tsx`
+- Mengubah fungsi layout menjadi `async function DKMDashboardLayout`.
+- Menambahkan proteksi RBAC server-side:
+  - Jika sesi tidak ada atau tidak valid: redirect ke `/login`.
+  - Jika `session.role === 'admin'`: redirect ke `/dashboard/admin`.
+
+### 4. `app/dashboard/admin/page.tsx`
+- Mengganti balikan teks statis menjadi redirect tegas:
+  - Jika sesi tidak ada: redirect ke `/login`.
+  - Jika `session.role !== 'admin'`: redirect ke `/dashboard/dkm`.
+
+### 5. `app/dashboard/dkm/page.tsx`
+- Menambahkan verifikasi sesi dan guard redirect jika bukan role `dkm`.
+- Mengimplementasikan **Zero Silent Fallback** pada `getDKMKajian(token, masjidId)`:
+  - Jika `!masjidId || Number.isNaN(Number(masjidId)) || Number(masjidId) <= 0`, mengembalikan array kosong `[]` (tidak lagi mengembalikan seluruh kajian semua masjid).
+  - Menggunakan URL endpoint dinamis `WP_BASE_URL` dengan parameter `status=publish,pending,draft&per_page=100&_embed`.
+  - Menggunakan fallback otorisasi `authHeader = (token ? Bearer ... : null) || getWPAdminAuthHeader()`.
+  - Memfilter daftar kajian secara presisi menggunakan `resolveMasjidIdFromAcf(k.acf?.masjid_terkait)`.
+
+### 6. `app/dashboard/dkm/tambah-kajian/page.tsx`
+- Menambahkan validasi sesi dan proteksi jika `session.role !== 'dkm'` (redirect ke `/dashboard/admin`).
+- Menambahkan penanganan jika `!session.masjidId` dengan menampilkan kartu peringatan ramah yang mengarahkan pengurus DKM ke `/daftar-dkm`.
+
+### 7. `lib/actions/kajian.ts`
+- Pada `submitKajian()`:
+  - Menetapkan status postingan berdasarkan role pengguna: `const postStatus = userRole === 'admin' ? 'publish' : 'pending'`.
+  - Menyesuaikan pesan balikan untuk status pending ('Alhamdulillah, jadwal kajian berhasil diajukan dan sedang menunggu persetujuan Super Admin').
+  - Menambahkan revalidasi rute lengkap: `/jadwal-kajian`, `/`, `/masjid`, `/sitemap.xml`, `/dashboard/dkm`, `/dashboard/admin`.
+- Pada `approveKajian()`, `rejectKajian()`, `updateKajianStatus()`, `createKajianByAdmin()`, `updateKajianByAdmin()`, dan `deleteKajian()`:
+  - Menggunakan fallback otorisasi `getWPAdminAuthHeader() || (session.token ? Bearer ... : null)`.
+  - Memastikan bila disetujui atau dipublikasikan (`publish`), `acf.status_kajian` diset ke `'aktif'` dan memicu ping IndexNow.
+  - Memastikan seluruh mutasi memanggil `revalidatePath('/dashboard/admin')` dan `revalidatePath('/dashboard/dkm')`.
+
+### 8. `components/dashboard/AdminDashboardTabs.tsx`
+- Mengimpor `resolveMasjidIdFromAcf` dari `@/lib/wordpress` untuk mengisi `currentMasjidId` di `AdminKajianModal`.
+- Menambahkan pelacak penghapusan `deletedKajianIds` dan optimistik update `updatedKajianMap`.
+- Menambahkan tombol aksi cepat status (Setujui / Publish untuk status `pending`, dan Kembalikan ke Pending untuk status `publish`) yang memperbarui UI secara optimis dan memanggil `router.refresh()`.
+- Menghapus item dari tampilan secara optimis pada `handleDeleteKajian`.
+
+### 9. `components/dashboard/DKMKajianList.tsx`
+- Menghapus anti-pattern stale state `useState<WPKajian[]>(initialKajian)`.
+- Menggunakan pola derived state:
+  ```tsx
+  const [updatedKajianMap, setUpdatedKajianMap] = useState<Record<number, WPKajian>>({});
+  const kajianList = initialKajian.map((k) => updatedKajianMap[k.id] || k);
+  ```
+- Memperbarui `updatedKajianMap` pada `handleSubmitEdit` dan callback `CatatanFaedahModal` (`onSuccess`), lalu memanggil `router.refresh()` di dalam `startTransition`.
+
+---
+
+## 🧪 Hasil Verifikasi Quality Gates
+
+1. **TypeScript Typecheck (`npx tsc --noEmit`)**:
+   - Status: **0 Error** (Lolos).
+2. **ESLint (`npm run lint`)**:
+   - Status: **0 Error, 0 Warning** pada berkas yang dimodifikasi. (Hanya warning pra-eksisting pada hook `watch` react-hook-form di `DaftarDKMForm` & `TambahKajianForm`).
+3. **Next.js Production Build (`npm run build`)**:
+   - Status: **Compiled successfully** untuk seluruh 19 rute tanpa ada kegagalan kompilasi.
 
 Platform: **Banten Mengaji (`banten-mengaji.vercel.app`)**  
 Repositori: `https://github.com/chandraanggaradiputra/website-islam`  

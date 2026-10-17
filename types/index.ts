@@ -150,6 +150,7 @@ export interface WPKajian {
   featured_media_url?: string;
   kategori_kajian?: number[];
   acf: KajianACF;
+  masjid_id?: number | null;
   masjid_detail?: WPMasjid | null;
   masjid_name?: string | null;
   _embedded?: {
@@ -230,4 +231,4 @@ export const DEFAULT_SYSTEM_SETTINGS: SystemSettings = {
 };
 
 // Re-export tipe push notification
-export * from './push';
+export * from './push';

@@ -28,6 +28,7 @@ import {
   updateKajianByAdmin,
   deleteKajian,
 } from '@/lib/actions/kajian';
+import { resolveMasjidIdFromAcf } from '@/lib/wordpress';
 import {
   resetDKMUserPassword,
   updateSystemSettings,
@@ -151,6 +152,7 @@ export function AdminDashboardTabs({
   const [isAddKajianOpen, setIsAddKajianOpen] = useState(false);
   const [editingKajian, setEditingKajian] = useState<WPKajian | null>(null);
   const [updatedKajianMap, setUpdatedKajianMap] = useState<Record<number, WPKajian>>({});
+  const [deletedKajianIds, setDeletedKajianIds] = useState<Record<number, boolean>>({});
   const [faedahModalKajian, setFaedahModalKajian] = useState<WPKajian | null>(null);
   const [resetTargetUser, setResetTargetUser] = useState<DKMUserItem | null>(null);
 
@@ -182,7 +184,9 @@ export function AdminDashboardTabs({
   );
 
   // Filtered lists
-  const currentKajianList = allKajian.map((k) => updatedKajianMap[k.id] || k);
+  const currentKajianList = allKajian
+    .filter((k) => !deletedKajianIds[k.id])
+    .map((k) => updatedKajianMap[k.id] || k);
   const filteredDKM = registrations.filter((r) => {
     const q = searchDKM.toLowerCase();
     return (
@@ -337,9 +341,15 @@ export function AdminDashboardTabs({
 
   const handleDeleteKajian = async (id: number, title: string) => {
     if (confirm(`Hapus jadwal kajian "${title}" secara permanen?`)) {
+      setDeletedKajianIds((prev) => ({ ...prev, [id]: true }));
       startTransition(async () => {
         const res = await deleteKajian(id);
         if (!res.success) {
+          setDeletedKajianIds((prev) => {
+            const next = { ...prev };
+            delete next[id];
+            return next;
+          });
           alert(sanitizeErrorMessage(res.error, 'Afwan, jadwal kajian belum dapat dihapus. Silakan coba beberapa saat lagi.'));
         } else {
           router.refresh();
@@ -353,9 +363,30 @@ export function AdminDashboardTabs({
     status: 'publish' | 'draft' | 'pending',
     statusKajian?: 'aktif' | 'libur' | 'selesai'
   ) => {
+    const existing = currentKajianList.find((k) => k.id === id);
+    if (existing) {
+      setUpdatedKajianMap((prev) => ({
+        ...prev,
+        [id]: {
+          ...existing,
+          status,
+          acf: {
+            ...existing.acf,
+            status_kajian: statusKajian || (status === 'publish' ? 'aktif' : existing.acf?.status_kajian || 'aktif'),
+          },
+        },
+      }));
+    }
+
     startTransition(async () => {
       const res = await updateKajianStatus(id, status, statusKajian);
       if (!res.success) {
+        if (existing) {
+          setUpdatedKajianMap((prev) => ({
+            ...prev,
+            [id]: existing,
+          }));
+        }
         alert(sanitizeErrorMessage(res.error, 'Afwan, status kajian belum dapat diperbarui. Silakan coba beberapa saat lagi.'));
       } else {
         router.refresh();
@@ -876,6 +907,15 @@ export function AdminDashboardTabs({
                                   title="Publikasikan Kajian"
                                 >
                                   <Check className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                              {kajian.status === 'publish' && (
+                                <button
+                                  onClick={() => handleQuickStatusKajian(kajian.id, 'pending')}
+                                  className="p-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold transition-colors cursor-pointer"
+                                  title="Kembalikan ke Status Pending"
+                                >
+                                  <Clock className="w-3.5 h-3.5" />
                                 </button>
                               )}
 
@@ -2152,19 +2192,8 @@ function AdminKajianModal({
   };
 
   const masjidVal = kajian?.acf?.masjid_terkait;
-  const currentMasjidId =
-    masjidVal !== undefined
-      ? typeof masjidVal === 'number'
-        ? masjidVal
-        : Array.isArray(masjidVal)
-        ? Number(masjidVal[0])
-        : typeof masjidVal === 'object' && masjidVal !== null
-        ? Number(
-            (masjidVal as { id?: number; ID?: number })?.id ||
-              (masjidVal as { id?: number; ID?: number })?.ID
-          )
-        : undefined
-      : undefined;
+  const resolvedTargetId = resolveMasjidIdFromAcf(masjidVal);
+  const currentMasjidId = resolvedTargetId ?? undefined;
 
   const rawDate = kajian?.acf?.tanggal_kajian || '';
   const formattedDate =

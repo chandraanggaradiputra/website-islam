@@ -82,7 +82,8 @@ export async function submitKajian(formData: FormData) {
         ? 'khusus_ikhwan'
         : 'umum';
 
-    // 2. Buat Postingan Kajian Baru (Langsung 'publish' dan 'aktif' untuk DKM resmi)
+    // 2. Buat Postingan Kajian Baru ('publish' untuk Admin, 'pending' untuk DKM agar melalui antrean moderasi)
+    const postStatus = userRole === 'admin' ? 'publish' : 'pending';
     const rawContent = formData.get('content')?.toString() || formData.get('deskripsi')?.toString() || '';
     const judul = (formData.get('title') || formData.get('judul'))?.toString()?.trim();
     const namaUstadz = formData.get('namaUstadz')?.toString() || formData.get('penceramah')?.toString() || '';
@@ -92,7 +93,7 @@ export async function submitKajian(formData: FormData) {
     const payload = {
       title: judul,
       content: rawContent,
-      status: 'publish',
+      status: postStatus,
       featured_media: mediaId,
       acf: {
         kota_kabupaten: kotaKabupaten,
@@ -137,19 +138,25 @@ export async function submitKajian(formData: FormData) {
     // Revalidasi cache instan katalog, beranda, sitemap, dan dasbor
     revalidatePath('/jadwal-kajian');
     revalidatePath('/');
+    revalidatePath('/masjid');
     revalidatePath('/sitemap.xml');
     revalidatePath('/dashboard/dkm');
     revalidatePath('/dashboard/admin');
 
-    // Auto-ping IndexNow untuk pengindeksan instan ke mesin pencari
-    if (slug) {
+    // Auto-ping IndexNow untuk pengindeksan instan ke mesin pencari jika langsung tayang
+    if (slug && postStatus === 'publish') {
       const host = process.env.NEXT_PUBLIC_SITE_URL?.replace(/^https?:\/\//, '') || 'banten-mengaji.vercel.app';
       notifySearchEngines([`https://${host}/jadwal-kajian/${slug}`]).catch(() => {});
     }
 
+    const returnMsg =
+      postStatus === 'pending'
+        ? 'Alhamdulillah, jadwal kajian berhasil diajukan dan sedang menunggu persetujuan Super Admin.'
+        : 'Jazakallahu khairan. Jadwal kajian berhasil dipublikasikan dan langsung tayang di portal Banten Mengaji.';
+
     return {
       success: true,
-      message: 'Jazakallahu khairan. Jadwal kajian berhasil dipublikasikan dan langsung tayang di portal Banten Mengaji.',
+      message: returnMsg,
       slug,
     };
   } catch (err: unknown) {
@@ -170,14 +177,22 @@ export async function approveKajian(id: number) {
     return { success: false, error: 'Tidak ada akses.' };
   }
 
+  const authHeader = getWPAdminAuthHeader() || (session.token ? `Bearer ${session.token}` : null);
+  if (!authHeader) {
+    return { success: false, error: 'Kredensial server tidak tersedia.' };
+  }
+
   try {
     const res = await fetch(`${WP_API_URL}/kajian/${id}`, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${session.token}`,
+        Authorization: authHeader,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ status: 'publish' }),
+      body: JSON.stringify({
+        status: 'publish',
+        acf: { status_kajian: 'aktif' },
+      }),
     });
 
     if (!res.ok) {
@@ -192,6 +207,7 @@ export async function approveKajian(id: number) {
     revalidatePath('/jadwal-kajian');
     revalidatePath('/masjid');
     revalidatePath('/dashboard/admin');
+    revalidatePath('/dashboard/dkm');
 
     if (slug) {
       const host = process.env.NEXT_PUBLIC_SITE_URL?.replace(/^https?:\/\//, '') || 'banten-mengaji.vercel.app';
@@ -210,11 +226,16 @@ export async function rejectKajian(id: number) {
     return { success: false, error: 'Tidak ada akses.' };
   }
 
+  const authHeader = getWPAdminAuthHeader() || (session.token ? `Bearer ${session.token}` : null);
+  if (!authHeader) {
+    return { success: false, error: 'Kredensial server tidak tersedia.' };
+  }
+
   try {
     const res = await fetch(`${WP_API_URL}/kajian/${id}`, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${session.token}`,
+        Authorization: authHeader,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ status: 'draft' }),
@@ -224,7 +245,12 @@ export async function rejectKajian(id: number) {
       return { success: false, error: 'Gagal menolak kajian.' };
     }
 
+    revalidatePath('/');
+    revalidatePath('/jadwal-kajian');
+    revalidatePath('/masjid');
+    revalidatePath('/sitemap.xml');
     revalidatePath('/dashboard/admin');
+    revalidatePath('/dashboard/dkm');
 
     return { success: true };
   } catch {
@@ -245,6 +271,11 @@ export async function updateKajianStatus(
     return { success: false, error: 'Akses ditolak.' };
   }
 
+  const authHeader = getWPAdminAuthHeader() || (session.token ? `Bearer ${session.token}` : null);
+  if (!authHeader) {
+    return { success: false, error: 'Kredensial server tidak tersedia.' };
+  }
+
   try {
     const bodyPayload: {
       status: string;
@@ -253,12 +284,14 @@ export async function updateKajianStatus(
 
     if (statusKajian) {
       bodyPayload.acf = { status_kajian: statusKajian };
+    } else if (status === 'publish') {
+      bodyPayload.acf = { status_kajian: 'aktif' };
     }
 
     const res = await fetch(`${WP_API_URL}/kajian/${id}`, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${session.token}`,
+        Authorization: authHeader,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(bodyPayload),
@@ -282,6 +315,7 @@ export async function updateKajianStatus(
     revalidatePath('/jadwal-kajian');
     revalidatePath('/masjid');
     revalidatePath('/dashboard/admin');
+    revalidatePath('/dashboard/dkm');
 
     if (slug && status === 'publish') {
       const host = process.env.NEXT_PUBLIC_SITE_URL?.replace(/^https?:\/\//, '') || 'banten-mengaji.vercel.app';
@@ -402,10 +436,15 @@ export async function createKajianByAdmin(formData: FormData) {
       payload.featured_media = mediaId;
     }
 
+    const authHeader = getWPAdminAuthHeader() || (session.token ? `Bearer ${session.token}` : null);
+    if (!authHeader) {
+      return { success: false, error: 'Kredensial server tidak tersedia.' };
+    }
+
     const res = await fetch(`${WP_API_URL}/kajian`, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${session.token}`,
+        Authorization: authHeader,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(payload),
@@ -429,6 +468,7 @@ export async function createKajianByAdmin(formData: FormData) {
     revalidatePath('/jadwal-kajian');
     revalidatePath('/masjid');
     revalidatePath('/dashboard/admin');
+    revalidatePath('/dashboard/dkm');
 
     if (slug && payload.status === 'publish') {
       const host = process.env.NEXT_PUBLIC_SITE_URL?.replace(/^https?:\/\//, '') || 'banten-mengaji.vercel.app';
@@ -460,6 +500,11 @@ export async function updateKajianByAdmin(formData: FormData) {
   const id = Number(formData.get('id'));
   if (!id) {
     return { success: false, error: 'ID Kajian tidak valid.' };
+  }
+
+  const authHeader = getWPAdminAuthHeader() || (session.token ? `Bearer ${session.token}` : null);
+  if (!authHeader) {
+    return { success: false, error: 'Kredensial server tidak tersedia.' };
   }
 
   try {
@@ -550,7 +595,7 @@ export async function updateKajianByAdmin(formData: FormData) {
     const res = await fetch(`${WP_API_URL}/kajian/${id}`, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${session.token}`,
+        Authorization: authHeader,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(payload),
@@ -574,8 +619,9 @@ export async function updateKajianByAdmin(formData: FormData) {
     revalidatePath('/jadwal-kajian');
     revalidatePath('/masjid');
     revalidatePath('/dashboard/admin');
+    revalidatePath('/dashboard/dkm');
 
-    if (slug && payload.status === 'publish') {
+    if (slug) {
       const host = process.env.NEXT_PUBLIC_SITE_URL?.replace(/^https?:\/\//, '') || 'banten-mengaji.vercel.app';
       notifySearchEngines([`https://${host}/jadwal-kajian/${slug}`]);
     }
@@ -602,11 +648,16 @@ export async function deleteKajian(id: number) {
     return { success: false, error: 'Akses ditolak.' };
   }
 
+  const authHeader = getWPAdminAuthHeader() || (session.token ? `Bearer ${session.token}` : null);
+  if (!authHeader) {
+    return { success: false, error: 'Kredensial server tidak tersedia.' };
+  }
+
   try {
     const res = await fetch(`${WP_API_URL}/kajian/${id}?force=true`, {
       method: 'DELETE',
       headers: {
-        Authorization: `Bearer ${session.token}`,
+        Authorization: authHeader,
       },
     });
 
@@ -623,7 +674,9 @@ export async function deleteKajian(id: number) {
     revalidatePath('/');
     revalidatePath('/jadwal-kajian');
     revalidatePath('/masjid');
+    revalidatePath('/sitemap.xml');
     revalidatePath('/dashboard/admin');
+    revalidatePath('/dashboard/dkm');
 
     return { success: true, message: 'Kajian berhasil dihapus.' };
   } catch (err: unknown) {
