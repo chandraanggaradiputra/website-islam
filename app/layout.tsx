@@ -45,6 +45,27 @@ export const metadata: Metadata = {
   verification: {
     google: 'mdKrf2CGmVDCr4rmjjEzuIZ1Vr1RVbqgo-Js5ukYfbM',
   },
+  openGraph: {
+    type: 'website',
+    locale: 'id_ID',
+    siteName: 'Banten Mengaji',
+    title: 'Banten Mengaji | Direktori Masjid & Jadwal Kajian Sunnah Banten',
+    description: 'Pusat informasi jadwal kajian Islam ilmiah bermanhaj Salafus Shalih dan direktori masjid di seluruh Provinsi Banten.',
+    images: [
+      {
+        url: '/og-banten-mengaji.png',
+        width: 1200,
+        height: 630,
+        alt: 'Banten Mengaji - Jadwal Kajian Sunnah & Direktori Masjid Banten',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Banten Mengaji | Direktori Masjid & Jadwal Kajian Sunnah Banten',
+    description: 'Pusat informasi jadwal kajian Islam ilmiah bermanhaj Salafus Shalih dan direktori masjid di seluruh Provinsi Banten.',
+    images: ['/og-banten-mengaji.png'],
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
