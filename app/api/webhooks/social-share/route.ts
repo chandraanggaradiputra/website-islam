@@ -47,7 +47,39 @@ interface WebhookArticlePayload {
   };
 }
 
+const MAX_WEBHOOK_PAYLOAD_BYTES = 2 * 1024 * 1024; // 2 Megabytes
+
 export async function POST(request: Request) {
+  // 1. Validasi Ukuran Payload (Mitigasi Memory OOM & Flood)
+  const contentLength = Number(request.headers.get('content-length') || 0);
+  if (contentLength > MAX_WEBHOOK_PAYLOAD_BYTES) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Payload Too Large: Ukuran payload webhook melebihi batas 2MB.',
+      },
+      {
+        status: 413,
+        headers: corsHeaders,
+      }
+    );
+  }
+
+  // 2. Validasi Content-Type
+  const contentType = request.headers.get('content-type') || '';
+  if (!contentType.toLowerCase().includes('application/json')) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Unsupported Media Type: Content-Type harus application/json.',
+      },
+      {
+        status: 415,
+        headers: corsHeaders,
+      }
+    );
+  }
+
   const url = new URL(request.url);
   const secretFromQuery = url.searchParams.get('secret');
   const secretFromHeader = request.headers.get('x-webhook-secret');
@@ -56,7 +88,7 @@ export async function POST(request: Request) {
   const expectedSecret =
     process.env.WEBHOOK_SECRET || 'banten_mengaji_secret_2026';
 
-  // 1. Validasi Otorisasi Webhook (Zero Silent Fallback)
+  // 3. Validasi Otorisasi Webhook (Zero Silent Fallback)
   if (!providedSecret || providedSecret !== expectedSecret) {
     return NextResponse.json(
       {
@@ -71,7 +103,7 @@ export async function POST(request: Request) {
     );
   }
 
-  // 2. Ekstraksi Payload Artikel WordPress
+  // 4. Ekstraksi Payload Artikel WordPress
   let payload: WebhookArticlePayload;
   try {
     payload = await request.json();

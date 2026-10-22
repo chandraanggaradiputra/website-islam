@@ -713,7 +713,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   if (contentLength > MAX_BODY_BYTES) {
     return NextResponse.json(
       rpcError(null, RPC.INVALID_REQUEST, "Payload terlalu besar (maksimal 64KB)"),
-      { status: 400, headers: nocacheHeaders() }
+      { status: 413, headers: nocacheHeaders() }
+    );
+  }
+
+  // Validasi Content-Type
+  const contentType = request.headers.get("content-type") || "";
+  if (!contentType.toLowerCase().includes("application/json")) {
+    return NextResponse.json(
+      rpcError(null, RPC.INVALID_REQUEST, "Unsupported Media Type: Content-Type harus application/json"),
+      { status: 415, headers: nocacheHeaders() }
     );
   }
 
