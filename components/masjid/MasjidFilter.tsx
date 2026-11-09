@@ -1,9 +1,11 @@
+// components/masjid/MasjidFilter.tsx
 'use client';
 
 import { useState, useMemo, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { WPMasjid } from '@/types';
 import { MasjidCard } from './MasjidCard';
+import { MasjidCardSkeleton } from './MasjidCardSkeleton';
 import { Filter, RotateCcw } from 'lucide-react';
 import { BANTEN_REGIONS, KotaKabupatenBanten } from '@/lib/constants/bantenRegions';
 import { resolveKecamatanName } from '@/lib/wordpress';
@@ -58,14 +60,12 @@ function MasjidFilterContent({
       if (kecamatan && kecamatan.trim() !== '') {
         const targetKec = kecamatan.trim().toLowerCase();
         
-        // Kita juga bisa mencocokkan id kecamatan dari item.kecamatan, 
-        // tapi mencocokkan string dari alamat lebih aman untuk masjid karena ACF-nya seringkali hanya alamat string.
         const alamat = typeof item.acf?.alamat_lengkap === 'string'
           ? item.acf.alamat_lengkap
           : '';
         const masjidName = item.title?.rendered || item.post_title || '';
 
-        // Kalau ada relasi taxonomy kecamatan_nama dari WP REST API (opsional):
+        // Taxonomy kecamatan dari WP REST API
         const termData = item._embedded?.['wp:term'];
         let taxonomyKecamatan = '';
         if (termData && Array.isArray(termData)) {
@@ -110,7 +110,7 @@ function MasjidFilterContent({
 
   return (
     <div className="space-y-6">
-      {/* Box Filter */}
+      {/* Box Filter dengan Touch Target Minimal 48x48px (WCAG 2.2 SC 2.5.8) */}
       <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-200">
@@ -120,9 +120,9 @@ function MasjidFilterContent({
           {(kota || kecamatan || search) && (
             <button
               onClick={handleReset}
-              className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-red-600 dark:text-slate-300 dark:hover:text-red-400 min-h-[48px] px-3.5 py-2.5 rounded-xl transition-colors cursor-pointer"
             >
-              <RotateCcw className="h-3 w-3" />
+              <RotateCcw className="h-3.5 w-3.5" />
               <span>Reset Filter</span>
             </button>
           )}
@@ -133,7 +133,7 @@ function MasjidFilterContent({
             aria-label="Filter Kota atau Kabupaten Masjid"
             value={kota}
             onChange={handleKotaChange}
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-800 focus:border-[#093c96] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3 min-h-[48px] text-sm font-medium text-slate-800 focus:border-[#093c96] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
           >
             <option value="">Semua Kota/Kabupaten</option>
             {BANTEN_REGIONS.map((r) => (
@@ -148,7 +148,7 @@ function MasjidFilterContent({
             value={kecamatan}
             onChange={(e) => setKecamatan(e.target.value)}
             disabled={!kota}
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-800 focus:border-[#093c96] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3 min-h-[48px] text-sm font-medium text-slate-800 focus:border-[#093c96] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <option value="">{kota ? 'Semua Kecamatan' : 'Pilih Kota Dulu'}</option>
             {availableKecamatans.map((kecName) => (
@@ -163,7 +163,7 @@ function MasjidFilterContent({
             placeholder="Cari Nama Masjid..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:border-[#093c96] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3 min-h-[48px] text-sm text-slate-800 placeholder-slate-400 focus:border-[#093c96] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
           />
         </div>
       </div>
@@ -189,11 +189,34 @@ function MasjidFilterContent({
   );
 }
 
+function MasjidFilterSkeletonFallback() {
+  return (
+    <div className="space-y-6 animate-pulse" aria-hidden="true">
+      {/* Filter Box Skeleton */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+        <div className="h-5 w-40 bg-slate-200 dark:bg-slate-800 rounded mb-4" />
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="h-12 rounded-xl bg-slate-100 dark:bg-slate-800" />
+          ))}
+        </div>
+      </div>
+
+      {/* Grid 4x Masjid Skeletons */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <MasjidCardSkeleton key={i} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function MasjidFilter(props: {
   initialMasjid?: WPMasjid[];
 }) {
   return (
-    <Suspense fallback={<div className="p-4 text-center text-sm text-slate-500">Memuat filter...</div>}>
+    <Suspense fallback={<MasjidFilterSkeletonFallback />}>
       <MasjidFilterContent {...props} />
     </Suspense>
   );

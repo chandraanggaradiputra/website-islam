@@ -1,6 +1,8 @@
 // app/jadwal-sholat/page.tsx
 import { Metadata } from 'next';
 import { MonthlyPrayerCalendar } from '@/components/prayer/MonthlyPrayerCalendar';
+import { getMonthlyShalat } from '@/lib/equranShalat';
+import { EQuranShalatData } from '@/types/prayer';
 
 export const revalidate = 86400; // 24 jam revalidasi
 
@@ -62,11 +64,20 @@ export default async function JadwalSholatPage({ searchParams }: PageProps) {
       ? parsedTahun
       : now.getFullYear();
 
+  // Server-Side Data Pre-fetch: Ambil jadwal Kota Serang agar initial HTML lengkap (Zero CLS)
+  let initialData: EQuranShalatData | null = null;
+  try {
+    initialData = await getMonthlyShalat('Kota Serang', validBulan, validTahun);
+  } catch (error) {
+    console.error('Failed to pre-fetch monthly prayer times on server:', error);
+  }
+
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-6 min-h-[850px]">
       <MonthlyPrayerCalendar
         bulan={validBulan}
         tahun={validTahun}
+        initialData={initialData}
       />
     </div>
   );

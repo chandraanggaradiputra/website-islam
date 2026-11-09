@@ -48,7 +48,19 @@ export async function updateMasjidProfile(formData: FormData) {
     return { success: false, error: 'Sesi Anda telah berakhir. Silakan login kembali.' };
   }
 
-  const masjidId = Number(formData.get('masjidId')) || session.masjidId;
+  const requestedMasjidId = formData.get('masjidId') ? Number(formData.get('masjidId')) : undefined;
+  
+  // Validasi Otorisasi Anti-IDOR: DKM hanya boleh memperbarui masjid miliknya sendiri
+  if (session.role === 'dkm') {
+    if (!session.masjidId || (requestedMasjidId && requestedMasjidId !== Number(session.masjidId))) {
+      return {
+        success: false,
+        error: 'Akses Ditolak: Anda hanya berwenang memperbarui profil masjid resmi yang terhubung dengan akun DKM Anda.',
+      };
+    }
+  }
+
+  const masjidId = session.role === 'admin' && requestedMasjidId ? requestedMasjidId : session.masjidId;
   if (!masjidId) {
     return { success: false, error: 'ID Masjid tidak valid atau belum terhubung dengan akun Anda.' };
   }

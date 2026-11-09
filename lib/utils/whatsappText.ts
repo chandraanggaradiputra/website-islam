@@ -16,11 +16,13 @@ export function formatWhatsAppText(text: string): string {
     .replace(/^[ \t]+$/gm, '')
     .trim();
 
-  // 2. Amankan karakter HTML dasar untuk mencegah XSS
+  // 2. Amankan karakter HTML dasar untuk mencegah XSS & Attribute Breakout
   clean = clean
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
 
   // 3. Format Tebal WhatsApp: *teks* -> <strong>teks</strong>
   // Mendukung kata diapit tanda kutip, emoji, dan aksara Arab
@@ -32,8 +34,8 @@ export function formatWhatsAppText(text: string): string {
   // 5. Format Coret WhatsApp: ~teks~ -> <del>teks</del>
   clean = clean.replace(/(?<!\w)~([^\s~](?:.*?[^\s~])?)~(?!\w)/g, '<del>$1</del>');
 
-  // 6. Format Tautan URL aktif
-  const urlRegex = /(https?:\/\/[^\s<]+)/g;
+  // 6. Format Tautan URL aktif (Strict scheme https?:// tanpa celah breakout)
+  const urlRegex = /(https?:\/\/[^\s<"'>]+)/g;
   clean = clean.replace(
     urlRegex,
     '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 underline hover:text-blue-800 break-all font-medium">$1</a>'

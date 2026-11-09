@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getAgentSecretKey } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "*",
+};
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   // 1. Validasi Content-Type
@@ -51,7 +58,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const clientName = rawClientName.replace(/[^\w\s.-]/g, "");
 
   const clientId = "gemini-spark-" + Date.now();
-  const secret = process.env.AGENT_SECRET_KEY || "bm_agent_sec_2026_banten";
+  let secret = "";
+  try {
+    secret = getAgentSecretKey();
+  } catch {
+    return NextResponse.json(
+      { error: "server_error", error_description: "AGENT_SECRET_KEY belum dikonfigurasi." },
+      { status: 500, headers: corsHeaders }
+    );
+  }
 
   return NextResponse.json(
     {

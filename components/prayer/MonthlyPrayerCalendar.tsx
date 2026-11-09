@@ -1,3 +1,4 @@
+// components/prayer/MonthlyPrayerCalendar.tsx
 'use client';
 
 import { useState, useTransition, useEffect } from 'react';
@@ -5,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { EQuranDailyShalat, EQuranShalatData } from '@/types/prayer';
 import { BANTEN_REGIONS, KotaKabupatenBanten } from '@/lib/constants/bantenRegions';
 import { formatAdjustedHijriDate } from '@/lib/equranShalat';
+import { MonthlyPrayerCalendarSkeleton } from './MonthlyPrayerCalendarSkeleton';
 import {
   Printer,
   Calendar,
@@ -14,12 +16,14 @@ import {
   Clock,
   Sparkles,
   Info,
+  Loader2,
 } from 'lucide-react';
 import clsx from 'clsx';
 
 interface MonthlyPrayerCalendarProps {
   bulan: number;
   tahun: number;
+  initialData?: EQuranShalatData | null;
 }
 
 const MONTH_NAMES = [
@@ -40,6 +44,7 @@ const MONTH_NAMES = [
 export function MonthlyPrayerCalendar({
   bulan,
   tahun,
+  initialData = null,
 }: MonthlyPrayerCalendarProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -48,15 +53,41 @@ export function MonthlyPrayerCalendar({
   const currentMonth = bulan;
   const currentYear = tahun;
 
-  const [region, setRegion] = useState<KotaKabupatenBanten>(() => {
+  // Inisialisasi data dari pre-fetched initialData (SSR)
+  const [currentData, setCurrentData] = useState<EQuranShalatData | null>(initialData);
+  const [region, setRegion] = useState<KotaKabupatenBanten>('Kota Serang');
+  const [hasHydratedRegion, setHasHydratedRegion] = useState(false);
+
+  // Live Digital Clock WIB (Two-pass rendering: aman dari React 19 hydration mismatch)
+  const [currentTimeStr, setCurrentTimeStr] = useState<string>('');
+
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
+      setCurrentTimeStr(`${hours}:${minutes}:${seconds} WIB`);
+    };
+
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Baca preferensi wilayah tersimpan di localStorage setelah mount
+  useEffect(() => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('banten_mengaji_region');
       if (stored && BANTEN_REGIONS.some((r) => r.name === stored)) {
-        return stored as KotaKabupatenBanten;
+        if (stored !== 'Kota Serang') {
+          // eslint-disable-next-line react-hooks/set-state-in-effect
+          setRegion(stored as KotaKabupatenBanten);
+        }
       }
+      setHasHydratedRegion(true);
     }
-    return 'Kota Serang';
-  });
+  }, []);
 
   const handleRegionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newRegion = e.target.value as KotaKabupatenBanten;
@@ -66,9 +97,13 @@ export function MonthlyPrayerCalendar({
     }
   };
 
-  const [currentData, setCurrentData] = useState<EQuranShalatData | null>(null);
-
+  // Re-fetch data jika wilayah/bulan/tahun berubah (dengan retensi tabel tanpa unmount / collapse)
   useEffect(() => {
+    // Lewati fetch awal jika sudah ada initialData untuk Kota Serang
+    if (initialData && region === 'Kota Serang' && currentData === initialData && !hasHydratedRegion) {
+      return;
+    }
+
     let isMounted = true;
     startTransition(async () => {
       try {
@@ -78,15 +113,17 @@ export function MonthlyPrayerCalendar({
           setCurrentData(data);
         }
       } catch (error) {
-        console.error(error);
+        console.error('Failed to fetch prayer times in MonthlyPrayerCalendar:', error);
       }
     });
     return () => {
       isMounted = false;
     };
-  }, [region, currentMonth, currentYear]);
+    // currentData tidak dimasukkan ke deps agar tidak memicu infinite fetch loop
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [region, currentMonth, currentYear, hasHydratedRegion, initialData]);
 
-  // Tanggal Hari Ini (dalam format YYYY-MM-DD)
+  // Tanggal Hari Ini (format YYYY-MM-DD)
   const now = new Date();
   const pad = (n: number) => n.toString().padStart(2, '0');
   const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
@@ -130,26 +167,33 @@ export function MonthlyPrayerCalendar({
     (item: EQuranDailyShalat) => item.tanggal_lengkap === todayStr
   );
 
+  // Jika data belum tersedia (misal fallback), tampilkan Skeleton dengan tinggi statis
   if (!currentData) {
-    return (
-      <div className="flex flex-col items-center justify-center p-12 text-slate-500 animate-pulse">
-        <Clock className="w-8 h-8 mb-4 opacity-50" />
-        <p>Memuat jadwal sholat...</p>
-      </div>
-    );
+    return <MonthlyPrayerCalendarSkeleton />;
   }
 
   return (
     <div className="space-y-6">
       {/* Header Banner - Screen Only */}
-      <div className="print:hidden rounded-2xl bg-gradient-to-br from-[#093c96] via-blue-800 to-indigo-950 p-6 md:p-8 text-white shadow-xl relative overflow-hidden">
+      <div className="print:hidden rounded-2xl bg-gradient-to-br from-[#093c96] via-blue-800 to-indigo-950 p-6 md:p-8 text-white shadow-xl relative overflow-hidden min-h-[220px]">
         <div className="absolute top-0 right-0 -mt-10 -mr-10 w-64 h-64 bg-white/5 rounded-full blur-2xl pointer-events-none" />
         <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-xs font-semibold text-blue-100 border border-white/15">
-              <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
-              <span>Standar Bimas Islam Kemenag RI</span>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-xs font-semibold text-blue-100 border border-white/15">
+                <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
+                <span>Standar Bimas Islam Kemenag RI</span>
+              </div>
+              {/* Jam Digital WIB Real-Time dengan Two-Pass Reservation */}
+              <div
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/30 backdrop-blur-md text-xs font-mono tabular-nums font-semibold text-blue-100 border border-white/15 min-w-[130px] justify-center h-7"
+                suppressHydrationWarning
+              >
+                <Clock className="w-3.5 h-3.5 text-blue-300 shrink-0" />
+                <span>{currentTimeStr || '--:--:-- WIB'}</span>
+              </div>
             </div>
+
             <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
               Jadwal Sholat & Imsakiyah {region}
             </h1>
@@ -159,12 +203,12 @@ export function MonthlyPrayerCalendar({
             </p>
           </div>
 
-          {/* Tombol Cetak / PDF */}
+          {/* Tombol Cetak / PDF dengan Touch Target Nyaman (min-h-[48px]) */}
           <div className="flex items-center gap-3 self-start md:self-center">
             <button
               onClick={handlePrint}
               type="button"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-[#093c96] hover:bg-blue-50 font-semibold text-sm shadow-md hover:shadow-lg transition-all active:scale-95 cursor-pointer"
+              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-white text-[#093c96] hover:bg-blue-50 font-semibold text-sm shadow-md hover:shadow-lg transition-all active:scale-95 cursor-pointer min-h-[48px]"
             >
               <Printer className="w-4 h-4" />
               <span>Cetak / Simpan PDF</span>
@@ -250,13 +294,13 @@ export function MonthlyPrayerCalendar({
               </h2>
             </div>
 
-            {/* Dropdown khusus Desktop (md:flex) */}
+            {/* Dropdown khusus Desktop (md:flex) dengan Touch Target min-h-[48px] */}
             <div className="hidden md:flex items-center gap-2">
               <select
                 aria-label="Pilih Kota atau Wilayah Sholat"
                 value={region}
                 onChange={handleRegionChange}
-                className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 font-medium text-sm rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-[#093c96]/20 outline-none hover:border-[#093c96]/50 transition-colors cursor-pointer"
+                className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 font-medium text-sm rounded-xl px-4 py-2.5 min-h-[48px] focus:ring-2 focus:ring-[#093c96]/20 outline-none hover:border-[#093c96]/50 transition-colors cursor-pointer"
               >
                 {BANTEN_REGIONS.map((r) => (
                   <option key={r.id} value={r.name}>
@@ -265,20 +309,23 @@ export function MonthlyPrayerCalendar({
                 ))}
               </select>
               {isPending && (
-                <span className="text-xs text-slate-400 animate-pulse">Memuat...</span>
+                <span className="inline-flex items-center gap-1 text-xs text-slate-400">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Memperbarui...</span>
+                </span>
               )}
             </div>
           </div>
 
           {/* Baris Kontrol: Dropdown di kiri (Mobile Only) + Tombol Panah di kanan */}
           <div className="flex items-center justify-between md:justify-end gap-2 w-full md:w-auto">
-            {/* Dropdown khusus Mobile (md:hidden) berdampingan di kiri tombol pagination */}
-            <div className="flex items-center gap-2 flex-1 max-w-[200px] sm:max-w-xs md:hidden">
+            {/* Dropdown khusus Mobile (md:hidden) dengan min-h-[48px] */}
+            <div className="flex items-center gap-2 flex-1 max-w-[220px] sm:max-w-xs md:hidden">
               <select
                 aria-label="Pilih Kota atau Wilayah Sholat"
                 value={region}
                 onChange={handleRegionChange}
-                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 font-medium text-xs sm:text-sm rounded-lg px-2.5 py-1.5 focus:ring-2 focus:ring-[#093c96]/20 outline-none hover:border-[#093c96]/50 transition-colors cursor-pointer truncate"
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 font-medium text-sm rounded-xl px-3.5 py-2.5 min-h-[48px] focus:ring-2 focus:ring-[#093c96]/20 outline-none hover:border-[#093c96]/50 transition-colors cursor-pointer truncate"
               >
                 {BANTEN_REGIONS.map((r) => (
                   <option key={r.id} value={r.name}>
@@ -287,17 +334,17 @@ export function MonthlyPrayerCalendar({
                 ))}
               </select>
               {isPending && (
-                <span className="text-[10px] text-slate-400 animate-pulse shrink-0">...</span>
+                <Loader2 className="w-4 h-4 text-slate-400 animate-spin shrink-0" />
               )}
             </div>
 
-            {/* Tombol Panah Prev / Next */}
+            {/* Tombol Panah Prev / Next dengan Touch Target Minimum 48x48px (WCAG 2.2) */}
             <div className="flex items-center gap-1.5 shrink-0">
               <button
                 onClick={handlePrevMonth}
                 disabled={isPending}
                 aria-label="Bulan Sebelumnya"
-                className="p-1.5 sm:p-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors disabled:opacity-50"
+                className="min-h-[48px] min-w-[48px] p-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors disabled:opacity-50 flex items-center justify-center cursor-pointer"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
@@ -305,7 +352,7 @@ export function MonthlyPrayerCalendar({
                 onClick={handleNextMonth}
                 disabled={isPending}
                 aria-label="Bulan Selanjutnya"
-                className="p-1.5 sm:p-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors disabled:opacity-50"
+                className="min-h-[48px] min-w-[48px] p-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors disabled:opacity-50 flex items-center justify-center cursor-pointer"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -313,7 +360,7 @@ export function MonthlyPrayerCalendar({
           </div>
         </div>
 
-        {/* Tab Pilihan Bulan (Jan - Des) */}
+        {/* Tab Pilihan Bulan (Jan - Des) dengan Touch Target min-h-[44px] */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs">
           {MONTH_NAMES.map((name, index) => {
             const monthNumber = index + 1;
@@ -324,7 +371,7 @@ export function MonthlyPrayerCalendar({
                 type="button"
                 onClick={() => changeMonth(monthNumber, currentYear)}
                 className={clsx(
-                  'px-3.5 py-1.5 rounded-xl font-medium whitespace-nowrap transition-all cursor-pointer',
+                  'px-4 py-2.5 rounded-xl font-medium whitespace-nowrap transition-all cursor-pointer min-h-[44px] md:min-h-[40px] flex items-center justify-center',
                   isSelected
                     ? 'bg-[#093c96] text-white shadow-md dark:bg-blue-600 font-semibold'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
@@ -337,21 +384,26 @@ export function MonthlyPrayerCalendar({
         </div>
       </div>
 
-      {/* Tabel Jadwal Sholat 30 Hari Penuh */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden print:border-slate-300 print:shadow-none print:rounded-none">
+      {/* Tabel Jadwal Sholat 30 Hari Penuh (Dengan Transisi Opacity saat Re-fetch agar Zero CLS) */}
+      <div
+        className={clsx(
+          'bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden print:border-slate-300 print:shadow-none print:rounded-none transition-opacity duration-200',
+          isPending && 'opacity-70'
+        )}
+      >
         <div className="overflow-x-auto">
           <table className="w-full text-center border-collapse text-xs md:text-sm">
             <thead>
               <tr className="bg-slate-100/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 font-bold border-b border-slate-200 dark:border-slate-700 print:bg-slate-100 print:text-black">
-                <th className="py-3 px-3 text-left w-24 md:w-36">Tanggal</th>
-                <th className="py-3 px-2 text-slate-600 dark:text-slate-400 print:text-black">Imsak</th>
-                <th className="py-3 px-2 text-[#093c96] dark:text-blue-400 print:text-black font-extrabold">Subuh</th>
-                <th className="py-3 px-2 text-slate-600 dark:text-slate-400 print:text-black">Terbit</th>
-                <th className="py-3 px-2 text-slate-600 dark:text-slate-400 print:text-black">Dhuha</th>
-                <th className="py-3 px-2 text-[#093c96] dark:text-blue-400 print:text-black font-extrabold">Dzuhur</th>
-                <th className="py-3 px-2 text-[#093c96] dark:text-blue-400 print:text-black font-extrabold">Ashar</th>
-                <th className="py-3 px-2 text-[#093c96] dark:text-blue-400 print:text-black font-extrabold">Maghrib</th>
-                <th className="py-3 px-2 text-[#093c96] dark:text-blue-400 print:text-black font-extrabold">Isya</th>
+                <th className="py-3.5 px-3 text-left w-24 md:w-36">Tanggal</th>
+                <th className="py-3.5 px-2 text-slate-600 dark:text-slate-400 print:text-black">Imsak</th>
+                <th className="py-3.5 px-2 text-[#093c96] dark:text-blue-400 print:text-black font-extrabold">Subuh</th>
+                <th className="py-3.5 px-2 text-slate-600 dark:text-slate-400 print:text-black">Terbit</th>
+                <th className="py-3.5 px-2 text-slate-600 dark:text-slate-400 print:text-black">Dhuha</th>
+                <th className="py-3.5 px-2 text-[#093c96] dark:text-blue-400 print:text-black font-extrabold">Dzuhur</th>
+                <th className="py-3.5 px-2 text-[#093c96] dark:text-blue-400 print:text-black font-extrabold">Ashar</th>
+                <th className="py-3.5 px-2 text-[#093c96] dark:text-blue-400 print:text-black font-extrabold">Maghrib</th>
+                <th className="py-3.5 px-2 text-[#093c96] dark:text-blue-400 print:text-black font-extrabold">Isya</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 print:divide-slate-300">
@@ -374,10 +426,12 @@ export function MonthlyPrayerCalendar({
                     {/* Tanggal & Hari */}
                     <td className="py-2.5 px-3 text-left whitespace-nowrap font-sans">
                       <div className="flex items-center gap-1.5">
-                        <span className={clsx(
-                          'font-bold text-xs md:text-sm',
-                          isToday ? 'text-[#093c96] dark:text-blue-400' : 'text-slate-900 dark:text-slate-100'
-                        )}>
+                        <span
+                          className={clsx(
+                            'font-bold text-xs md:text-sm',
+                            isToday ? 'text-[#093c96] dark:text-blue-400' : 'text-slate-900 dark:text-slate-100'
+                          )}
+                        >
                           {item.tanggal} {MONTH_NAMES[currentMonth - 1].slice(0, 3)}
                         </span>
                         <span className="text-slate-600 dark:text-slate-300 text-xs">

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getAgentSecretKey } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +20,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const secret = process.env.AGENT_SECRET_KEY || "bm_agent_sec_2026_banten";
+  let secret = "";
+  try {
+    secret = getAgentSecretKey();
+  } catch {
+    return NextResponse.json(
+      { error: "server_error", error_description: "AGENT_SECRET_KEY belum dikonfigurasi." },
+      { status: 500 }
+    );
+  }
 
   return NextResponse.json(
     {

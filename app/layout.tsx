@@ -81,7 +81,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <JsonLd data={orgSchema} />
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <Header />
-          <main className={clsx('flex-grow', 'mx-auto', 'px-4', 'py-8', 'pb-20', 'md:pb-0', 'container')}>
+          <main className={clsx('flex-grow', 'mx-auto', 'px-4', 'py-8', 'pb-[calc(5.5rem+env(safe-area-inset-bottom))]', 'md:pb-0', 'container')}>
             {children}
           </main>
           <BottomNav />

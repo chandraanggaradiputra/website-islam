@@ -1,3 +1,4 @@
+// components/layout/BottomNav.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -58,17 +59,17 @@ export function BottomNav() {
   return (
     <>
       {/* ========================================================================= */}
-      {/* 1. BOTTOM NAVIGATION BAR (FIXED 5-TAB) */}
+      {/* 1. BOTTOM NAVIGATION BAR (FIXED 5-TAB DENGAN TOUCH TARGET 48x48px WCAG 2.2) */}
       {/* ========================================================================= */}
       <nav
         aria-label="Navigasi Utama Smartphone"
-        className="fixed bottom-0 left-0 right-0 z-40 flex h-16 items-center justify-around border-t border-slate-200/80 bg-white/95 px-2 backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-950/95 md:hidden transition-colors"
+        className="fixed bottom-0 left-0 right-0 z-40 flex h-16 pb-[env(safe-area-inset-bottom)] box-content items-center justify-around border-t border-slate-200/80 bg-white/95 px-1 backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-950/95 md:hidden transition-colors"
       >
         {/* Tab 1: Beranda / Dasbor Adaptif */}
         {isDkmDashboard ? (
           <Link
             href="/dashboard/dkm"
-            className={`flex flex-col items-center justify-center gap-1 px-2 py-1 text-[11px] font-medium transition-colors ${
+            className={`flex-1 h-full min-h-[48px] flex flex-col items-center justify-center gap-1 px-1 py-1 text-[11px] font-medium transition-all active:scale-95 select-none ${
               pathname === '/dashboard/dkm'
                 ? 'text-emerald-700 dark:text-emerald-400 font-bold'
                 : 'text-slate-500 dark:text-slate-400'
@@ -80,7 +81,7 @@ export function BottomNav() {
         ) : isAdminDashboard ? (
           <Link
             href="/dashboard/admin"
-            className={`flex flex-col items-center justify-center gap-1 px-2 py-1 text-[11px] font-medium transition-colors ${
+            className={`flex-1 h-full min-h-[48px] flex flex-col items-center justify-center gap-1 px-1 py-1 text-[11px] font-medium transition-all active:scale-95 select-none ${
               pathname === '/dashboard/admin'
                 ? 'text-[#093c96] dark:text-blue-400 font-bold'
                 : 'text-slate-500 dark:text-slate-400'
@@ -92,7 +93,7 @@ export function BottomNav() {
         ) : (
           <Link
             href="/"
-            className={`flex flex-col items-center justify-center gap-1 px-2 py-1 text-[11px] font-medium transition-colors ${
+            className={`flex-1 h-full min-h-[48px] flex flex-col items-center justify-center gap-1 px-1 py-1 text-[11px] font-medium transition-all active:scale-95 select-none ${
               pathname === '/' ? 'text-[#093c96] dark:text-blue-400 font-bold' : 'text-slate-500 dark:text-slate-400'
             }`}
           >
@@ -104,7 +105,7 @@ export function BottomNav() {
         {/* Tab 2: Jadwal Kajian */}
         <Link
           href="/jadwal-kajian"
-          className={`flex flex-col items-center justify-center gap-1 px-2 py-1 text-[11px] font-medium transition-colors ${
+          className={`flex-1 h-full min-h-[48px] flex flex-col items-center justify-center gap-1 px-1 py-1 text-[11px] font-medium transition-all active:scale-95 select-none ${
             pathname.startsWith('/jadwal-kajian') ? 'text-[#093c96] dark:text-blue-400 font-bold' : 'text-slate-500 dark:text-slate-400'
           }`}
         >
@@ -114,45 +115,49 @@ export function BottomNav() {
 
         {/* Tab 3 (Tengah - Adaptif Berdasarkan Role & Rute) */}
         {role === 'dkm' || isDkmDashboard ? (
-          <Link
-            href="/dashboard/dkm/tambah-kajian"
-            className="flex flex-col items-center justify-center -mt-5 group"
-            aria-label="Tambah Jadwal Kajian Baru"
-          >
-            <div
-              className={`flex h-12 w-12 items-center justify-center rounded-full text-white shadow-lg transition-transform group-hover:scale-105 ${
-                pathname === '/dashboard/dkm/tambah-kajian'
-                  ? 'bg-emerald-700 shadow-emerald-900/40 ring-2 ring-emerald-400'
-                  : 'bg-emerald-600 shadow-emerald-900/30'
-              }`}
+          <div className="flex-1 h-full flex flex-col items-center justify-center">
+            <Link
+              href="/dashboard/dkm/tambah-kajian"
+              className="flex flex-col items-center justify-center -mt-5 group"
+              aria-label="Tambah Jadwal Kajian Baru"
             >
-              <Plus className="h-6 w-6 stroke-[2.5]" />
-            </div>
-            <span
-              className={`text-[10px] font-bold mt-0.5 ${
-                pathname === '/dashboard/dkm/tambah-kajian'
-                  ? 'text-emerald-700 dark:text-emerald-400 font-extrabold'
-                  : 'text-emerald-600 dark:text-emerald-400'
-              }`}
-            >
-              Tambah
-            </span>
-          </Link>
+              <div
+                className={`flex h-12 w-12 min-h-[48px] min-w-[48px] items-center justify-center rounded-full text-white shadow-lg transition-transform group-hover:scale-105 active:scale-90 ${
+                  pathname === '/dashboard/dkm/tambah-kajian'
+                    ? 'bg-emerald-700 shadow-emerald-900/40 ring-2 ring-emerald-400'
+                    : 'bg-emerald-600 shadow-emerald-900/30'
+                }`}
+              >
+                <Plus className="h-6 w-6 stroke-[2.5]" />
+              </div>
+              <span
+                className={`text-[10px] font-bold mt-0.5 ${
+                  pathname === '/dashboard/dkm/tambah-kajian'
+                    ? 'text-emerald-700 dark:text-emerald-400 font-extrabold'
+                    : 'text-emerald-600 dark:text-emerald-400'
+                }`}
+              >
+                Tambah
+              </span>
+            </Link>
+          </div>
         ) : role === 'admin' || isAdminDashboard ? (
-          <Link
-            href="/dashboard/admin"
-            className="flex flex-col items-center justify-center -mt-5 group"
-            aria-label="Moderasi Jadwal Kajian"
-          >
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#093c96] text-white shadow-lg shadow-blue-900/30 group-hover:scale-105 transition-transform">
-              <ShieldCheck className="h-6 w-6 stroke-[2.5]" />
-            </div>
-            <span className="text-[10px] font-bold text-[#093c96] dark:text-blue-400 mt-0.5">Moderasi</span>
-          </Link>
+          <div className="flex-1 h-full flex flex-col items-center justify-center">
+            <Link
+              href="/dashboard/admin"
+              className="flex flex-col items-center justify-center -mt-5 group"
+              aria-label="Moderasi Jadwal Kajian"
+            >
+              <div className="flex h-12 w-12 min-h-[48px] min-w-[48px] items-center justify-center rounded-full bg-[#093c96] text-white shadow-lg shadow-blue-900/30 group-hover:scale-105 active:scale-90 transition-transform">
+                <ShieldCheck className="h-6 w-6 stroke-[2.5]" />
+              </div>
+              <span className="text-[10px] font-bold text-[#093c96] dark:text-blue-400 mt-0.5">Moderasi</span>
+            </Link>
+          </div>
         ) : (
           <Link
             href="/masjid"
-            className={`flex flex-col items-center justify-center gap-1 px-2 py-1 text-[11px] font-medium transition-colors ${
+            className={`flex-1 h-full min-h-[48px] flex flex-col items-center justify-center gap-1 px-1 py-1 text-[11px] font-medium transition-all active:scale-95 select-none ${
               pathname.startsWith('/masjid') ? 'text-[#093c96] dark:text-blue-400 font-bold' : 'text-slate-500 dark:text-slate-400'
             }`}
           >
@@ -165,7 +170,7 @@ export function BottomNav() {
         {role === 'dkm' || isDkmDashboard ? (
           <Link
             href="/dashboard/dkm/profil-masjid"
-            className={`flex flex-col items-center justify-center gap-1 px-2 py-1 text-[11px] font-medium transition-colors ${
+            className={`flex-1 h-full min-h-[48px] flex flex-col items-center justify-center gap-1 px-1 py-1 text-[11px] font-medium transition-all active:scale-95 select-none ${
               pathname.startsWith('/dashboard/dkm/profil')
                 ? 'text-emerald-700 dark:text-emerald-400 font-bold'
                 : 'text-slate-500 dark:text-slate-400'
@@ -177,7 +182,7 @@ export function BottomNav() {
         ) : role === 'admin' || isAdminDashboard ? (
           <Link
             href="/dashboard/admin?tab=dkm"
-            className={`flex flex-col items-center justify-center gap-1 px-2 py-1 text-[11px] font-medium transition-colors ${
+            className={`flex-1 h-full min-h-[48px] flex flex-col items-center justify-center gap-1 px-1 py-1 text-[11px] font-medium transition-all active:scale-95 select-none ${
               pathname === '/dashboard/admin' && typeof window !== 'undefined' && window.location.search.includes('tab=dkm')
                 ? 'text-[#093c96] dark:text-blue-400 font-bold' 
                 : 'text-slate-500 dark:text-slate-400'
@@ -189,7 +194,7 @@ export function BottomNav() {
         ) : (
           <Link
             href="/artikel"
-            className={`flex flex-col items-center justify-center gap-1 px-2 py-1 text-[11px] font-medium transition-colors ${
+            className={`flex-1 h-full min-h-[48px] flex flex-col items-center justify-center gap-1 px-1 py-1 text-[11px] font-medium transition-all active:scale-95 select-none ${
               pathname.startsWith('/artikel') ? 'text-[#093c96] dark:text-blue-400 font-bold' : 'text-slate-500 dark:text-slate-400'
             }`}
           >
@@ -202,7 +207,7 @@ export function BottomNav() {
         <button
           type="button"
           onClick={() => setIsDrawerOpen(true)}
-          className={`flex flex-col items-center justify-center gap-1 px-2 py-1 text-[11px] font-medium transition-colors cursor-pointer ${
+          className={`flex-1 h-full min-h-[48px] flex flex-col items-center justify-center gap-1 px-1 py-1 text-[11px] font-medium transition-all active:scale-95 select-none cursor-pointer ${
             isDrawerOpen ? 'text-[#093c96] dark:text-blue-400 font-bold' : 'text-slate-500 dark:text-slate-400'
           }`}
           aria-label="Buka Menu Navigasi Lengkap"
@@ -231,7 +236,7 @@ export function BottomNav() {
             aria-label="Menu & Layanan Banten Mengaji"
             className="fixed inset-x-0 bottom-0 z-50 max-h-[85vh] overflow-y-auto rounded-t-3xl border-t border-slate-200/90 bg-white p-5 shadow-2xl backdrop-blur-xl dark:border-slate-800/90 dark:bg-slate-950 transition-transform duration-300 animate-in slide-in-from-bottom"
           >
-            {/* 1. Header Drawer: Drag handle bar kecil di tengah atas */}
+            {/* Header Drawer: Drag handle bar kecil di tengah atas */}
             <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-slate-300 dark:bg-slate-700" />
 
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800/80">
@@ -255,14 +260,14 @@ export function BottomNav() {
               <button
                 type="button"
                 onClick={() => setIsDrawerOpen(false)}
-                className="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                className="rounded-full p-2.5 min-h-[48px] min-w-[48px] flex items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors cursor-pointer"
                 aria-label="Tutup Menu"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            {/* 2. Area Autentikasi Pengguna (Role-Adaptive) */}
+            {/* Area Autentikasi Pengguna (Role-Adaptive) */}
             <div className="my-4">
               {role === 'guest' ? (
                 <div className="rounded-2xl border border-slate-200/90 bg-slate-50/80 p-4 dark:border-slate-800/90 dark:bg-slate-900/60">
@@ -283,7 +288,7 @@ export function BottomNav() {
                     <Link
                       href="/login"
                       onClick={() => setIsDrawerOpen(false)}
-                      className="flex items-center justify-center gap-1.5 rounded-xl bg-[#093c96] px-3 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-800 transition-colors"
+                      className="flex items-center justify-center gap-1.5 rounded-xl bg-[#093c96] px-3.5 py-3 min-h-[48px] text-xs font-semibold text-white shadow-sm hover:bg-blue-800 transition-colors"
                     >
                       <LogIn className="h-4 w-4" />
                       <span>Masuk / Login</span>
@@ -291,7 +296,7 @@ export function BottomNav() {
                     <Link
                       href="/daftar-dkm"
                       onClick={() => setIsDrawerOpen(false)}
-                      className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 transition-colors"
+                      className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-3 min-h-[48px] text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 transition-colors"
                     >
                       <UserPlus className="h-4 w-4 text-[#093c96] dark:text-blue-400" />
                       <span>Daftar DKM</span>
@@ -328,7 +333,7 @@ export function BottomNav() {
                     <Link
                       href={role === 'admin' ? '/dashboard/admin' : '/dashboard/dkm'}
                       onClick={() => setIsDrawerOpen(false)}
-                      className={`flex items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-semibold text-white shadow-sm transition-colors ${
+                      className={`flex items-center justify-center gap-1.5 rounded-xl px-3.5 py-3 min-h-[48px] text-xs font-semibold text-white shadow-sm transition-colors ${
                         role === 'admin'
                           ? 'bg-[#093c96] hover:bg-blue-800'
                           : 'bg-emerald-600 hover:bg-emerald-700'
@@ -343,7 +348,7 @@ export function BottomNav() {
                         setIsDrawerOpen(false);
                         await logout();
                       }}
-                      className="flex items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-red-50/80 px-3 py-2.5 text-xs font-semibold text-red-600 shadow-sm hover:bg-red-100 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-400 dark:hover:bg-red-900/60 transition-colors cursor-pointer"
+                      className="flex items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-red-50/80 px-3.5 py-3 min-h-[48px] text-xs font-semibold text-red-600 shadow-sm hover:bg-red-100 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-400 dark:hover:bg-red-900/60 transition-colors cursor-pointer"
                     >
                       <LogOut className="h-4 w-4" />
                       <span>Logout</span>
@@ -353,7 +358,7 @@ export function BottomNav() {
               )}
             </div>
 
-            {/* 3. Daftar Navigasi Utama & Fitur Ibadah */}
+            {/* Daftar Navigasi Utama & Fitur Ibadah dengan min-h-[48px] */}
             <div className="my-4 space-y-1.5">
               <p className="px-1 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                 Fitur & Layanan Utama
@@ -363,7 +368,7 @@ export function BottomNav() {
                 <Link
                   href="/jadwal-sholat"
                   onClick={() => setIsDrawerOpen(false)}
-                  className="flex items-center justify-between p-3 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors group"
+                  className="flex items-center justify-between p-3 min-h-[48px] hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors group"
                 >
                   <div className="flex items-center gap-3">
                     <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400 group-hover:scale-105 transition-transform">
@@ -384,7 +389,7 @@ export function BottomNav() {
                 <Link
                   href="/jadwal-kajian"
                   onClick={() => setIsDrawerOpen(false)}
-                  className="flex items-center justify-between p-3 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors group"
+                  className="flex items-center justify-between p-3 min-h-[48px] hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors group"
                 >
                   <div className="flex items-center gap-3">
                     <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-[#093c96] dark:bg-blue-950/60 dark:text-blue-400 group-hover:scale-105 transition-transform">
@@ -405,7 +410,7 @@ export function BottomNav() {
                 <Link
                   href="/masjid"
                   onClick={() => setIsDrawerOpen(false)}
-                  className="flex items-center justify-between p-3 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors group"
+                  className="flex items-center justify-between p-3 min-h-[48px] hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors group"
                 >
                   <div className="flex items-center gap-3">
                     <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400 group-hover:scale-105 transition-transform">
@@ -426,7 +431,7 @@ export function BottomNav() {
                 <Link
                   href="/artikel"
                   onClick={() => setIsDrawerOpen(false)}
-                  className="flex items-center justify-between p-3 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors group"
+                  className="flex items-center justify-between p-3 min-h-[48px] hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors group"
                 >
                   <div className="flex items-center gap-3">
                     <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-950/60 dark:text-purple-400 group-hover:scale-105 transition-transform">
@@ -447,7 +452,7 @@ export function BottomNav() {
                 <Link
                   href="/donasi"
                   onClick={() => setIsDrawerOpen(false)}
-                  className="flex items-center justify-between p-3 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors group"
+                  className="flex items-center justify-between p-3 min-h-[48px] hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors group"
                 >
                   <div className="flex items-center gap-3">
                     <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400 group-hover:scale-105 transition-transform">
@@ -468,7 +473,7 @@ export function BottomNav() {
                 <Link
                   href="/panduan-dkm"
                   onClick={() => setIsDrawerOpen(false)}
-                  className="flex items-center justify-between p-3 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors group"
+                  className="flex items-center justify-between p-3 min-h-[48px] hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors group"
                 >
                   <div className="flex items-center gap-3">
                     <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-50 text-sky-600 dark:bg-sky-950/60 dark:text-sky-400 group-hover:scale-105 transition-transform">
@@ -488,7 +493,7 @@ export function BottomNav() {
               </div>
             </div>
 
-            {/* 4. Kartu Ekosistem Terhubung: Mas Chan Digital */}
+            {/* Kartu Ekosistem Mas Chan Digital */}
             <div className="my-4">
               <a
                 href="https://maschandigital.id"
@@ -516,7 +521,7 @@ export function BottomNav() {
               </a>
             </div>
 
-            {/* 5. Footer Drawer */}
+            {/* Footer Drawer */}
             <div className="mt-5 pt-4 border-t border-slate-200/80 dark:border-slate-800/80 flex items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
               <div className="flex items-center gap-2">
                 <span className="text-[11px] font-medium">Tema:</span>

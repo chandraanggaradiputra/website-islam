@@ -32,7 +32,7 @@ Dokumen ini adalah **Instruksi Acuan Mutlak (Single Source of Truth)** bagi selu
 
 ---
 
-## 🔴 5 Prinsip Rekayasa Kode Baku (Strict Engineering Principles)
+## 🔴 8 Prinsip Rekayasa Kode Baku (Strict Engineering Principles)
 
 ### 1. Dilarang Keras Diam-Diam Fallback ke "Data Default" (Zero Silent Fallback)
 * Jika ID masjid, jadwal kajian, atau parameter kecamatan tidak valid/kosong, kembalikan **Error 404**, **Null**, atau **Array Kosong `[]`**.
@@ -51,6 +51,15 @@ Dokumen ini adalah **Instruksi Acuan Mutlak (Single Source of Truth)** bagi selu
 
 ### 5. Strict Type Safety & Penanganan Error
 * Seluruh tipe data entitas WordPress terpusat di `types/wordpress.ts`. Hindari penggunaan `any`. Tangani error secara aman: `catch (err: unknown)` dengan `if (err instanceof Error)`.
+
+### 6. Eliminasi CLS & Jam Digital Real-Time (Two-Pass Static Reservation)
+* Komponen jam digital real-time wajib menggunakan pola Two-Pass Rendering dengan reservasi kontainer statis (`h-7 min-w-[130px] font-mono tabular-nums` + `suppressHydrationWarning`). Dilarang me-render waktu dinamis tanpa lock dimensi kontainer agar bebas dari React 19 Hydration Mismatch dan menjamin CLS = 0.00.
+
+### 7. Zero-Collapse Table Retention saat Sinkronisasi Preferensi Client
+* Jadwal sholat dan tabel data wajib di-prefetch secara statis di SSR (default Kota Serang). Jika browser membaca preferensi wilayah berbeda di `localStorage`, gunakan `useTransition` dengan efek `opacity-70 transition-opacity`. Dilarang keras me-reset state ke `null` atau meruntuhkan (*collapse*) tabel kalender.
+
+### 8. Fallback Banner Syar'i & Keseragaman Grid Kartu (aspect-video sm:h-48)
+* Seluruh kartu kajian dan direktori masjid diwajibkan memiliki kontainer banner berdimensi tetap `aspect-video sm:h-48`. Jika data `featured_media_url` kosong/absen, wajib me-render Fallback Banner bergaya Islami dengan ikon syar'i (`BookOpen` untuk kajian, `Landmark` untuk masjid) demi menjaga simetri grid kartu 100% dan Zero CLS.
 
 ---
 
@@ -71,9 +80,10 @@ Dokumen ini adalah **Instruksi Acuan Mutlak (Single Source of Truth)** bagi selu
 ## ♿ Standar Aksesibilitas Web WCAG 2.2 (Level AA Mandatory)
 
 1. **Target Size Minimum (SC 2.5.8)**:
-   - Tombol jadwal sholat, kartu kajian, dan link navigasi mobile wajib berukuran minimal **24x24 CSS pixels** atau memiliki *spacing* pemisah yang aman.
-2. **Focus Not Obscured (SC 2.4.11)**:
-   - Elemen yang menerima fokus keyboard dilarang tertutup oleh *sticky header* atau *bottom navigation bar*. Wajib menyematkan `scroll-m-20` pada tautan dan elemen interaktif.
+   - Seluruh kontrol interaktif utama (dropdown kecamatan, tab filter kajian, reset filter, panah pagination bulan, dan tab navigasi jempol) wajib berukuran minimal **48x48 CSS pixels**.
+2. **Focus Not Obscured & Safe Area (SC 2.4.11)**:
+   - Elemen yang menerima fokus keyboard/input dilarang tertutup oleh sticky header atau bilah navigasi ponsel.
+   - Bilah navigasi bawah fixed wajib menyertakan `pb-[env(safe-area-inset-bottom)]`, dan padding bawah layout utama (`main`) wajib menggunakan `pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-0`.
 3. **Dragging Movements Alternative (SC 2.5.7)**:
    - Slider jadwal kajian atau profil masjid wajib menyediakan tombol navigasi panah alternatif selain gesture seret/swipe.
 4. **Consistent Help (SC 3.2.6)**:

@@ -1,8 +1,10 @@
+// components/kajian/KajianCard.tsx
 import Link from 'next/link';
 import Image from 'next/image';
 import { WPKajian, formatKategoriJamaah } from '@/types';
-import { MapPin, Clock, Calendar, User, Video } from 'lucide-react';
+import { MapPin, Clock, Calendar, User, Video, BookOpen } from 'lucide-react';
 import { isKajianExpired, isKajianJustFinished } from '@/lib/kajian';
+import { SHIMMER_BLUR_DATA_URL } from '@/lib/constants/imagePlaceholder';
 import htmlParser from 'html-react-parser';
 
 const FOCUS_RING =
@@ -77,17 +79,38 @@ export function KajianCard({ kajian }: { kajian: WPKajian }) {
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden hover:shadow-md transition-shadow flex flex-col h-full">
-      {kajian.featured_media_url && (
-        <div className="relative w-full h-48 bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-800">
+      {/* Banner Thumbnail Berdimensi Tetap aspect-video sm:h-48 (Zero Layout Shift) */}
+      {kajian.featured_media_url ? (
+        <div className="relative w-full aspect-video sm:h-48 bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-800 overflow-hidden">
           <Image
             src={kajian.featured_media_url}
             alt={title.rendered}
             fill
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             className="object-cover"
+            placeholder="blur"
+            blurDataURL={SHIMMER_BLUR_DATA_URL}
           />
         </div>
+      ) : (
+        <div className="relative w-full aspect-video sm:h-48 bg-gradient-to-br from-blue-900/10 via-slate-100 to-indigo-900/10 dark:from-blue-950/40 dark:via-slate-900 dark:to-indigo-950/40 border-b border-slate-200 dark:border-slate-800 p-5 flex flex-col justify-between overflow-hidden">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#093c96] dark:text-blue-400">
+              {isRutin ? 'Kajian Rutin' : 'Kajian Tematik'}
+            </span>
+            <BookOpen className="w-5 h-5 text-slate-400/80 dark:text-slate-500/80" />
+          </div>
+          <div>
+            <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 line-clamp-1">
+              {masjidName}
+            </span>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 block truncate">
+              {acf?.nama_ustadz ? `Bersama ${acf.nama_ustadz}` : 'Kajian Sunnah Banten'}
+            </span>
+          </div>
+        </div>
       )}
+
       <div className="p-5 flex-grow">
         <div className="flex flex-wrap items-center gap-2 mb-3">
           {/* Badge Status Kajian Mendatang vs Arsip Selesai vs Selesai Berlangsung */}
@@ -175,10 +198,11 @@ export function KajianCard({ kajian }: { kajian: WPKajian }) {
         </div>
       </div>
 
+      {/* Tombol Aksi dengan Touch Target Minimal 48x48px (WCAG 2.2 SC 2.5.8) */}
       <div className="border-t border-slate-100 dark:border-slate-800 p-2 bg-slate-50 dark:bg-slate-900/50">
         <Link
           href={`/jadwal-kajian/${slug}`}
-          className={`min-h-[44px] flex items-center justify-center w-full text-center text-sm font-semibold text-[#093c96] hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors ${FOCUS_RING}`}
+          className={`min-h-[48px] px-3 py-2 flex items-center justify-center w-full text-center text-sm font-semibold text-[#093c96] hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors ${FOCUS_RING}`}
         >
           <span>
             {isSelesai && hasRecording ? 'Tonton Rekaman & Faedah' : 'Lihat Detail Lengkap'}

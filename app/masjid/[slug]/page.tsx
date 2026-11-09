@@ -10,6 +10,7 @@ import Image from 'next/image';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { getMasjidJsonLd } from '@/lib/schema';
 import { formatFasilitasLabel } from '@/lib/utils/fasilitas';
+import { SHIMMER_BLUR_DATA_URL } from '@/lib/constants/imagePlaceholder';
 
 export const revalidate = 60;
 
@@ -67,11 +68,15 @@ export default async function MasjidDetailPage({ params }: { params: Promise<{ s
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
         {featured_media_url && (
           <div className="w-full h-64 md:h-96 relative bg-slate-100 dark:bg-slate-800">
-            <Image 
-              src={featured_media_url} 
+            <Image
+              src={featured_media_url}
               alt={title.rendered}
               fill
+              priority
+              sizes="(max-width: 768px) 100vw, 896px"
               className="object-cover"
+              placeholder="blur"
+              blurDataURL={SHIMMER_BLUR_DATA_URL}
             />
           </div>
         )}

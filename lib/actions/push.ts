@@ -13,34 +13,33 @@
 
 import fs from 'fs/promises';
 import path from 'path';
+import os from 'os';
 import webpush from 'web-push';
 import { getSession } from '@/lib/auth';
+import { getVapidKeys } from '@/lib/env';
 import {
   PushSubscriptionRecord,
   BroadcastNotificationPayload,
   BroadcastResult,
 } from '@/types/push';
 
-// Kunci VAPID Resmi Portal Banten Mengaji (dengan fallback aman)
-const VAPID_PUBLIC_KEY =
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ||
-  'BP8ri_PYx69PsvrmRYZ8eeqWTvMmJW4Kt7b9wuxiSFURrCV8iFS-kgRT_asqfZgDwetVtJYBcQXLcdAFmqQ7TUY';
-
-const VAPID_PRIVATE_KEY =
-  process.env.VAPID_PRIVATE_KEY ||
-  'dP-Fx7szjoclheTuDkBDaZwl7q_hGgrMRWkt_6GoCs0';
-
-const VAPID_SUBJECT =
-  process.env.VAPID_SUBJECT || 'mailto:admin@maschandigital.id';
-
-// Konfigurasi identitas server VAPID ke web-push
-try {
-  webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
-} catch (err) {
-  console.warn('[WebPush] Inisialisasi VAPID details:', err);
+// Konfigurasi identitas server VAPID ke web-push secara aman (Prinsip 1: Zero Default Secret)
+function ensureVapidConfigured() {
+  try {
+    const { publicKey, privateKey, subject } = getVapidKeys();
+    webpush.setVapidDetails(subject, publicKey, privateKey);
+    return { publicKey, privateKey, subject };
+  } catch (err) {
+    console.warn('[WebPush Security Alert] VAPID belum terkonfigurasi:', err);
+    return null;
+  }
 }
 
-const DATA_DIR = path.join(process.cwd(), 'data');
+// Gunakan os.tmpdir() di lingkungan serverless production untuk mitigasi EROFS (read-only filesystem)
+const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+const DATA_DIR = isServerless
+  ? path.join(os.tmpdir(), 'banten-mengaji-data')
+  : path.join(process.cwd(), 'data');
 const SUBS_FILE_PATH = path.join(DATA_DIR, 'push-subscriptions.json');
 
 /**
@@ -69,7 +68,8 @@ async function writeSubscriptions(subs: PushSubscriptionRecord[]): Promise<void>
  * Mengambil VAPID Public Key untuk konfigurasi registrasi di browser client
  */
 export async function getVapidPublicKey(): Promise<string> {
-  return VAPID_PUBLIC_KEY;
+  const config = ensureVapidConfigured();
+  return config?.publicKey || '';
 }
 
 /**

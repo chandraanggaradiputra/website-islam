@@ -1,9 +1,11 @@
+// components/kajian/KajianFilter.tsx
 'use client';
 
 import { useState, useMemo, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { WPKajian } from '@/types';
 import { KajianCard } from './KajianCard';
+import { KajianCardSkeleton } from './KajianCardSkeleton';
 import { Filter, RotateCcw, Calendar, Video } from 'lucide-react';
 import { BANTEN_REGIONS, KotaKabupatenBanten } from '@/lib/constants/bantenRegions';
 import { isKajianExpired } from '@/lib/kajian';
@@ -153,13 +155,13 @@ function KajianFilterContent({
 
   return (
     <div className="space-y-6">
-      {/* Tab Navigasi: Kajian Mendatang vs Arsip & Rekaman */}
+      {/* Tab Navigasi: Kajian Mendatang vs Arsip & Rekaman dengan Touch Target min-h-[48px] */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="inline-flex p-1.5 bg-slate-100 dark:bg-slate-800/80 rounded-2xl border border-slate-200/80 dark:border-slate-700/60 shadow-inner">
           <button
             type="button"
             onClick={() => setActiveTab('mendatang')}
-            className={`flex items-center gap-2 py-2.5 px-4 rounded-xl text-sm font-semibold transition-all min-h-[44px] cursor-pointer ${
+            className={`flex items-center gap-2 py-3 px-5 rounded-xl text-sm font-semibold transition-all min-h-[48px] cursor-pointer ${
               activeTab === 'mendatang'
                 ? 'bg-[#093c96] text-white shadow-sm'
                 : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
@@ -181,7 +183,7 @@ function KajianFilterContent({
           <button
             type="button"
             onClick={() => setActiveTab('arsip')}
-            className={`flex items-center gap-2 py-2.5 px-4 rounded-xl text-sm font-semibold transition-all min-h-[44px] cursor-pointer ${
+            className={`flex items-center gap-2 py-3 px-5 rounded-xl text-sm font-semibold transition-all min-h-[48px] cursor-pointer ${
               activeTab === 'arsip'
                 ? 'bg-[#093c96] text-white shadow-sm'
                 : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
@@ -214,7 +216,7 @@ function KajianFilterContent({
         </div>
       )}
 
-      {/* Box Filter */}
+      {/* Box Filter dengan Touch Target Minimal 48x48px (WCAG 2.2 SC 2.5.8) */}
       <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-200">
@@ -225,7 +227,7 @@ function KajianFilterContent({
             <button
               type="button"
               onClick={handleReset}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-red-600 dark:text-slate-300 dark:hover:text-red-400 min-h-[36px] px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-red-600 dark:text-slate-300 dark:hover:text-red-400 min-h-[48px] px-3.5 py-2.5 rounded-xl transition-colors cursor-pointer"
             >
               <RotateCcw className="h-3.5 w-3.5" />
               <span>Reset Filter</span>
@@ -238,7 +240,7 @@ function KajianFilterContent({
             aria-label="Filter Kota atau Kabupaten"
             value={kota}
             onChange={handleKotaChange}
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-900 focus:border-[#093c96] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3 min-h-[48px] text-sm font-medium text-slate-900 focus:border-[#093c96] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
           >
             <option value="">Semua Kota/Kabupaten</option>
             {BANTEN_REGIONS.map((r) => (
@@ -253,7 +255,7 @@ function KajianFilterContent({
             value={kecamatan}
             onChange={(e) => setKecamatan(e.target.value)}
             disabled={!kota}
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-900 focus:border-[#093c96] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3 min-h-[48px] text-sm font-medium text-slate-900 focus:border-[#093c96] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <option value="">{kota ? 'Semua Kecamatan' : 'Pilih Kota Dulu'}</option>
             {availableKecamatans.map((kecName) => (
@@ -267,7 +269,7 @@ function KajianFilterContent({
             aria-label="Filter Jenis Kajian"
             value={jenis}
             onChange={(e) => setJenis(e.target.value)}
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-900 focus:border-[#093c96] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3 min-h-[48px] text-sm font-medium text-slate-900 focus:border-[#093c96] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
           >
             <option value="">Semua Jenis Kajian</option>
             <option value="rutin">Kajian Rutin</option>
@@ -278,7 +280,7 @@ function KajianFilterContent({
             aria-label="Filter Kategori Jamaah"
             value={jamaah}
             onChange={(e) => setJamaah(e.target.value)}
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-900 focus:border-[#093c96] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3 min-h-[48px] text-sm font-medium text-slate-900 focus:border-[#093c96] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
           >
             <option value="">Semua Jamaah</option>
             <option value="umum">Umum</option>
@@ -292,7 +294,7 @@ function KajianFilterContent({
             placeholder="Cari Nama Ustadz..."
             value={ustadz}
             onChange={(e) => setUstadz(e.target.value)}
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-[#093c96] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3 min-h-[48px] text-sm text-slate-900 placeholder-slate-400 focus:border-[#093c96] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
           />
         </div>
       </div>
@@ -317,11 +319,37 @@ function KajianFilterContent({
   );
 }
 
+function KajianFilterSkeletonFallback() {
+  return (
+    <div className="space-y-6 animate-pulse" aria-hidden="true">
+      {/* Tab Skeleton */}
+      <div className="h-12 w-80 bg-slate-200 dark:bg-slate-800 rounded-2xl" />
+
+      {/* Filter Box Skeleton */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+        <div className="h-5 w-40 bg-slate-200 dark:bg-slate-800 rounded mb-4" />
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-5">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="h-12 rounded-xl bg-slate-100 dark:bg-slate-800" />
+          ))}
+        </div>
+      </div>
+
+      {/* Grid 4x Card Skeletons */}
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <KajianCardSkeleton key={i} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function KajianFilter(props: {
   initialKajian?: WPKajian[];
 }) {
   return (
-    <Suspense fallback={<div className="p-4 text-center text-sm text-slate-500">Memuat filter...</div>}>
+    <Suspense fallback={<KajianFilterSkeletonFallback />}>
       <KajianFilterContent {...props} />
     </Suspense>
   );

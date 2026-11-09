@@ -5,6 +5,11 @@ import { SignJWT, jwtVerify } from 'jose';
 import { UserSession } from '@/types';
 import { redirect } from 'next/navigation';
 import { SECRET_KEY } from '@/lib/env';
+import {
+  checkLoginRateLimit,
+  recordFailedLogin,
+  resetLoginRateLimit,
+} from '@/lib/utils/rateLimit';
 
 export async function createSession(sessionData: UserSession) {
   const token = await new SignJWT({ ...sessionData })
@@ -46,6 +51,16 @@ export async function login(formData: FormData) {
   const username = formData.get('username') as string;
   const password = formData.get('password') as string;
 
+  const identifier = (username || '').trim();
+  const rateCheck = checkLoginRateLimit(identifier);
+  if (!rateCheck.allowed) {
+    const minutes = Math.ceil(rateCheck.lockoutSeconds / 60);
+    return {
+      success: false,
+      error: `Terlalu banyak percobaan masuk yang salah. Silakan coba kembali dalam ${minutes} menit demi keamanan akun DKM Anda.`,
+    };
+  }
+
   try {
     // 1. Dapatkan JWT Token dari WordPress
     const authRes = await fetch('https://salaf.maschandigital.id/wp-json/jwt-auth/v1/token', {
@@ -59,6 +74,14 @@ export async function login(formData: FormData) {
     const authData = await authRes.json();
 
     if (!authRes.ok) {
+      const failedResult = recordFailedLogin(identifier);
+      if (failedResult.isLocked) {
+        return {
+          success: false,
+          error: `Terlalu banyak percobaan masuk yang salah (5x berturut-turut). Akun Anda dikunci sementara selama ${failedResult.lockoutMinutes} menit demi keamanan.`,
+        };
+      }
+
       // Bersihkan tag HTML dan kata teknis dari pesan error autentikasi
       let errorMsg = 'Email atau kata sandi tidak sesuai.';
       if (authData.code === '[jwt_auth] invalid_username' || authData.message?.includes('not registered') || authData.message?.includes('Unknown email address')) {
@@ -70,6 +93,9 @@ export async function login(formData: FormData) {
       }
       return { success: false, error: errorMsg };
     }
+
+    // Reset rate limit jika login berhasil
+    resetLoginRateLimit(identifier);
 
     const { token, user_email, user_display_name } = authData;
 

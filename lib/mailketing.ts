@@ -1,4 +1,5 @@
 // lib/mailketing.ts
+import { getMailketingApiToken } from '@/lib/env';
 
 export interface MailketingEmailParams {
   recipient: string;
@@ -7,7 +8,6 @@ export interface MailketingEmailParams {
   fromName?: string;
 }
 
-const MAILKETING_API_TOKEN = process.env.MAILKETING_API_TOKEN || 'fd5208fcad3c4e08653a7709bd47f58c';
 const MAILKETING_FROM_EMAIL = process.env.MAILKETING_FROM_EMAIL || 'admin@maschandigital.id';
 const MAILKETING_DKM_LIST_ID = process.env.MAILKETING_DKM_LIST_ID || '92693';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://banten-mengaji.vercel.app';
@@ -22,7 +22,7 @@ export async function sendMailketingEmail({
 }: MailketingEmailParams): Promise<boolean> {
 
   const formData = new URLSearchParams();
-  formData.append('api_token', MAILKETING_API_TOKEN);
+  formData.append('api_token', getMailketingApiToken());
   formData.append('from_name', fromName);
   formData.append('from_email', MAILKETING_FROM_EMAIL);
   formData.append('recipient', recipient);
@@ -68,7 +68,7 @@ export async function addDKMSubscriberToMailketing(data: {
 }): Promise<boolean> {
 
   const formData = new URLSearchParams();
-  formData.append('api_token', MAILKETING_API_TOKEN);
+  formData.append('api_token', getMailketingApiToken());
   formData.append('list_id', MAILKETING_DKM_LIST_ID);
   formData.append('email', data.email);
   formData.append('first_name', data.namaPengurus);

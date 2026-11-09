@@ -1,9 +1,17 @@
 import { NextResponse } from 'next/server';
+import { createHash, timingSafeEqual } from 'node:crypto';
+import { getWebhookSecret } from '@/lib/env';
 import {
   generateSocialCaptions,
   publishToSocialPlatforms,
   cleanHtmlText,
 } from '@/lib/socialShare';
+
+function safeCompare(a: string, b: string): boolean {
+  const hashA = createHash('sha256').update(a).digest();
+  const hashB = createHash('sha256').update(b).digest();
+  return timingSafeEqual(hashA, hashB);
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -80,21 +88,27 @@ export async function POST(request: Request) {
     );
   }
 
-  const url = new URL(request.url);
-  const secretFromQuery = url.searchParams.get('secret');
-  const secretFromHeader = request.headers.get('x-webhook-secret');
-  const providedSecret = secretFromHeader || secretFromQuery;
+  const providedSecret = request.headers.get('x-webhook-secret')?.trim() || '';
+  let expectedSecret = '';
+  try {
+    expectedSecret = getWebhookSecret();
+  } catch {
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Server Misconfiguration: WEBHOOK_SECRET belum dikonfigurasi.',
+      },
+      { status: 500, headers: corsHeaders }
+    );
+  }
 
-  const expectedSecret =
-    process.env.WEBHOOK_SECRET || 'banten_mengaji_secret_2026';
-
-  // 3. Validasi Otorisasi Webhook (Zero Silent Fallback)
-  if (!providedSecret || providedSecret !== expectedSecret) {
+  // 3. Validasi Otorisasi Webhook (timingSafeEqual & Zero Silent Fallback)
+  if (!providedSecret || !safeCompare(providedSecret, expectedSecret)) {
     return NextResponse.json(
       {
         success: false,
         error:
-          'Unauthorized: Webhook secret tidak valid atau tidak disertakan.',
+          'Unauthorized: Header x-webhook-secret tidak valid atau tidak disertakan.',
       },
       {
         status: 401,
