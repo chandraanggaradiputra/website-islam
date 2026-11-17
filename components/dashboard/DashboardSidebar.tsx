@@ -36,7 +36,6 @@ import {
   LogOut,
   MapPin,
   CheckCircle2,
-  Sparkles,
   ChevronRight,
   BellRing,
 } from 'lucide-react';
@@ -169,7 +168,7 @@ function DashboardSidebarContent({
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border border-[#C5A059]/40">
-                  <Sparkles className="w-3 h-3 text-[#C5A059]" />
+                  <Building2 className="w-3 h-3 text-[#C5A059]" aria-hidden="true" />
                   Pengurus DKM
                 </span>
               )}

@@ -283,7 +283,7 @@ export function AdminTambahKajianForm({ masjidList }: AdminTambahKajianFormProps
             </h4>
 
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-              {/* Hari Kajian — select 7 hari baku */}
+              {/* Pilihan 7 hari baku */}
               <div>
                 <label
                   htmlFor="tambah-hariKajian"

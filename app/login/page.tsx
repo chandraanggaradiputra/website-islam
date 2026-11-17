@@ -56,9 +56,9 @@ export default function LoginPage() {
       </div>
 
       {errorMsg && (
-        <div className="mb-6 flex items-start gap-3 rounded-xl bg-red-50 p-4 text-red-600 dark:bg-red-900/20 dark:text-red-400">
-          <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
-          <p className="text-sm">{errorMsg}</p>
+        <div role="alert" className="mb-6 flex items-start gap-3 rounded-xl bg-red-50 p-4 text-red-600 dark:bg-red-900/20 dark:text-red-400">
+          <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
+          <p className="text-sm font-medium">{errorMsg}</p>
         </div>
       )}
 
@@ -106,10 +106,10 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              className="absolute right-1.5 top-1.5 h-8 w-8 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg cursor-pointer transition-colors"
               aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
             >
-              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              {showPassword ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
             </button>
           </div>
           {errors.password && (

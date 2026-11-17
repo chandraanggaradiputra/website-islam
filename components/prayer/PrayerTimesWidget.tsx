@@ -4,10 +4,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { fetchMonthlyPrayerTimesAction } from '@/app/actions/prayer';
-import { Clock, MapPin, CalendarDays, ArrowRight, LocateFixed, Loader2, Sparkles } from 'lucide-react';
+import { Clock, MapPin, CalendarDays, ArrowRight, LocateFixed, Loader2, Info } from 'lucide-react';
 import { BANTEN_REGIONS, KotaKabupatenBanten, findNearestBantenRegion } from '@/lib/constants/bantenRegions';
 import { formatAdjustedHijriDate } from '@/lib/equranShalat';
 import { EQuranDailyShalat } from '@/types/prayer';
+import { useToast } from '@/components/ui/Toast';
 
 const INDONESIAN_MONTHS = [
   'Januari',
@@ -25,6 +26,7 @@ const INDONESIAN_MONTHS = [
 ];
 
 export function PrayerTimesWidget() {
+  const { showToast } = useToast();
   const [now, setNow] = useState<Date | null>(null);
   const [region, setRegion] = useState<KotaKabupatenBanten>(() => {
     if (typeof window !== 'undefined') {
@@ -149,7 +151,7 @@ export function PrayerTimesWidget() {
 
   const handleLocateMe = () => {
     if (!navigator.geolocation) {
-      alert('Browser Anda tidak mendukung deteksi lokasi otomatis.');
+      showToast('Browser Anda tidak mendukung deteksi lokasi otomatis.', 'error');
       return;
     }
 
@@ -163,10 +165,11 @@ export function PrayerTimesWidget() {
           localStorage.setItem('banten_mengaji_region', nearest);
         }
         setIsLocating(false);
+        showToast(`Lokasi terdeteksi: ${nearest}`, 'success');
       },
       (error) => {
         console.error(error);
-        alert('Gagal mendeteksi lokasi. Pastikan izin akses lokasi diberikan.');
+        showToast('Izin akses lokasi diperlukan untuk deteksi otomatis.', 'error');
         setIsLocating(false);
       },
       { timeout: 10000, maximumAge: 60000 }
@@ -252,7 +255,7 @@ export function PrayerTimesWidget() {
       {/* Footer Info & Link Kalender 1 Bulan Penuh */}
       <div className="mt-4 pt-3 border-t border-white/15 flex flex-wrap items-center justify-between gap-2">
         <span className="text-xs text-blue-200 flex items-center gap-1.5">
-          <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
+          <Info className="w-3.5 h-3.5 text-blue-200" aria-hidden="true" />
           <span>Jadwal Bimas Islam Kemenag RI</span>
         </span>
         <Link

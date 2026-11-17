@@ -20,7 +20,7 @@ import {
   MapPin,
   Compass,
   CreditCard,
-  Sparkles,
+  Info,
   AlertCircle,
   Map,
   Lock,
@@ -531,7 +531,7 @@ export function DaftarDKMForm({ masjidList = [], kecamatanTerms = [] }: DaftarDK
           </div>
           {selectedKota && filteredMasjidList.length === 0 && (
             <p className="mt-1.5 text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 shrink-0" />
+              <Info className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
               <span>Belum ada data masjid di {selectedKota}. Formulir pendaftaran masjid baru otomatis diaktifkan di bawah.</span>
             </p>
           )}
@@ -544,7 +544,7 @@ export function DaftarDKMForm({ masjidList = [], kecamatanTerms = [] }: DaftarDK
         {isNewMasjid && (
           <div className="rounded-2xl border-2 border-blue-200 bg-blue-50/50 p-5 md:p-6 dark:border-blue-900/60 dark:bg-blue-950/30 space-y-4 animate-in fade-in slide-in-from-top-3 duration-200">
             <div className="flex items-center gap-2 text-[#093c96] dark:text-blue-300 font-bold text-sm">
-              <Sparkles className="w-4 h-4" />
+              <Building2 className="w-4 h-4" aria-hidden="true" />
               <span>Formulir Usulan Pendaftaran Masjid Baru</span>
             </div>
 

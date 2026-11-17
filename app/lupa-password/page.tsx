@@ -45,8 +45,8 @@ export default function LupaPasswordPage() {
         <div className="space-y-4">
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/50">
             <div className="flex items-center gap-2 mb-2">
-              <ShieldCheck className="h-4 w-4 text-[#093c96] dark:text-blue-400" />
-              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+              <ShieldCheck className="h-4 w-4 text-[#093c96] dark:text-blue-400" aria-hidden="true" />
+              <h2 className="text-xs font-bold text-slate-700 dark:text-slate-300">
                 Instruksi Verifikasi Identitas
               </h2>
             </div>

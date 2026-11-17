@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import { getKajianFaedahList } from '@/lib/kajian';
 import { FaedahKajianCard } from '@/components/kajian/FaedahKajianCard';
-import { BookOpen, Sparkles, Calendar, ArrowRight } from 'lucide-react';
+import { BookOpen, Calendar, ArrowRight } from 'lucide-react';
 
 export const revalidate = 60;
 
@@ -24,7 +24,7 @@ export default async function ArtikelFaedahPage() {
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#093c96] via-[#072d73] to-slate-900 text-white p-8 md:p-12 shadow-md">
         <div className="relative z-10 max-w-3xl space-y-3">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-blue-200 text-xs font-semibold border border-white/15">
-            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+            <BookOpen className="w-3.5 h-3.5 text-blue-300" aria-hidden="true" />
             <span>Intisari Tholabul &apos;Ilmi</span>
           </div>
 

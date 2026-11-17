@@ -73,12 +73,12 @@ export function CopyWhatsAppButton({
       >
         {copied ? (
           <>
-            <Check className="w-3.5 h-3.5 text-white animate-in zoom-in-50" />
+            <Check className="w-3.5 h-3.5 text-white animate-in zoom-in-50" aria-hidden="true" />
             <span>Tersalin!</span>
           </>
         ) : (
           <>
-            <Copy className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <Copy className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
             <span>Salin WA</span>
           </>
         )}
@@ -91,7 +91,7 @@ export function CopyWhatsAppButton({
       type="button"
       onClick={handleCopy}
       disabled={!textToCopy}
-      aria-label={copied ? 'Format WhatsApp Tersalin!' : `Salin Format WhatsApp untuk ${title}`}
+      aria-label={copied ? 'Format WhatsApp tersalin' : `Salin format WhatsApp untuk ${title}`}
       className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all min-h-[44px] cursor-pointer disabled:opacity-50 ${
         copied
           ? 'bg-emerald-600 text-white shadow-md ring-2 ring-emerald-400/40'
@@ -100,13 +100,13 @@ export function CopyWhatsAppButton({
     >
       {copied ? (
         <>
-          <Check className="w-4 h-4 animate-in zoom-in-50" />
-          <span>✓ Format WhatsApp Tersalin!</span>
+          <Check className="w-4 h-4 animate-in zoom-in-50" aria-hidden="true" />
+          <span>Format WhatsApp tersalin!</span>
         </>
       ) : (
         <>
-          <MessageSquareShare className="w-4 h-4" />
-          <span>📋 Salin Format WhatsApp</span>
+          <MessageSquareShare className="w-4 h-4" aria-hidden="true" />
+          <span>Salin format WhatsApp</span>
         </>
       )}
     </button>

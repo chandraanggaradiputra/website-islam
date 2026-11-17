@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { WPKajian } from '@/types';
 import { updateCatatanFaedahKajian } from '@/lib/actions/kajian';
 import { decodeHtmlEntities } from '@/lib/utils/text';
 import { getKajianCatatanFaedah } from '@/lib/kajian';
-import { X, Loader2, BookOpen, Video, CheckCircle2, AlertCircle, Sparkles } from 'lucide-react';
+import { X, Loader2, BookOpen, Video, CheckCircle2, AlertCircle } from 'lucide-react';
 
 interface CatatanFaedahModalProps {
   kajian: WPKajian;
@@ -43,6 +43,17 @@ function CatatanFaedahModalContent({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
+  // Tutup modal saat user menekan Escape (R-32)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isSubmitting) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose, isSubmitting]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -76,8 +87,14 @@ function CatatanFaedahModalContent({
   const ustadz = kajian.acf?.nama_ustadz || 'Asatidz';
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
+    <div 
+      className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200"
+      onClick={onClose}
+    >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="faedah-modal-title"
         className="bg-white dark:bg-slate-900 rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 relative max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
@@ -85,10 +102,10 @@ function CatatanFaedahModalContent({
         <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-2.5">
             <div className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300">
-              <BookOpen className="w-5 h-5" />
+              <BookOpen className="w-5 h-5" aria-hidden="true" />
             </div>
             <div>
-              <h3 className="font-bold text-lg text-slate-900 dark:text-white leading-snug">
+              <h3 id="faedah-modal-title" className="font-bold text-lg text-slate-900 dark:text-white leading-snug">
                 Isi Catatan & Faedah Kajian
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -100,16 +117,16 @@ function CatatanFaedahModalContent({
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-50"
-            aria-label="Tutup modal"
+            className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-50 cursor-pointer"
+            aria-label="Tutup modal faedah"
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
 
         {/* Informasi Kajian (Read-Only) */}
         <div className="mt-4 p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200/80 dark:border-slate-700/60">
-          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
             Informasi Kajian
           </p>
           <h4 className="text-sm font-bold text-slate-900 dark:text-white line-clamp-1">
@@ -122,14 +139,14 @@ function CatatanFaedahModalContent({
 
         {/* Feedback Alert */}
         {errorMsg && (
-          <div className="mt-4 p-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-300 text-xs flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0" />
+          <div role="alert" className="mt-4 p-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-300 text-xs flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" aria-hidden="true" />
             <span>{errorMsg}</span>
           </div>
         )}
         {successMsg && (
-          <div className="mt-4 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 text-emerald-700 dark:text-emerald-300 text-xs flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 shrink-0" />
+          <div role="status" className="mt-4 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 text-emerald-700 dark:text-emerald-300 text-xs flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 shrink-0" aria-hidden="true" />
             <span>{successMsg}</span>
           </div>
         )}
@@ -138,7 +155,7 @@ function CatatanFaedahModalContent({
         <form onSubmit={handleSubmit} className="mt-4 space-y-4 overflow-y-auto pr-1 flex-1">
           <div>
             <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 mb-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+              <BookOpen className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
               <span>Ringkasan / Faedah Kajian</span>
             </label>
             <textarea

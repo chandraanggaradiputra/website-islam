@@ -61,8 +61,9 @@ export default async function MasjidDetailPage({ params }: { params: Promise<{ s
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <JsonLd data={masjidSchema} />
-      <Link href="/masjid" className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 transition-colors mb-4">
-        <ArrowLeft className="w-4 h-4" /> Kembali ke Direktori
+      <Link href="/masjid" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-[#093c96] dark:text-slate-400 dark:hover:text-blue-400 transition-colors min-h-[44px] px-2 rounded-lg mb-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#093c96]">
+        <ArrowLeft className="w-4 h-4" aria-hidden="true" />
+        <span>Kembali ke Direktori</span>
       </Link>
 
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">

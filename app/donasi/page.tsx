@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Copy, Check, MessageCircle, Heart, ShieldCheck, Sparkles, Building2, Wallet } from 'lucide-react';
+import { Copy, Check, MessageCircle, Heart, ShieldCheck, Building2, Wallet } from 'lucide-react';
 import Link from 'next/link';
 
 interface BankAccount {
@@ -83,7 +83,7 @@ export default function DonasiPage() {
       <div className="rounded-2xl border border-blue-100 bg-blue-50/60 p-6 dark:border-blue-900/40 dark:bg-blue-950/30 text-slate-800 dark:text-slate-200 shadow-sm">
         <div className="flex items-start gap-4">
           <div className="rounded-xl bg-[#093c96] p-2.5 text-white shadow-sm shrink-0">
-            <Sparkles className="h-5 w-5" />
+            <Heart className="h-5 w-5" aria-hidden="true" />
           </div>
           <div className="space-y-2">
             <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">

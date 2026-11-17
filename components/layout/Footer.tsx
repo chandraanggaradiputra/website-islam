@@ -30,14 +30,14 @@ export function Footer() {
               Pusat informasi jadwal kajian ilmiah Islam bermanhaj Salafus Shalih, direktori masjid sunnah, dan faedah tholabul &apos;ilmi di wilayah Provinsi Banten dan sekitarnya.
             </p>
             <div className={clsx('flex', 'items-center', 'gap-2', 'text-slate-500', 'text-xs')}>
-              <MapPin className={clsx('w-4', 'h-4', 'text-[#093c96]', 'dark:text-blue-400')} />
+              <MapPin className={clsx('w-4', 'h-4', 'text-[#093c96]', 'dark:text-blue-400')} aria-hidden="true" />
               <span>Provinsi Banten, Indonesia</span>
             </div>
           </div>
 
           {/* Kolom 2: Navigasi Utama */}
           <div>
-            <h4 className={clsx('mb-4', 'font-semibold', 'text-slate-900', 'dark:text-slate-200', 'text-sm', 'uppercase', 'tracking-wider')}>
+            <h4 className={clsx('mb-4', 'font-semibold', 'text-slate-900', 'dark:text-slate-200', 'text-sm')}>
               Menu Utama
             </h4>
             <ul className={clsx('space-y-2.5', 'text-sm')}>
@@ -76,7 +76,7 @@ export function Footer() {
 
           {/* Kolom 3: Kajian Berdasarkan Kecamatan */}
           <div>
-            <h4 className={clsx('mb-4', 'font-semibold', 'text-slate-900', 'dark:text-slate-200', 'text-sm', 'uppercase', 'tracking-wider')}>
+            <h4 className={clsx('mb-4', 'font-semibold', 'text-slate-900', 'dark:text-slate-200', 'text-sm')}>
               Wilayah Banten
             </h4>
             <ul className={clsx('gap-2', 'grid', 'grid-cols-2', 'text-sm')}>
@@ -95,7 +95,7 @@ export function Footer() {
 
           {/* Kolom 4: Layanan & Informasi */}
           <div className="space-y-3">
-            <h4 className={clsx('font-semibold', 'text-slate-900', 'dark:text-slate-200', 'text-sm', 'uppercase', 'tracking-wider')}>
+            <h4 className={clsx('font-semibold', 'text-slate-900', 'dark:text-slate-200', 'text-sm')}>
               Informasi & Kontak
             </h4>
             <p className={clsx('text-slate-500', 'dark:text-slate-400', 'text-xs')}>
@@ -108,14 +108,14 @@ export function Footer() {
                 rel="noopener noreferrer"
                 className={clsx('flex', 'items-center', 'gap-2', 'hover:text-[#093c96]', 'dark:hover:text-blue-400', 'transition-colors')}
               >
-                <Phone className={clsx('w-4', 'h-4', 'text-emerald-600')} />
+                <Phone className={clsx('w-4', 'h-4', 'text-emerald-600')} aria-hidden="true" />
                 <span>0822-9814-8474 (WhatsApp)</span>
               </a>
               <a
                 href="mailto:admin@maschandigital.id"
                 className={clsx('flex', 'items-center', 'gap-2', 'hover:text-[#093c96]', 'dark:hover:text-blue-400', 'transition-colors')}
               >
-                <Mail className={clsx('w-4', 'h-4', 'text-blue-600')} />
+                <Mail className={clsx('w-4', 'h-4', 'text-blue-600')} aria-hidden="true" />
                 <span>admin@maschandigital.id</span>
               </a>
             </div>
@@ -128,7 +128,7 @@ export function Footer() {
             <span>© 2026 Banten Mengaji. All rights reserved.</span>
             <span>•</span>
             <span className={clsx('inline-flex', 'items-center', 'gap-1')}>
-              Banten Mengaji — Dikembangkan oleh
+              Dikembangkan oleh
               <a
                 href="https://maschandigital.id"
                 target="_blank"

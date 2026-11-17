@@ -17,9 +17,10 @@ interface SectionHeaderProps {
   title: string;
   href: string;
   srContext: string;
+  linkText?: string;
 }
 
-function SectionHeader({ id, title, href, srContext }: SectionHeaderProps) {
+function SectionHeader({ id, title, href, srContext, linkText = 'Lihat Semua' }: SectionHeaderProps) {
   return (
     <div className="flex items-center justify-between mb-4">
       <h2 id={id} className="text-xl font-bold text-slate-900 dark:text-slate-100">
@@ -29,7 +30,7 @@ function SectionHeader({ id, title, href, srContext }: SectionHeaderProps) {
         href={href}
         className={`text-sm font-semibold text-[#093c96] dark:text-blue-400 hover:underline flex items-center gap-1 min-h-[44px] px-2 rounded-lg transition-colors ${FOCUS_RING}`}
       >
-        <span>Lihat Semua</span>
+        <span>{linkText}</span>
         <span className="sr-only">: {srContext}</span>
         <ArrowRight className="w-4 h-4" aria-hidden="true" />
       </Link>
@@ -117,6 +118,7 @@ export default async function Home() {
           title="Kajian Terdekat"
           href="/jadwal-kajian"
           srContext="Daftar Jadwal Kajian Terdekat"
+          linkText="Jadwal Kajian"
         />
 
         {kajianList === null ? (
@@ -124,7 +126,7 @@ export default async function Home() {
             Gagal memuat jadwal kajian terbaru. Silakan coba muat ulang halaman beberapa saat lagi.
           </StateBox>
         ) : activeKajian.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {activeKajian.map((kajian) => (
               <KajianCard key={kajian.id} kajian={kajian} />
             ))}
@@ -143,6 +145,7 @@ export default async function Home() {
           title="Direktori Masjid"
           href="/masjid"
           srContext="Direktori Masjid Sunnah Banten"
+          linkText="Semua Masjid"
         />
 
         {masjidList === null ? (
@@ -150,7 +153,7 @@ export default async function Home() {
             Gagal memuat direktori masjid. Silakan coba muat ulang halaman beberapa saat lagi.
           </StateBox>
         ) : featuredMasjid.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {featuredMasjid.map((masjid) => (
               <MasjidCard key={masjid.id} masjid={masjid} />
             ))}
@@ -169,6 +172,7 @@ export default async function Home() {
           title="Artikel Terbaru"
           href="/artikel"
           srContext="Katalog Direktori Mutiara Faedah Kajian"
+          linkText="Semua Faedah"
         />
 
         {artikelList === null ? (
@@ -176,7 +180,7 @@ export default async function Home() {
             Gagal memuat mutiara faedah & artikel terbaru. Silakan coba muat ulang halaman beberapa saat lagi.
           </StateBox>
         ) : latestArtikel.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {latestArtikel.map((artikel) => (
               <Link
                 href={`/artikel/${artikel.slug}`}

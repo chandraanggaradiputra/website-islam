@@ -1,5 +1,5 @@
 // components/prayer/MonthlyPrayerCalendarSkeleton.tsx
-import { Sparkles, MapPin, Printer, Calendar } from 'lucide-react';
+import { Info, MapPin, Printer, Calendar } from 'lucide-react';
 
 export function MonthlyPrayerCalendarSkeleton() {
   return (
@@ -9,7 +9,7 @@ export function MonthlyPrayerCalendarSkeleton() {
         <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div className="space-y-3">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-xs font-semibold text-blue-100 border border-white/15">
-              <Sparkles className="w-3.5 h-3.5 text-yellow-300 opacity-60" />
+              <Info className="w-3.5 h-3.5 text-blue-200 opacity-60" />
               <div className="h-3.5 w-44 bg-white/20 rounded" />
             </div>
             <div className="h-8 w-72 md:w-96 bg-white/20 rounded-lg" />

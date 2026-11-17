@@ -14,7 +14,6 @@ import {
   ChevronRight,
   MapPin,
   Clock,
-  Sparkles,
   Info,
   Loader2,
 } from 'lucide-react';
@@ -181,7 +180,7 @@ export function MonthlyPrayerCalendar({
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-xs font-semibold text-blue-100 border border-white/15">
-                <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
+                <Info className="w-3.5 h-3.5 text-blue-200" aria-hidden="true" />
                 <span>Standar Bimas Islam Kemenag RI</span>
               </div>
               {/* Jam Digital WIB Real-Time dengan Two-Pass Reservation */}

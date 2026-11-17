@@ -4,9 +4,11 @@ import { useState } from 'react';
 import { approveKajian, rejectKajian } from '@/lib/actions/kajian';
 import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useToast } from '@/components/ui/Toast';
 
 export function AdminKajianActions({ id }: { id: number }) {
   const router = useRouter();
+  const { showToast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
   const handleApprove = async () => {
@@ -14,8 +16,12 @@ export function AdminKajianActions({ id }: { id: number }) {
       setIsLoading(true);
       const res = await approveKajian(id);
       setIsLoading(false);
-      if (!res.success) alert(res.error);
-      else router.refresh();
+      if (!res.success) {
+        showToast(res.error || 'Gagal menyetujui kajian.', 'error');
+      } else {
+        showToast('Kajian berhasil disetujui dan dipublikasikan.', 'success');
+        router.refresh();
+      }
     }
   };
 
@@ -24,8 +30,12 @@ export function AdminKajianActions({ id }: { id: number }) {
       setIsLoading(true);
       const res = await rejectKajian(id);
       setIsLoading(false);
-      if (!res.success) alert(res.error);
-      else router.refresh();
+      if (!res.success) {
+        showToast(res.error || 'Gagal menolak kajian.', 'error');
+      } else {
+        showToast('Kajian ditolak dan diubah menjadi draf.', 'info');
+        router.refresh();
+      }
     }
   };
 
@@ -34,16 +44,16 @@ export function AdminKajianActions({ id }: { id: number }) {
   }
 
   return (
-    <div className="flex gap-2">
+    <div className="flex gap-2 items-center">
       <button 
         onClick={handleApprove}
-        className="text-green-600 hover:text-green-700 font-medium cursor-pointer"
+        className="min-h-[44px] px-3 py-2 text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded-lg transition-colors cursor-pointer"
       >
         Setujui
       </button>
       <button 
         onClick={handleReject}
-        className="text-red-600 hover:text-red-700 font-medium cursor-pointer"
+        className="min-h-[44px] px-3 py-2 text-xs font-semibold text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer"
       >
         Tolak
       </button>

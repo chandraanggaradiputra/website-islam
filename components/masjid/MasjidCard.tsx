@@ -63,7 +63,7 @@ export function MasjidCard({ masjid }: { masjid: WPMasjid }) {
         </div>
 
         <div className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-400 mb-4">
-          <MapPin className="w-4 h-4 mt-0.5 shrink-0" />
+          <MapPin className="w-4 h-4 mt-0.5 shrink-0" aria-hidden="true" />
           <span className="line-clamp-2">{acf.alamat_lengkap}</span>
         </div>
 
@@ -86,13 +86,12 @@ export function MasjidCard({ masjid }: { masjid: WPMasjid }) {
         )}
       </div>
 
-      {/* Grid 2 Tombol Aksi dengan Touch Target Minimal 48x48px (WCAG 2.2 SC 2.5.8) */}
       <div className="grid grid-cols-2 border-t border-slate-100 dark:border-slate-800">
         <Link
           href={`/masjid/${slug}`}
           className="min-h-[48px] flex items-center justify-center p-3 text-center text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-800/50 text-slate-800 dark:text-slate-200 transition-colors border-r border-slate-100 dark:border-slate-800"
         >
-          Lihat Profil
+          Profil Masjid
         </Link>
         <a
           href={mapsUrl}
@@ -100,7 +99,7 @@ export function MasjidCard({ masjid }: { masjid: WPMasjid }) {
           rel="noopener noreferrer"
           className="min-h-[48px] flex items-center justify-center gap-1.5 p-3 text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-800/50 text-[#093c96] dark:text-blue-400 transition-colors"
         >
-          <Navigation className="w-4 h-4" />
+          <Navigation className="w-4 h-4" aria-hidden="true" />
           <span>Rute Maps</span>
         </a>
       </div>

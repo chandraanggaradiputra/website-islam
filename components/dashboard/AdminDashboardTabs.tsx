@@ -36,6 +36,7 @@ import {
 import { sendBroadcastNotification } from '@/lib/actions/push';
 import { WhatsAppScratchpad } from '@/components/dashboard/WhatsAppScratchpad';
 import { stripHtmlToWhatsAppText, decodeHtmlEntities } from '@/lib/utils/whatsappText';
+import { useToast } from '@/components/ui/Toast';
 import {
   Users,
   Building2,
@@ -62,7 +63,7 @@ import {
   MessageCircle,
   Eye,
   EyeOff,
-  Sparkles,
+  Info,
   BellRing,
   Send,
   Smartphone,
@@ -130,6 +131,7 @@ export function AdminDashboardTabs({
   pushStats,
 }: AdminDashboardTabsProps) {
   const router = useRouter();
+  const { showToast } = useToast();
   const searchParams = useSearchParams();
   const rawTab = searchParams.get('tab') || initialTab;
   const activeTab = (
@@ -163,10 +165,7 @@ export function AdminDashboardTabs({
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [settingsSuccess, setSettingsSuccess] = useState<string | null>(null);
   const [settingsError, setSettingsError] = useState<string | null>(null);
-
-  // ============================================================================
   // State Panel Broadcast Web Push Notification
-  // ============================================================================
   const [broadcastTitle, setBroadcastTitle] = useState('');
   const [broadcastBody, setBroadcastBody] = useState('');
   const [broadcastUrl, setBroadcastUrl] = useState('/jadwal-kajian');
@@ -239,7 +238,7 @@ export function AdminDashboardTabs({
   const handleSendBroadcast = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!broadcastTitle.trim() || !broadcastBody.trim()) {
-      alert('Judul dan pesan notifikasi wajib diisi.');
+      showToast('Judul dan pesan notifikasi wajib diisi.', 'error');
       return;
     }
 
@@ -310,8 +309,12 @@ export function AdminDashboardTabs({
     if (confirm('Setujui akun DKM ini dan terbitkan data masjid terkait?')) {
       startTransition(async () => {
         const res = await approveDKMRegistration(id);
-        if (!res.success) alert(res.error);
-        else router.refresh();
+        if (!res.success) {
+          showToast(res.error || 'Gagal menyetujui akun DKM.', 'error');
+        } else {
+          showToast('Akun DKM berhasil disetujui.', 'success');
+          router.refresh();
+        }
       });
     }
   };
@@ -320,8 +323,12 @@ export function AdminDashboardTabs({
     if (confirm('Tolak permohonan DKM ini?')) {
       startTransition(async () => {
         const res = await rejectDKMRegistration(id);
-        if (!res.success) alert(res.error);
-        else router.refresh();
+        if (!res.success) {
+          showToast(res.error || 'Gagal menolak permohonan DKM.', 'error');
+        } else {
+          showToast('Permohonan DKM telah ditolak.', 'info');
+          router.refresh();
+        }
       });
     }
   };
@@ -331,8 +338,9 @@ export function AdminDashboardTabs({
       startTransition(async () => {
         const res = await deleteMasjidByAdmin(id);
         if (!res.success) {
-          alert(sanitizeErrorMessage(res.error, 'Afwan, masjid belum dapat dihapus. Silakan coba beberapa saat lagi.'));
+          showToast(sanitizeErrorMessage(res.error, 'Afwan, masjid belum dapat dihapus. Silakan coba beberapa saat lagi.'), 'error');
         } else {
+          showToast('Masjid berhasil dihapus.', 'success');
           router.refresh();
         }
       });
@@ -350,8 +358,9 @@ export function AdminDashboardTabs({
             delete next[id];
             return next;
           });
-          alert(sanitizeErrorMessage(res.error, 'Afwan, jadwal kajian belum dapat dihapus. Silakan coba beberapa saat lagi.'));
+          showToast(sanitizeErrorMessage(res.error, 'Afwan, jadwal kajian belum dapat dihapus. Silakan coba beberapa saat lagi.'), 'error');
         } else {
+          showToast('Jadwal kajian berhasil dihapus.', 'success');
           router.refresh();
         }
       });
@@ -387,8 +396,9 @@ export function AdminDashboardTabs({
             [id]: existing,
           }));
         }
-        alert(sanitizeErrorMessage(res.error, 'Afwan, status kajian belum dapat diperbarui. Silakan coba beberapa saat lagi.'));
+        showToast(sanitizeErrorMessage(res.error, 'Afwan, status kajian belum dapat diperbarui. Silakan coba beberapa saat lagi.'), 'error');
       } else {
+        showToast('Status kajian berhasil diperbarui.', 'success');
         router.refresh();
       }
     });
@@ -470,10 +480,7 @@ export function AdminDashboardTabs({
           <span>Broadcast Notifikasi ({currentPushStats.activeSubscribers})</span>
         </button>
       </div>
-
-      {/* ========================================================================= */}
       {/* TAB 1: Antrean Verifikasi DKM & Usulan Masjid Baru */}
-      {/* ========================================================================= */}
       {activeTab === 'dkm' && (
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800">
@@ -553,13 +560,15 @@ export function AdminDashboardTabs({
                                   {masjidTitle}
                                 </p>
                                 {isNewMasjid ? (
-                                  <span className="inline-block mt-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                                    ✨ Usulan Masjid Baru
+                                  <span className="inline-flex items-center gap-1 mt-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                    <Building2 className="w-3 h-3" aria-hidden="true" />
+                                    <span>Usulan masjid baru</span>
                                   </span>
                                 ) : (
                                   <div className="mt-1 space-y-0.5">
-                                    <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-                                      🏛️ Klaim Masjid Terdaftar
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                                      <Building2 className="w-3 h-3" aria-hidden="true" />
+                                      <span>Klaim masjid terdaftar</span>
                                     </span>
                                     <p className="text-xs text-slate-600 dark:text-slate-400">
                                       Masjid Terkait: <span className="font-semibold text-slate-800 dark:text-slate-200">{app.masjidName || existingMasjid?.title?.rendered || masjidTitle}</span> (ID: #{targetMasjidId})
@@ -567,8 +576,9 @@ export function AdminDashboardTabs({
                                   </div>
                                 )}
                                 {masjidKota && (
-                                  <p className="mt-1 text-xs font-semibold text-[#093c96] dark:text-blue-400">
-                                    📍 {masjidKota}
+                                  <p className="mt-1 text-xs font-semibold text-[#093c96] dark:text-blue-400 inline-flex items-center gap-1">
+                                    <MapPin className="w-3 h-3 shrink-0" aria-hidden="true" />
+                                    <span>{masjidKota}</span>
                                   </p>
                                 )}
                                 {isNewMasjid && app.newMasjidData && (
@@ -641,10 +651,7 @@ export function AdminDashboardTabs({
           </div>
         </div>
       )}
-
-      {/* ========================================================================= */}
       {/* TAB 2: Kelola Seluruh Direktori Masjid */}
-      {/* ========================================================================= */}
       {activeTab === 'masjid' && (
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800">
@@ -771,10 +778,7 @@ export function AdminDashboardTabs({
           </div>
         </div>
       )}
-
-      {/* ========================================================================= */}
       {/* TAB 3: Kelola Seluruh Jadwal Kajian */}
-      {/* ========================================================================= */}
       {activeTab === 'kajian' && (
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800">
@@ -851,8 +855,9 @@ export function AdminDashboardTabs({
                           <td className="p-4 text-xs text-slate-700 dark:text-slate-300 min-w-[140px]">
                             <p className="font-medium line-clamp-1">{masjid}</p>
                             {kajian.acf?.kota_kabupaten && (
-                              <p className="mt-1 text-xs font-semibold text-[#093c96] dark:text-blue-400">
-                                📍 {kajian.acf.kota_kabupaten}
+                              <p className="mt-1 text-xs font-semibold text-[#093c96] dark:text-blue-400 inline-flex items-center gap-1">
+                                <MapPin className="w-3 h-3 shrink-0" aria-hidden="true" />
+                                <span>{kajian.acf.kota_kabupaten}</span>
                               </p>
                             )}
                           </td>
@@ -948,10 +953,7 @@ export function AdminDashboardTabs({
           </div>
         </div>
       )}
-
-      {/* ========================================================================= */}
       {/* TAB 4: Pengurus DKM Terdaftar */}
-      {/* ========================================================================= */}
       {activeTab === 'pengguna' && (
         <div className="space-y-4">
           {/* Bar Kontrol & Pencarian */}
@@ -1090,10 +1092,7 @@ export function AdminDashboardTabs({
           )}
         </div>
       )}
-
-      {/* ========================================================================= */}
       {/* TAB 5: Pengaturan Sistem */}
-      {/* ========================================================================= */}
       {activeTab === 'pengaturan' && (
         <div className="space-y-6">
           {/* Feedback Notifikasi */}
@@ -1431,10 +1430,7 @@ export function AdminDashboardTabs({
           </div>
         </div>
       )}
-
-      {/* ========================================================================= */}
       {/* TAB 6: Siaran Notifikasi Web Push ke Seluruh Jamaah (PWA Native Push) */}
-      {/* ========================================================================= */}
       {activeTab === 'broadcast' && (
         <div className="space-y-6">
           {/* Header & Stats Cards */}
@@ -1728,7 +1724,7 @@ export function AdminDashboardTabs({
                 {/* Petunjuk Teknis untuk Admin */}
                 <div className="p-3.5 rounded-xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/50 space-y-1.5 text-[11px] text-slate-600 dark:text-slate-400">
                   <div className="flex items-center gap-1.5 font-bold text-[#093c96] dark:text-blue-400">
-                    <Sparkles className="w-3.5 h-3.5 text-[#C5A059]" />
+                    <Info className="w-3.5 h-3.5 text-[#093c96] dark:text-blue-400" aria-hidden="true" />
                     <span>Panduan Siaran Efektif</span>
                   </div>
                   <ul className="list-disc list-inside space-y-1 text-[10.5px] leading-relaxed">
@@ -1742,10 +1738,7 @@ export function AdminDashboardTabs({
           </div>
         </div>
       )}
-
-      {/* ========================================================================= */}
       {/* MODAL: Tambah Masjid Baru oleh Admin */}
-      {/* ========================================================================= */}
       {isAddMasjidOpen && (
         <AdminMasjidModal
           onClose={() => setIsAddMasjidOpen(false)}
@@ -1755,10 +1748,7 @@ export function AdminDashboardTabs({
           }}
         />
       )}
-
-      {/* ========================================================================= */}
       {/* MODAL: Edit Masjid oleh Admin */}
-      {/* ========================================================================= */}
       {editingMasjid && (
         <AdminMasjidModal
           initialMasjid={editingMasjid}
@@ -1769,10 +1759,7 @@ export function AdminDashboardTabs({
           }}
         />
       )}
-
-      {/* ========================================================================= */}
       {/* MODAL: Tambah / Edit Kajian oleh Admin */}
-      {/* ========================================================================= */}
       {(isAddKajianOpen || editingKajian) && (
         <AdminKajianModal
           kajian={editingKajian}
@@ -1788,10 +1775,7 @@ export function AdminDashboardTabs({
           }}
         />
       )}
-
-      {/* ========================================================================= */}
       {/* MODAL: Isi Catatan Faedah Kajian Selesai oleh Admin */}
-      {/* ========================================================================= */}
       {faedahModalKajian && (
         <CatatanFaedahModal
           kajian={faedahModalKajian}
@@ -1814,10 +1798,7 @@ export function AdminDashboardTabs({
           }}
         />
       )}
-
-      {/* ========================================================================= */}
       {/* MODAL: Reset Kata Sandi Pengurus DKM oleh Admin */}
-      {/* ========================================================================= */}
       {resetTargetUser && (
         <AdminResetPasswordModal
           user={resetTargetUser}
@@ -1832,10 +1813,7 @@ export function AdminDashboardTabs({
     </div>
   );
 }
-
-/* ========================================================================= */
 /* Modal Form Masjid (Tambah / Edit) */
-/* ========================================================================= */
 function AdminMasjidModal({
   initialMasjid,
   onClose,
@@ -2141,10 +2119,7 @@ function AdminMasjidModal({
     </div>
   );
 }
-
-/* ========================================================================= */
 /* Modal Form Jadwal Kajian (Tambah Baru / Edit) oleh Admin */
-/* ========================================================================= */
 function AdminKajianModal({
   kajian,
   masjidList,
@@ -2353,7 +2328,7 @@ function AdminKajianModal({
 
           {/* Waktu Pelaksanaan */}
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-            {/* Hari Kajian — select 7 hari baku */}
+            {/* Pilihan 7 hari baku */}
             <div>
               <label
                 htmlFor="modal-hariKajian"
@@ -2550,10 +2525,7 @@ function AdminKajianModal({
     </div>
   );
 }
-
-/* ========================================================================= */
 /* Modal Form Reset Password Akun Pengurus DKM */
-/* ========================================================================= */
 function AdminResetPasswordModal({
   user,
   onClose,
@@ -2665,7 +2637,7 @@ function AdminResetPasswordModal({
                 onClick={handleGeneratePassword}
                 className="text-[11px] font-semibold text-[#093c96] dark:text-blue-400 hover:underline inline-flex items-center gap-1 cursor-pointer"
               >
-                <Sparkles className="w-3 h-3 text-[#C5A059]" />
+                <KeyRound className="w-3 h-3 text-[#C5A059]" aria-hidden="true" />
                 <span>Acak Sandi Kuat</span>
               </button>
             </div>

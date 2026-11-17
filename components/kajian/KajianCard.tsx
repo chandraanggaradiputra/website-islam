@@ -198,14 +198,13 @@ export function KajianCard({ kajian }: { kajian: WPKajian }) {
         </div>
       </div>
 
-      {/* Tombol Aksi dengan Touch Target Minimal 48x48px (WCAG 2.2 SC 2.5.8) */}
       <div className="border-t border-slate-100 dark:border-slate-800 p-2 bg-slate-50 dark:bg-slate-900/50">
         <Link
           href={`/jadwal-kajian/${slug}`}
           className={`min-h-[48px] px-3 py-2 flex items-center justify-center w-full text-center text-sm font-semibold text-[#093c96] hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors ${FOCUS_RING}`}
         >
           <span>
-            {isSelesai && hasRecording ? 'Tonton Rekaman & Faedah' : 'Lihat Detail Lengkap'}
+            {isSelesai && hasRecording ? 'Tonton Rekaman & Faedah' : 'Baca Jadwal & Faedah'}
           </span>
           <span className="sr-only">: {htmlParser(title.rendered)}</span>
         </Link>

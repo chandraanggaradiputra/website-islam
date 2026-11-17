@@ -21,12 +21,9 @@ export function Header() {
   return (
     <header className="sticky top-0 z-40 w-full bg-white/95 backdrop-blur-md dark:bg-slate-950/95 transition-colors border-b border-slate-200/80 dark:border-slate-800/80">
       
-      {/* ========================================================================= */}
-      {/* LAPISAN 1: TOP BAR */}
-      {/* ========================================================================= */}
+      {/* Top bar */}
       <div className="container mx-auto flex h-16 max-w-6xl items-center justify-between px-4 gap-4">
         
-        {/* Bagian Kiri: Brand Logo */}
         <Link href="/" className="flex items-center gap-2.5 font-bold text-slate-900 dark:text-white group shrink-0">
           <Image
             src="/banten-mengaji.jpeg"
@@ -46,7 +43,7 @@ export function Header() {
           </div>
         </Link>
 
-        {/* Bagian Tengah: Global Search (Desktop) */}
+        {/* Global Search (Desktop) */}
         <div className="flex-1 max-w-xl mx-6 hidden md:block">
           <GlobalSearch 
             triggerClassName="w-full flex items-center justify-between rounded-full border border-slate-200 bg-slate-50/50 px-4 py-2 text-sm text-slate-500 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400 dark:hover:bg-slate-800 transition-colors shadow-sm" 
@@ -54,31 +51,27 @@ export function Header() {
           />
         </div>
 
-        {/* Bagian Kanan: CTA, ThemeToggle, Auth */}
         <div className="flex items-center gap-2 shrink-0">
-          
-          {/* Search Trigger for Mobile */}
+          {/* Search Trigger for Mobile (44px touch target) */}
           <div className="md:hidden">
             <GlobalSearch 
-              triggerClassName="flex items-center justify-center h-9 w-9 rounded-lg border border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400 dark:hover:bg-slate-800 transition-colors" 
+              triggerClassName="flex items-center justify-center min-h-[44px] min-w-[44px] rounded-lg border border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400 dark:hover:bg-slate-800 transition-colors" 
               triggerText="" 
               iconOnly={true} 
             />
           </div>
 
-          {/* Tombol Ekosistem Marketplace Mas Chan Digital */}
           <a
             href="https://maschandigital.id"
             target="_blank"
             rel="noopener noreferrer"
-            className="hidden md:inline-flex items-center gap-1.5 rounded-full bg-[#093c96] hover:bg-blue-800 text-white px-3.5 py-1.5 text-xs font-bold shadow-sm hover:shadow-blue-900/20 transition-all ml-1 shrink-0"
+            className="hidden md:inline-flex items-center gap-1.5 rounded-full bg-[#093c96] hover:bg-blue-800 text-white px-3.5 py-1.5 text-xs font-bold shadow-sm hover:shadow-blue-900/20 transition-all ml-1 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#093c96] focus-visible:ring-offset-2"
             title="Kunjungi Marketplace UMKM Kota Serang"
           >
             <span>Mas Chan Digital</span>
-            <ExternalLink className="h-3 w-3 opacity-90" />
+            <ExternalLink className="h-3 w-3 opacity-90" aria-hidden="true" />
           </a>
 
-          {/* Tema Gelap/Terang */}
           <ThemeToggle />
 
           {/* Role-Adaptive Auth Buttons */}
@@ -133,13 +126,9 @@ export function Header() {
         </div>
       </div>
 
-      {/* ========================================================================= */}
-      {/* LAPISAN 2: SUB-NAVIGATION BAR (Desktop Only) */}
-      {/* ========================================================================= */}
+      {/* Sub-navigation bar (Desktop) */}
       <div className="hidden md:block border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/60 dark:bg-slate-900/40 py-2">
         <div className="container mx-auto max-w-6xl px-4 flex items-center justify-between">
-          
-          {/* Bagian Kiri: Daftar Menu Navigasi Utama */}
           <nav aria-label="Navigasi Utama" className="flex items-center gap-1">
             <Link
               href="/"
@@ -213,12 +202,8 @@ export function Header() {
             </Link>
           </nav>
 
-          {/* Bagian Kanan: Tagline */}
           <div className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
+            <span className="inline-flex rounded-full h-2 w-2 bg-emerald-500 shrink-0" aria-hidden="true" />
             <span>Syiar Dakwah Salafiyah se-Provinsi Banten</span>
           </div>
         </div>

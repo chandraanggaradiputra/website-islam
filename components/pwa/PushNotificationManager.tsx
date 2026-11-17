@@ -11,7 +11,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Bell, BellRing, BellOff, CheckCircle2, Loader2, Sparkles, AlertCircle } from 'lucide-react';
+import { Bell, BellRing, BellOff, CheckCircle2, Loader2, Info, AlertCircle } from 'lucide-react';
 import { getVapidPublicKey, savePushSubscription, removePushSubscription } from '@/lib/actions/push';
 
 interface PushNotificationManagerProps {
@@ -302,11 +302,11 @@ export function PushNotificationManager({
           }`}
         >
           {feedback.type === 'success' ? (
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" aria-hidden="true" />
           ) : feedback.type === 'error' ? (
-            <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+            <AlertCircle className="w-4 h-4 text-red-600 shrink-0" aria-hidden="true" />
           ) : (
-            <Sparkles className="w-4 h-4 text-blue-600 shrink-0" />
+            <Info className="w-4 h-4 text-blue-600 shrink-0" aria-hidden="true" />
           )}
           <span>{feedback.message}</span>
         </div>

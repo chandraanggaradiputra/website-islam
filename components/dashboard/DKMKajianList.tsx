@@ -25,9 +25,11 @@ import { WhatsAppScratchpad } from '@/components/dashboard/WhatsAppScratchpad';
 import { stripHtmlToWhatsAppText, decodeHtmlEntities } from '@/lib/utils/whatsappText';
 import { formatTanggalIndo } from '@/lib/utils/date';
 import { CatatanFaedahModal } from '@/components/dashboard/CatatanFaedahModal';
+import { useToast } from '@/components/ui/Toast';
 
 export function DKMKajianList({ initialKajian }: { initialKajian: WPKajian[] }) {
   const router = useRouter();
+  const { showToast } = useToast();
   const [updatedKajianMap, setUpdatedKajianMap] = useState<Record<number, WPKajian>>({});
   const kajianList = initialKajian.map((k) => updatedKajianMap[k.id] || k);
   const [editingKajian, setEditingKajian] = useState<WPKajian | null>(null);
@@ -49,7 +51,7 @@ export function DKMKajianList({ initialKajian }: { initialKajian: WPKajian[] }) 
       isKajianExpired(kajian.acf?.tanggal_kajian, kajian.acf?.jam_selesai, kajian.acf?.jam_mulai);
 
     if (expired) {
-      alert('Kajian telah selesai dilaksanakan dan tidak dapat diedit lagi.');
+      showToast('Kajian telah selesai dilaksanakan dan tidak dapat diedit lagi.', 'info');
       return;
     }
 

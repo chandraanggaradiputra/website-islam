@@ -38,9 +38,8 @@ export function BottomNav() {
   const isDkmDashboard = pathname.startsWith('/dashboard/dkm');
   const isAdminDashboard = pathname.startsWith('/dashboard/admin');
 
-  // Penutup otomatis ketika rute (pathname) berpindah
+  // Tutup drawer saat rute berpindah
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsDrawerOpen(false);
   }, [pathname]);
 
@@ -56,16 +55,25 @@ export function BottomNav() {
     };
   }, [isDrawerOpen]);
 
+  // Tutup drawer saat user menekan Escape (WCAG 2.2 SC 2.1.1 & R-32)
+  useEffect(() => {
+    if (!isDrawerOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsDrawerOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isDrawerOpen]);
+
   return (
     <>
-      {/* ========================================================================= */}
-      {/* 1. BOTTOM NAVIGATION BAR (FIXED 5-TAB DENGAN TOUCH TARGET 48x48px WCAG 2.2) */}
-      {/* ========================================================================= */}
+      {/* Bottom navigation bar */}
       <nav
         aria-label="Navigasi Utama Smartphone"
         className="fixed bottom-0 left-0 right-0 z-40 flex h-16 pb-[env(safe-area-inset-bottom)] box-content items-center justify-around border-t border-slate-200/80 bg-white/95 px-1 backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-950/95 md:hidden transition-colors"
       >
-        {/* Tab 1: Beranda / Dasbor Adaptif */}
         {isDkmDashboard ? (
           <Link
             href="/dashboard/dkm"
@@ -217,9 +225,7 @@ export function BottomNav() {
         </button>
       </nav>
 
-      {/* ========================================================================= */}
-      {/* 2. BOTTOM SHEET DRAWER (SLIDE-UP MODAL DARI BAWAH) */}
-      {/* ========================================================================= */}
+      {/* Bottom sheet drawer */}
       {isDrawerOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
           {/* Backdrop Overlay */}

@@ -56,7 +56,7 @@ export default async function AdminDashboard({
     <div className="space-y-6">
       <div className="mb-6">
         <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">
-          Selamat Datang, {session?.name} 👋
+          Selamat Datang, {session?.name}
         </h2>
         <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
           Panel Manajemen Eksekutif & Verifikasi Portal Banten Mengaji.
@@ -67,10 +67,10 @@ export default async function AdminDashboard({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
           <div className="p-3.5 rounded-xl bg-blue-50 text-[#093c96] dark:bg-blue-950/60 dark:text-blue-400">
-            <Users className="w-6 h-6" />
+            <Users className="w-6 h-6" aria-hidden="true" />
           </div>
           <div>
-            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
               Antrean DKM
             </p>
             <h3 className="text-2xl font-bold text-slate-900 dark:text-white mt-0.5">
@@ -81,10 +81,10 @@ export default async function AdminDashboard({
 
         <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
           <div className="p-3.5 rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400">
-            <Clock className="w-6 h-6" />
+            <Clock className="w-6 h-6" aria-hidden="true" />
           </div>
           <div>
-            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
               Kajian Pending
             </p>
             <h3 className="text-2xl font-bold text-slate-900 dark:text-white mt-0.5">
@@ -95,10 +95,10 @@ export default async function AdminDashboard({
 
         <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
           <div className="p-3.5 rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
-            <BookOpen className="w-6 h-6" />
+            <BookOpen className="w-6 h-6" aria-hidden="true" />
           </div>
           <div>
-            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
               Kajian Tayang
             </p>
             <h3 className="text-2xl font-bold text-slate-900 dark:text-white mt-0.5">
@@ -109,10 +109,10 @@ export default async function AdminDashboard({
 
         <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
           <div className="p-3.5 rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-950/60 dark:text-purple-400">
-            <CheckCircle className="w-6 h-6" />
+            <CheckCircle className="w-6 h-6" aria-hidden="true" />
           </div>
           <div>
-            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
               Total Masjid
             </p>
             <h3 className="text-2xl font-bold text-slate-900 dark:text-white mt-0.5">

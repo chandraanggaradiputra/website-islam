@@ -9,6 +9,7 @@ import { ImagePlus, Loader2, Calendar, MapPin, Clock, Video, AlertCircle } from 
 import { useRouter } from 'next/navigation';
 import { submitKajian } from '@/lib/actions/kajian';
 import { WhatsAppScratchpad } from '@/components/dashboard/WhatsAppScratchpad';
+import { useToast } from '@/components/ui/Toast';
 
 const kajianSchema = z
   .object({
@@ -53,6 +54,7 @@ interface TambahKajianFormProps {
 
 export function TambahKajianForm({ masjidId, masjidName }: TambahKajianFormProps) {
   const router = useRouter();
+  const { showToast } = useToast();
   const [posterPreview, setPosterPreview] = useState<string | null>(null);
 
   const {
@@ -99,9 +101,10 @@ export function TambahKajianForm({ masjidId, masjidName }: TambahKajianFormProps
     try {
       const res = await submitKajian(formData);
       if (res.success) {
-        alert(
+        showToast(
           res.message ||
-            'Jazakallahu khairan. Jadwal kajian berhasil dipublikasikan dan langsung tayang di portal Banten Mengaji.'
+            'Jazakallahu khairan. Jadwal kajian berhasil dipublikasikan dan langsung tayang di portal Banten Mengaji.',
+          'success'
         );
         router.push('/dashboard/dkm');
         router.refresh();
